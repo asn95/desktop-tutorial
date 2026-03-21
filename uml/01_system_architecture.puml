@@ -1,0 +1,38 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam node {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam database {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+}
+
+node "Client Tier (Presentation Layer)" {
+    component "Web Admin Portal\n(React.js)" as web
+    component "Telegram Mini App\n(Web App SDK)" as miniapp
+    component "Manager Bot\n(Telegram Chat)" as botchat
+}
+
+cloud "Internet Gateway" as gateway {
+    component "HTTPS / WSS Gateway\n(Cloudflare/Nginx)" as lb
+}
+
+node "Application Tier (Business Logic)" {
+    component "Backend API Server\n(Python FastAPI)" as api
+}
+
+node "Data Tier (Storage Layer)" {
+    database "Relational DB\n(Supabase PostgreSQL)" as db
+    database "Object Storage\n(Supabase Storage)" as storage
+}
+
+web --> lb : HTTPS (REST)
+miniapp --> lb : HTTPS (REST)
+botchat <--> gateway : Chat Commands
+lb --> api : Route Traffic
+api --> db : SQL Queries
+api --> storage : Upload Photos
+@enduml

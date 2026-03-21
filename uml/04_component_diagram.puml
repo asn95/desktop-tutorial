@@ -1,0 +1,18 @@
+@startuml
+skinparam defaultFontName Arial
+package "Client (React + TG SDK)" {
+  class "TaskList_View" as TaskList
+  class "ReportForm_View" as Form
+}
+package "Backend (FastAPI)" {
+  class "Report_Controller" as Controller
+  class "Pydantic_Validator" as Validator
+}
+package "Database (Supabase)" {
+  class "DB_Client" as DbClient
+}
+TaskList ..> Controller : HTTP GET
+Form ..> Controller : HTTP POST
+Controller --> Validator : validate_json()
+Controller --> DbClient : execute_query()
+@enduml

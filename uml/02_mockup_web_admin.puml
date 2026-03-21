@@ -1,0 +1,21 @@
+@startsalt
+{+
+  {/ <b>Dashboard | Targets | Officers | Settings }
+  {
+    {
+      <b>Upload Targets
+      [ Choose CSV ]
+      [ Upload & Assign ]
+    } | {
+      <b>System Summary
+      Total: 150 | Done: 45
+    }
+  }
+  == <b>Target List
+  {#
+    ID | Customer | Officer | Status
+    T-1 | Budi S.  | Auza    | [Completed]
+    T-2 | Siti A.  | Rashad  | [Pending]
+  }
+}
+@endsalt

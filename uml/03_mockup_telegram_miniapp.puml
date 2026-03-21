@@ -1,16 +1,67 @@
 @startsalt
 {+
-  { <b>< C3MR Field App </b> }
+  {  <b>< C3MR Field App </b>           ... }
   ===
-  <b>Task: Siti Aminah
-  Payment Status:
-  ^Promise to Pay^
-  Notes:
-  {S
-  Will pay tomorrow.
-  .
+  {
+    Logged in as: <b>Auza Rahman
+    <i>3 tasks assigned
   }
+  ---
+  <b>MY TASKS
+  .
+  {+
+    <b>Siti Aminah
+    Jl. Sudirman No.45, Bekasi
+    Rp 3,800,000
+    <color:orange>[In Progress]</color> | <i>Tap to submit report >
+  }
+  .
+  {+
+    <b>Dewi Lestari
+    Jl. Asia Afrika No.20, Bandung
+    Rp 2,500,000
+    <color:red>[Pending]</color> | <i>Tap to submit report >
+  }
+  .
+  {+
+    <b>Budi Santoso
+    Jl. Merdeka No.12, Jakarta
+    Rp 5,200,000
+    <color:green>[Completed]</color> | <i>Report submitted
+  }
+  ===
+}
+@endsalt
+
+@startsalt
+{+
+  {  <b>< C3MR Field App </b>           ... }
+  ===
+  {
+    [< Back to Tasks]
+    <b>Siti Aminah
+    Jl. Sudirman No.45, Bekasi
+    Phone: 0812-3456-7890
+    Amount Due: <color:red><b>Rp 3,800,000</color>
+  }
+  ---
+  <b>SUBMIT VISIT REPORT
+  .
+  Payment Status: <color:red>*</color>
+  ^Promise to Pay^
+  .
+  Notes:
+  {SI
+  Customer said they will pay by
+  Friday. Spoke with customer
+  directly at the door.
+  }
+  .
+  Photo Evidence: <color:red>*</color>
+  "Tap to take photo or choose from gallery"
   [ Upload Photo Evidence ]
-  [    Submit Report    ]
+  <i>Max size: 10MB
+  ===
+  [     Submit Report     ]
 }
 @endsalt

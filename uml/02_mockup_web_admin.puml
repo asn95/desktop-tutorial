@@ -1,21 +1,52 @@
 @startsalt
 {+
   {/ <b>Dashboard | Targets | Officers | Settings }
+  ---
+  {
+    {
+      {#
+        <b>Total Targets | <b>Completed | <b>In Progress | <b>Pending
+        <b>150           | <color:green><b>45</color> | <color:orange><b>60</color> | <color:red><b>45</color>
+      }
+    }
+  }
+  ---
   {
     {
       <b>Upload Targets
+      .
+      "Drag & drop CSV here"
       [ Choose CSV ]
+      .
+      <i>Required: customer_name, address,
+      <i>phone, amount_due
+      .
       [ Upload & Assign ]
     } | {
-      <b>System Summary
-      Total: 150 | Done: 45
+      <b>Completion Rate
+      .
+      .
+      "        [  30%  ]        "
+      "  45 of 150 targets completed  "
+      .
+      .
     }
   }
+  ---
   == <b>Target List
+  {
+    "Search customer...      " | ^All Status^
+  }
   {#
-    ID | Customer | Officer | Status
-    T-1 | Budi S.  | Auza    | [Completed]
-    T-2 | Siti A.  | Rashad  | [Pending]
+    <b>ID  | <b>Customer     | <b>Address               | <b>Amount Due  | <b>Officer     | <b>Status      | <b>Action
+    T-001 | Budi Santoso    | Jl. Merdeka No.12       | Rp 5,200,000  | Auza Rahman   | [Completed]   | [View]
+    T-002 | Siti Aminah     | Jl. Sudirman No.45      | Rp 3,800,000  | Rashad Putra  | [In Progress] | [View]
+    T-003 | Ahmad Wijaya    | Jl. Gatot Subroto No.8  | Rp 7,100,000  | <i>Unassigned  | [Pending]     | [Assign]
+    T-004 | Dewi Lestari    | Jl. Asia Afrika No.20   | Rp 2,500,000  | Auza Rahman   | [In Progress] | [View]
+    T-005 | Rina Marlina    | Jl. Diponegoro No.33    | Rp 4,600,000  | <i>Unassigned  | [Pending]     | [Assign]
+  }
+  {
+    "Showing 1-5 of 150" | [Previous] [<b>1] [2] [3] [Next]
   }
 }
 @endsalt

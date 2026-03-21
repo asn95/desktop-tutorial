@@ -1,0 +1,16 @@
+@startuml
+autonumber
+actor "Field Officer" as FO
+participant "Mini App" as UI
+participant "FastAPI" as API
+database "Supabase" as DB
+
+FO -> UI : Fill form & Photo
+UI -> API : POST /api/reports (JSON+Image)
+API -> DB : Upload Image to Storage
+DB --> API : Return Image URL
+API -> DB : INSERT report data & UPDATE target
+DB --> API : Success
+API --> UI : HTTP 200 OK
+UI --> FO : Show "Success"
+@enduml

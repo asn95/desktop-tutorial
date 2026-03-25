@@ -111,8 +111,8 @@ The architecture consists of the following tiers:
 The Web Admin Portal provides the following interface elements:
 - **Navigation Tabs:** Dashboard, Targets, Officers, Settings – allowing managers to switch between major sections.
 - **Upload Targets Section:** A CSV file upload area with "Choose CSV" and "Upload & Assign" buttons for bulk importing collection targets.
-- **System Summary:** Displays aggregate statistics (Total targets, Completed targets).
-- **Target List Table:** A sortable/filterable table showing Target ID, Customer name, assigned Officer, and current Status (Completed/Pending).
+- **System Summary:** Displays aggregate statistics across four cards: Total Targets, Completed (green), In Progress (yellow), and Pending (red).
+- **Target List Table:** A sortable/filterable table showing Target ID, Customer name, Address, Amount Due, assigned Officer, Status (Completed / In Progress / Pending), and an Actions column (View or Assign).
 
 #### Telegram Mini App Mock-up
 
@@ -120,8 +120,8 @@ The Web Admin Portal provides the following interface elements:
 
 The Telegram Mini App provides the following interface elements:
 - **Header:** App name "C3MR Field App" with back navigation.
-- **Task Detail:** Displays the current task with customer name.
-- **Payment Status Dropdown:** Selectable options (e.g., "Promise to Pay", "Paid", "Refused", "Not Home").
+- **Task Detail:** Displays the current task with customer name, address, phone number, and amount due (highlighted in red).
+- **Payment Status Dropdown:** Selectable options: "Promise to Pay", "Paid", "Refused", "Not Home", "Partial Payment".
 - **Notes Field:** A scrollable text area for the officer to enter visit notes.
 - **Upload Photo Evidence Button:** Triggers the device camera or gallery to capture/select photo proof.
 - **Submit Report Button:** Sends the completed report to the backend API.
@@ -574,7 +574,7 @@ The system is implemented in an iterative manner across the following phases:
 | Step | Action | Expected Result | Alternative |
 |------|--------|----------------|-------------|
 | 1 | Field Officer opens the Mini App from Telegram. | System validates Telegram user ID. Task list is displayed showing all assigned targets with customer name, address, and status. | If Telegram ID is not registered, show "You are not registered as a field officer. Contact your manager." |
-| 2 | Task list loads with assigned targets. | Each task shows customer name, address snippet, and status badge (Pending / In Progress / Completed). Tasks are sorted by status (Pending first). | If no tasks are assigned, show "No tasks assigned. Check back later." |
+| 2 | Task list loads with assigned targets. | Each task shows customer name, address snippet, amount due, and status badge (Pending / In Progress / Completed). Tasks are sorted by status (Pending first). | If no tasks are assigned, show "No tasks assigned. Check back later." |
 | 3 | Officer taps on a task. | Task detail view opens with full customer information (name, address, phone, amount due). | – |
 
 #### Scenario 5: Field Officer Submits Report (Telegram Mini App)
@@ -582,7 +582,7 @@ The system is implemented in an iterative manner across the following phases:
 | Step | Action | Expected Result | Alternative |
 |------|--------|----------------|-------------|
 | 1 | Officer opens a task detail and taps "Submit Report". | Report form is displayed with Payment Status dropdown, Notes text area, and "Upload Photo Evidence" button. | – |
-| 2 | Officer selects a payment status from the dropdown (e.g., "Promise to Pay"). | Selection is recorded. Dropdown shows the selected value. | – |
+| 2 | Officer selects a payment status from the dropdown (e.g., "Promise to Pay", "Paid", "Refused", "Not Home", or "Partial Payment"). | Selection is recorded. Dropdown shows the selected value. | – |
 | 3 | Officer types notes in the text area (e.g., "Customer will pay by Friday"). | Text is recorded in the notes field. | – |
 | 4 | Officer taps "Upload Photo Evidence". | Device camera or gallery opens. Officer can take a photo or select an existing image. | If camera/gallery permission is denied, show "Please grant camera access to upload photos." |
 | 5 | Officer captures/selects a photo. | Photo thumbnail preview is displayed in the form. | If photo exceeds 10MB, show "Photo size exceeds 10MB limit. Please take a smaller photo." |
@@ -595,7 +595,7 @@ The system is implemented in an iterative manner across the following phases:
 | Step | Action | Expected Result | Alternative |
 |------|--------|----------------|-------------|
 | 1 | Manager navigates to the Dashboard page. | Dashboard loads with summary cards (Total Targets, Completed, Pending, In Progress) and charts (completion rate over time, officer performance). | If no data exists, show "No data available yet. Upload targets to get started." |
-| 2 | Manager views the Target List table. | Table displays all targets with columns: ID, Customer, Officer, Status. Table supports sorting by any column and filtering by status. | – |
+| 2 | Manager views the Target List table. | Table displays all targets with columns: ID, Customer, Address, Amount Due, Officer, Status, and Actions. Table supports sorting by any column and filtering by status. | – |
 | 3 | Manager clicks on a completed target row. | Target detail view opens showing customer information and the submitted report (payment status, notes, photo evidence). | – |
 
 #### Scenario 7: Manager Bot Notifications (Telegram)

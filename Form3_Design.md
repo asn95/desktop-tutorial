@@ -8,11 +8,11 @@
 
 | No. | Student Name | Student ID |
 |-----|-------------|------------|
-| 1.  | …. (Leader) |            |
-| 2.  | …. (Member 1) |          |
-| 3.  | …. (Member 2) |          |
+| 1.  | Auza Syamil Nabawi (Leader) | 001202300150 |
+| 2.  | Rashad Abdul Faqih (Member) | 001202300149 |
+| 3.  | Atthariqul Hazam Albanna (Member) | 012202300122 |
 
-**Advisor:** ……………………….
+**Advisor:** Dr. Adhi Setyo Santoso, ST., MBA.
 
 ---
 
@@ -40,9 +40,9 @@ to **Faculty of Computer Science**
 In my capacity as an active student at President University and as the author of the Capstone Design Project stated below:
 
 - **Name:**
-  1. Student Name – NIM
-  2. Student Name – NIM
-  3. Student Name – NIM
+  1. Auza Syamil Nabawi – 001202300150
+  2. Rashad Abdul Faqih – 001202300149
+  3. Atthariqul Hazam Albanna – 012202300122
 - **Faculty:** Computer Science
 
 I hereby declare that my Capstone Design Project entitled **"C3MR – Collection Case & Customer Management Report"** is to the best of my knowledge and belief, an original piece of work based on sound academic principles. If there is any plagiarism detected in this final project, I am willing to be personally responsible for the consequences of these acts of plagiarism and will accept the sanctions against these acts in accordance with the rules and policies of President University.
@@ -53,7 +53,7 @@ Cikarang, January 2024
 
 | Signer 1 | Signer 2 | Signer 3 |
 |-----------|-----------|-----------|
-| Student Name – NIM | Student Name – NIM | Student Name – NIM |
+| Auza Syamil Nabawi – 001202300150 | Rashad Abdul Faqih – 001202300149 | Atthariqul Hazam Albanna – 012202300122 |
 
 ---
 
@@ -109,10 +109,9 @@ The architecture consists of the following tiers:
 ![Web Admin Portal](uml/images/02_mockup_web_admin.png)
 
 The Web Admin Portal provides the following interface elements:
-- **Navigation Tabs:** Dashboard, Targets, Officers, Settings – allowing managers to switch between major sections.
-- **Upload Targets Section:** A CSV file upload area with "Choose CSV" and "Upload & Assign" buttons for bulk importing collection targets.
-- **System Summary:** Displays aggregate statistics across four cards: Total Targets, Completed (green), In Progress (yellow), and Pending (red).
-- **Target List Table:** A sortable/filterable table showing Target ID, Customer name, Address, Amount Due, assigned Officer, Status (Completed / In Progress / Pending), and an Actions column (View or Assign).
+- **Navigation Tabs:** Dashboard, Analytics, User Management, Targets – allowing managers to switch between major sections.
+- **System Summary:** Displays aggregate statistics across four cards: Total Targets (320), Completed (145, green), In Progress (98, yellow), and Pending (77, red).
+- **Target List Table:** A sortable/filterable table showing Target ID, Customer Name, Address, Amount Due, assigned Officer, and Status (Completed / In Progress / Pending) with color-coded status labels.
 
 #### Telegram Mini App Mock-up
 

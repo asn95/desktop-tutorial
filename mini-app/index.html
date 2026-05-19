@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>C3MR Field</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #fff;
+            color: #1a1a2e;
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        .hidden { display: none !important; }
+
+        /* ===== BLUE HEADER ===== */
+        .hdr {
+            background: linear-gradient(135deg, #1b3a5c 0%, #2e6cb5 60%, #4a8ed9 100%);
+            color: #fff;
+            padding: 16px 16px 14px;
+        }
+        .hdr-row1 {
+            font-size: 17px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .hdr-row1 .back { cursor: pointer; font-size: 13px; }
+        .hdr-status {
+            margin-top: 8px;
+            font-size: 7.5px;
+            font-weight: 700;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            opacity: 0.55;
+        }
+
+        /* ===== INFO BAR (white area below header) ===== */
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+            background: #fff;
+        }
+
+        /* ===== SECTION LABEL ===== */
+        .sec-label {
+            padding: 20px 16px 12px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+
+        /* ===== TASK CARD ===== */
+        .tcard {
+            background: #fff;
+            margin: 0 16px 14px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+        }
+        .tcard-case {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }
+        .tcard-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 2px;
+        }
+        .tcard-addr {
+            font-size: 12.5px;
+            color: #6b7280;
+            margin-bottom: 10px;
+            line-height: 1.35;
+        }
+        .pbadge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 3px;
+            font-size: 8.5px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+        .pbadge-1 { background: #fee2e2; color: #dc2626; }
+        .pbadge-2 { background: #fef3c7; color: #d97706; }
+        .pbadge-3 { background: #dbeafe; color: #2563eb; }
+        .tcard-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .tcard-amt {
+            font-size: 15px;
+            font-weight: 800;
+            color: #dc2626;
+        }
+        .tcard-btn {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            color: #2563eb;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px 0;
+        }
+
+        /* ===== REPORT VIEW ===== */
+        .rpt-body { padding: 16px; background: #fff; }
+
+        .subj-label {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        .subj-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .subj-name {
+            font-size: 17px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 2px;
+        }
+        .subj-addr {
+            font-size: 12.5px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        .bal-tag {
+            display: inline-block;
+            background: #fee2e2;
+            color: #dc2626;
+            font-size: 13.5px;
+            font-weight: 800;
+            padding: 5px 14px;
+            border-radius: 4px;
+        }
+
+        .obs-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+
+        .fgrp { margin-bottom: 18px; }
+        .flbl {
+            font-size: 10.5px;
+            font-weight: 800;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #374151;
+            margin-bottom: 7px;
+            display: block;
+        }
+        .fsel {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 13.5px;
+            font-weight: 500;
+            background: #fff;
+            color: #374151;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        .ftxt {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 13px;
+            color: #374151;
+            outline: none;
+            resize: none;
+            min-height: 80px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+        .fsel:focus, .ftxt:focus { border-color: #2563eb; }
+
+        .upbox {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            background: #fff;
+        }
+        .upbox.attached { border-color: #9ca3af; }
+        .upbox-file {
+            font-size: 11px;
+            font-weight: 600;
+            color: #374151;
+            letter-spacing: 0.3px;
+        }
+        .upbox-repl {
+            font-size: 9.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6b7280;
+            margin-top: 3px;
+        }
+        .upbox-ph {
+            font-size: 10px;
+            font-weight: 600;
+            color: #9ca3af;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-fin {
+            display: block;
+            width: calc(100% - 32px);
+            margin: 28px auto 24px;
+            background: #dc2626;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn-fin:active { background: #b91c1c; }
+        .btn-fin:disabled { background: #9ca3af; }
+
+        /* ===== COMMENT SECTION ===== */
+        .cmt-section { padding: 0 16px; margin-top: 4px; }
+        .cmt-divider {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 20px 16px 0;
+        }
+        .cmt-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        .cmt-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .cmt-tag {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #374151;
+            background: #fff;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .cmt-tag.active {
+            background: #dc2626;
+            color: #fff;
+            border-color: #dc2626;
+        }
+        .cmt-input {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #374151;
+            outline: none;
+            font-family: inherit;
+            resize: none;
+            min-height: 60px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .cmt-input:focus { border-color: #2563eb; }
+        .cmt-send {
+            display: inline-block;
+            background: #1b3a5c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .cmt-send:disabled { background: #9ca3af; }
+        .cmt-list { margin-top: 16px; }
+        .cmt-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .cmt-item:last-child { border-bottom: none; }
+        .cmt-item-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            background: #fee2e2;
+            color: #dc2626;
+            margin-bottom: 4px;
+        }
+        .cmt-item-msg {
+            font-size: 12.5px;
+            color: #374151;
+            line-height: 1.4;
+        }
+        .cmt-item-time {
+            font-size: 9px;
+            color: #9ca3af;
+            margin-top: 3px;
+        }
+        .cmt-empty {
+            font-size: 11px;
+            color: #9ca3af;
+            text-align: center;
+            padding: 12px 0;
+        }
+
+        /* ===== LOADING ===== */
+        .ld-wrap {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; min-height: 100vh; background: #fff;
+        }
+        .ld-sp {
+            width: 36px; height: 36px;
+            border: 3px solid #e5e7eb; border-top-color: #2563eb;
+            border-radius: 50%; animation: sp .7s linear infinite;
+        }
+        @keyframes sp { to { transform: rotate(360deg); } }
+        .ld-tx { margin-top: 14px; font-size: 9px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #9ca3af; }
+
+        /* ===== LOGIN ===== */
+        .lg-wrap {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; min-height: 100vh; padding: 32px 24px; background: #fff;
+        }
+        .lg-brand { font-size: 22px; font-weight: 800; color: #1b3a5c; margin-bottom: 4px; }
+        .lg-sub { font-size: 9px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #9ca3af; margin-bottom: 28px; }
+        .lg-inp { width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 13px; font-size: 14px; outline: none; margin-bottom: 10px; }
+        .lg-btn { width: 100%; background: #1b3a5c; color: #fff; border: none; border-radius: 6px; padding: 14px; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-view" class="ld-wrap">
+    <div class="ld-sp"></div>
+    <p class="ld-tx">Initializing System...</p>
+</div>
+
+<!-- Login Fallback -->
+<div id="login-view" class="hidden lg-wrap">
+    <div class="lg-brand">C3MR Field</div>
+    <p class="lg-sub">Access Verification</p>
+    <input type="text" id="manual-tid" placeholder="Enter Telegram ID" class="lg-inp">
+    <button onclick="manualLogin()" class="lg-btn">Verify Identity</button>
+</div>
+
+<!-- Task List -->
+<div id="list-view" class="hidden">
+    <div class="hdr">
+        <div class="hdr-row1">C3MR Field</div>
+        <div class="hdr-status">Network Status: Secured | Last Sync: <span id="sync-time">--:--</span></div>
+    </div>
+    <div class="info-bar">
+        <span>ID: <span id="officer-id">---</span></span>
+        <span><span id="active-cases">0</span> Active Cases</span>
+    </div>
+    <div class="sec-label">Assignment Queue</div>
+    <div id="task-container"></div>
+</div>
+
+<!-- Report Submission -->
+<div id="detail-view" class="hidden">
+    <div class="hdr">
+        <div class="hdr-row1">
+            <span class="back" id="back-btn">&#9664;</span>
+            <span>Report Submission</span>
+        </div>
+    </div>
+    <div class="rpt-body">
+        <div class="subj-label">Subject Data</div>
+        <div class="subj-card">
+            <div class="subj-name" id="target-name"></div>
+            <div class="subj-addr" id="target-address"></div>
+            <div class="bal-tag" id="target-amount"></div>
+        </div>
+
+        <div class="obs-label">Field Observation</div>
+
+        <form id="report-form">
+            <div class="fgrp">
+                <label class="flbl">Classification *</label>
+                <select id="payment-status" class="fsel">
+                    <option value="Promise to Pay">Promise to Pay (PTP)</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Refused">Refused</option>
+                    <option value="Not Home">Not Home</option>
+                    <option value="Partial Payment">Partial Payment</option>
+                </select>
+            </div>
+            <div class="fgrp">
+                <label class="flbl">Officer Narrative</label>
+                <textarea id="notes" class="ftxt" placeholder="Customer committed to settlement by Friday. Verification completed via on-site visit."></textarea>
+            </div>
+            <div class="fgrp">
+                <label class="flbl">Evidentiary Documentation *</label>
+                <label class="upbox" id="photo-area">
+                    <div id="photo-preview">
+                        <p class="upbox-ph">Tap to capture photo proof</p>
+                    </div>
+                    <input type="file" id="photo-input" style="display:none" accept="image/*" capture="environment">
+                </label>
+            </div>
+        </form>
+
+        <hr class="cmt-divider">
+        <div class="cmt-section">
+            <div class="cmt-label">Issue Report</div>
+            <div class="cmt-tags" id="cmt-tags">
+                <span class="cmt-tag" data-tag="wrong_address">Alamat Salah</span>
+                <span class="cmt-tag" data-tag="wrong_phone">Nomor Salah</span>
+                <span class="cmt-tag" data-tag="customer_moved">Customer Pindah</span>
+                <span class="cmt-tag" data-tag="not_found">Tidak Ditemukan</span>
+                <span class="cmt-tag" data-tag="other">Lainnya</span>
+            </div>
+            <textarea id="cmt-input" class="cmt-input" placeholder="Tulis komentar..."></textarea>
+            <button type="button" id="cmt-send" class="cmt-send" onclick="submitComment()">Kirim Komentar</button>
+            <div class="cmt-list" id="cmt-list"></div>
+        </div>
+    </div>
+    <button type="button" id="web-submit-btn" onclick="submitReportWeb()" class="btn-fin">Finalize Submission</button>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

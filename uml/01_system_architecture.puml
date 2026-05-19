@@ -16,9 +16,11 @@ node "Client Tier (Presentation Layer)" {
     component "Manager Bot\n(Telegram Chat)" as botchat
 }
 
-cloud "Internet Gateway" as gateway {
+cloud "Internet Gateway" {
     component "HTTPS / WSS Gateway\n(Cloudflare/Nginx)" as lb
 }
+
+cloud "Telegram Bot API (External)" as tgapi
 
 node "Application Tier (Business Logic)" {
     component "Backend API Server\n(Python FastAPI)" as api
@@ -31,8 +33,9 @@ node "Data Tier (Storage Layer)" {
 
 web --> lb : HTTPS (REST)
 miniapp --> lb : HTTPS (REST)
-botchat <--> gateway : Chat Commands
+botchat <--> tgapi : Notifications /\nCommands
 lb --> api : Route Traffic
 api --> db : SQL Queries
 api --> storage : Upload Photos
+api --> tgapi : Send Notification
 @enduml

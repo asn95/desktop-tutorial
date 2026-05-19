@@ -1,0 +1,241 @@
+import { useState, useEffect } from "react";
+import { formatCurrency } from "../../lib/format";
+import type { Target } from "../../types/target";
+import type { User } from "../../types/user";
+import { getUsers } from "../../services/userService";
+import { apiClient } from "../../lib/apiClient";
+
+interface Comment {
+  id: string;
+  message: string;
+  tag: string | null;
+  officerName: string;
+  created_at: string;
+}
+
+const TAG_LABELS: Record<string, string> = {
+  wrong_address: "Alamat Salah",
+  wrong_phone: "Nomor Salah",
+  customer_moved: "Customer Pindah",
+  not_found: "Tidak Ditemukan",
+  other: "Lainnya",
+};
+
+export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefresh?: () => void }) {
+  const [officers, setOfficers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+  const [detailTarget, setDetailTarget] = useState<Target | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  useEffect(() => {
+    getUsers().then(data => {
+      setAllUsers(data);
+      setOfficers(data.filter(u => u.role === "officer"));
+    });
+  }, []);
+
+  function getOfficerName(officerId: string | null): string {
+    if (!officerId) return "—";
+    const user = allUsers.find(u => u.id === officerId);
+    return user?.name ?? officerId.slice(0, 8);
+  }
+
+  async function handleAssign(targetId: string, officerId: string) {
+    if (!officerId) return;
+    setIsAssigning(true);
+    try {
+      await apiClient.patch(`/targets/${targetId}/assign?officer_id=${officerId}`);
+      setSelectedTarget(null);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      alert("Failed to assign officer.");
+    } finally {
+      setIsAssigning(false);
+    }
+  }
+
+  async function openDetail(target: Target) {
+    setDetailTarget(target);
+    setComments([]);
+    setLoadingComments(true);
+    try {
+      const res = await apiClient.get(`/targets/${target.id}/comments`);
+      setComments(res.data);
+    } catch {
+      setComments([]);
+    } finally {
+      setLoadingComments(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="w-full border border-black">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[11px] font-bold uppercase tracking-wider">
+            <thead className="bg-[#f2f2f2] text-[#1a1c1e]">
+              <tr className="border-b border-black">
+                <th className="px-4 py-4">ID</th>
+                <th className="px-4 py-4">Customer Name</th>
+                <th className="px-4 py-4">Address</th>
+                <th className="px-4 py-4">Due Amount</th>
+                <th className="px-4 py-4">Officer</th>
+                <th className="px-4 py-4">Status</th>
+                <th className="px-4 py-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {targets.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center text-[#5e6671] normal-case italic">
+                    No records available.
+                  </td>
+                </tr>
+              ) : (
+                targets.map((target) => (
+                  <tr key={target.id} className="text-[#1a1c1e] transition hover:bg-slate-50/50">
+                    <td className="px-4 py-4 text-slate-500">{target.id.slice(0, 6).toUpperCase()}</td>
+                    <td className="px-4 py-4">{target.customerName}</td>
+                    <td className="px-4 py-4 normal-case font-medium text-[#5e6671]">{target.address}</td>
+                    <td className="px-4 py-4">{formatCurrency(target.amountDue)}</td>
+                    <td className="px-4 py-4">
+                      {selectedTarget === target.id ? (
+                        <select
+                          autoFocus
+                          className="border border-black bg-white px-2 py-1 text-[10px] outline-none"
+                          onChange={(e) => handleAssign(target.id, e.target.value)}
+                          onBlur={() => setSelectedTarget(null)}
+                          disabled={isAssigning}
+                        >
+                          <option value="">Select Officer</option>
+                          {officers.map(o => (
+                            <option key={o.id} value={o.id}>{o.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="font-semibold text-slate-700">
+                          {getOfficerName(target.assignedOfficer)}
+                        </span>
+                      )}
+                    </td>
+                    <td className={`px-4 py-4 font-black ${
+                      target.status === 'completed' ? 'text-green-600' :
+                      target.status === 'pending' ? 'text-red-600' :
+                      'text-amber-600'
+                    }`}>
+                      {target.status.toUpperCase()}
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      {!target.assignedOfficer ? (
+                        <button
+                          onClick={() => setSelectedTarget(target.id)}
+                          className="border border-black px-3 py-1 hover:bg-black hover:text-white transition"
+                        >
+                          Assign
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => openDetail(target)}
+                          className="border border-black px-3 py-1 hover:bg-black hover:text-white transition"
+                        >
+                          View Details
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Detail Modal */}
+      {detailTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDetailTarget(null)}>
+          <div className="bg-white border border-black w-full max-w-lg mx-4 p-0 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="border-b border-black px-6 py-4 flex items-center justify-between shrink-0">
+              <h2 className="text-xs font-black uppercase tracking-widest">Target Details</h2>
+              <button onClick={() => setDetailTarget(null)} className="text-lg font-bold hover:text-red-600">&times;</button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              <div className="px-6 py-6 space-y-4 text-sm">
+                <div className="grid grid-cols-[120px_1fr] gap-y-3">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">ID</span>
+                  <span className="font-mono text-xs">{detailTarget.id}</span>
+
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Customer</span>
+                  <span className="font-bold">{detailTarget.customerName}</span>
+
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Phone</span>
+                  <span className="font-medium">{detailTarget.phone || "—"}</span>
+
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Address</span>
+                  <span className="font-medium">{detailTarget.address}</span>
+
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Amount Due</span>
+                  <span className="font-black text-red-600">{formatCurrency(detailTarget.amountDue)}</span>
+
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Officer</span>
+                  <span className="font-bold">{getOfficerName(detailTarget.assignedOfficer)}</span>
+
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Status</span>
+                  <span className={`font-black uppercase ${
+                    detailTarget.status === 'completed' ? 'text-green-600' :
+                    detailTarget.status === 'pending' ? 'text-red-600' :
+                    'text-amber-600'
+                  }`}>{detailTarget.status}</span>
+                </div>
+              </div>
+
+              {/* Officer Comments Section */}
+              <div className="border-t border-slate-200 px-6 py-5">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
+                  Officer Comments
+                </h3>
+                {loadingComments ? (
+                  <p className="text-xs text-slate-400 italic">Loading comments...</p>
+                ) : comments.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">No comments from officer yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {comments.map(c => (
+                      <div key={c.id} className="border border-slate-200 rounded px-4 py-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold text-slate-600">{c.officerName}</span>
+                          {c.tag && (
+                            <span className="text-[8px] font-black uppercase tracking-wider bg-red-100 text-red-600 px-2 py-0.5 rounded">
+                              {TAG_LABELS[c.tag] || c.tag}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-700 leading-relaxed">{c.message}</p>
+                        <p className="text-[9px] text-slate-400 mt-1">
+                          {new Date(c.created_at).toLocaleString("id-ID", {
+                            day: "2-digit", month: "short", year: "numeric",
+                            hour: "2-digit", minute: "2-digit"
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="border-t border-black px-6 py-4 shrink-0">
+              <button
+                onClick={() => setDetailTarget(null)}
+                className="w-full bg-black text-white py-2 text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

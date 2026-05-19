@@ -1,0 +1,37 @@
+@startsalt
+{+
+  { <b>C3MR Manager Bot                    [=] }
+  ===
+  {
+    <i>📋 New Report submitted:
+    <b>Siti Aminah</b> – <color:green>Paid</color>
+    Officer: Auza Rahman
+    <i>Today, 10:32
+  }
+  ---
+  {
+    <i>📋 New Report submitted:
+    <b>Ahmad Wijaya</b> – <color:orange>Promise to Pay</color>
+    Officer: Rashad Abdul Faqih
+    <i>Today, 11:15
+  }
+  ---
+  {
+    "/summary"
+    <i>You, 11:20
+  }
+  ---
+  {
+    <b>📊 Summary Report</b>
+    ──────────────────
+    Total Targets  : 150
+    ✅ Completed   : 45  (30%)
+    🔄 In Progress : 60  (40%)
+    ⏳ Pending     : 45  (30%)
+    ──────────────────
+    <i>Today, 11:20
+  }
+  ===
+  { "Type a message..."                  [>] }
+}
+@endsalt

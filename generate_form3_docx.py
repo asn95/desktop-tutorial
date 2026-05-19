@@ -1,6 +1,5 @@
 """
 Generate Form3_Design.docx for C3MR Capstone Design Project
-Follows the F300 alumni document format exactly.
 """
 
 from docx import Document
@@ -11,7 +10,7 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 import os
 
-BASE = "/workspace/desktop-tutorial"
+BASE = "/Users/auzasyamil/Documents/Capstone/capstone1"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -140,9 +139,8 @@ logo = os.path.join(BASE, "uml", "images", "01_system_architecture.png")
 # (User can insert logo manually)
 para(doc, "[Insert University Logo Here]", italic=True, center=True, size=11, space_after=12)
 
-para(doc, "F300 Document", bold=True, center=True, size=16, space_after=2)
-para(doc, "Capstone Design", bold=True, center=True, size=16, space_after=2)
-para(doc, "Project Design", bold=True, center=True, size=16, space_after=8)
+para(doc, "Form 3", bold=True, center=True, size=16, space_after=2)
+para(doc, "Design", bold=True, center=True, size=16, space_after=8)
 para(doc,
      "Integrated Operational Management System for C3MR:\n"
      "Web Admin Portal & Telegram Mini App Ecosystem",
@@ -196,7 +194,7 @@ heading(doc, "TABLE OF CONTENTS", level=1, center=True, size=13)
 toc_items = [
     ("STATEMENT OF ORIGINALITY", "3"),
     ("SCREENSHOT OF ZEROGPT", "4"),
-    ("PART 3 – DESIGN (F300)", "5"),
+    ("PART 3 – DESIGN", "5"),
     ("A. SYSTEM DESIGN", "6"),
     ("    A.1  System Architecture", "6"),
     ("    A.2  Mock-up Designs", "7"),
@@ -322,7 +320,7 @@ page_break(doc)
 # PART 3 – DESIGN
 # ═══════════════════════════════════════════════════════════════════
 heading(doc, "PART 3", level=1, center=True, size=14, space_before=0)
-heading(doc, "DESIGN (F300)", level=1, center=True, size=14, space_before=0)
+heading(doc, "DESIGN", level=1, center=True, size=14, space_before=0)
 para(doc, space_after=8)
 p_consists = doc.add_paragraph()
 r = p_consists.add_run("Consists of:")
@@ -331,7 +329,7 @@ set_font(r, bold=True, size=12)
 for sec in ["A. SYSTEM DESIGN",
             "B. HIERARCHICAL / ITERATIVE DESIGN",
             "C. STANDARDS USED",
-            "D. IMPLEMENTATION AND TESTING SCENARIO"]:
+            "D. FUNCTIONAL TESTING"]:
     p = doc.add_paragraph()
     r = p.add_run(f"    {sec}")
     set_font(r, bold=True, size=12)
@@ -389,24 +387,38 @@ bullet(doc, "Object Storage (Supabase Storage): Stores photo evidence from field
 # ── Mock-up Designs ──
 h2(doc, "Mock-up Designs")
 
-h3(doc, "Web Admin Portal Mock-up")
+h3(doc, "Web Admin Portal – Login Page")
 add_image(doc,
-          os.path.join(BASE, "uml", "images", "02_mockup_web_admin.png"),
-          caption="Figure A.2  Web Admin Portal Mock-up")
+          os.path.join(BASE, "uml", "images", "Figure_A.2a_Web_Admin_Login_Page.png"),
+          width=Inches(6.0),
+          caption="Figure A.2a  Web Admin Portal – Login Page")
 para(doc, space_after=4)
-body(doc, "The Web Admin Portal provides the following interface elements:", indent=False)
-bullet(doc, "Navigation Tabs: Dashboard, Targets, Officers, Settings.")
-bullet(doc, "Upload Targets Section: CSV file upload area with 'Choose CSV' and "
-            "'Upload & Assign' buttons.")
-bullet(doc, "System Summary: Four stat cards — Total Targets, Completed (green), "
-            "In Progress (yellow), and Pending (red).")
-bullet(doc, "Target List Table: Sortable/filterable table showing Target ID, Customer name, "
-            "Address, Amount Due, assigned Officer, Status (Completed / In Progress / Pending), "
-            "and an Actions column (View or Assign).")
+body(doc, "The Login Page is the entry point for authorized managers to access the "
+     "C3MR Web Admin Portal. It includes the following elements:", indent=False)
+bullet(doc, "Email and Password input fields with validation.")
+bullet(doc, "Login button that authenticates via Supabase Auth and stores a JWT token.")
+bullet(doc, "Forgot Password link for credential recovery.")
+bullet(doc, "Access restriction notice — only whitelisted manager accounts can log in.")
+para(doc, space_after=8)
+
+h3(doc, "Web Admin Portal – Target Management Dashboard")
+add_image(doc,
+          os.path.join(BASE, "uml", "images", "Figure_A.2_Web_Admin_Portal_Mock-up.png"),
+          width=Inches(6.0),
+          caption="Figure A.2b  Web Admin Portal – Target Management Dashboard")
+para(doc, space_after=4)
+body(doc, "The Target Management Dashboard provides the following interface elements:", indent=False)
+bullet(doc, "Navigation Tabs: Dashboard, Analytics, User Management, Targets.")
+bullet(doc, "System Summary: Four stat cards — Total Targets (320), Completed (145, green), "
+            "In Progress (98, yellow), and Pending (77, red).")
+bullet(doc, "Target List Table: Sortable/filterable table showing Target ID, Customer Name, "
+            "Address, Amount Due, assigned Officer, and Status (Completed / In Progress / Pending) "
+            "with color-coded status labels.")
 
 h3(doc, "Telegram Mini App Mock-up")
 add_image(doc,
-          os.path.join(BASE, "uml", "images", "03_mockup_telegram_miniapp.png"),
+          os.path.join(BASE, "uml", "images", "Figure_A.3_Telegram_Mini_App_Mock-up.png"),
+          width=Inches(6.0),
           caption="Figure A.3  Telegram Mini App Mock-up")
 para(doc, space_after=4)
 body(doc, "The Telegram Mini App provides the following interface elements:", indent=False)
@@ -419,16 +431,17 @@ bullet(doc, "Notes Field: Scrollable text area for the officer to enter visit no
 bullet(doc, "Upload Photo Evidence Button: Triggers the device camera or gallery.")
 bullet(doc, "Submit Report Button: Sends the completed report to the backend API.")
 
-h3(doc, "System Dashboard Screenshot")
+h3(doc, "Manager Bot Mock-up")
 add_image(doc,
-          os.path.join(BASE, "Gemini_Generated_Image_axio0iaxio0iaxio.png"),
-          width=Inches(5.5),
-          caption="Figure A.4  C3MR Executive Overview Dashboard (Rendered Design)")
-para(doc, space_after=6)
-add_image(doc,
-          os.path.join(BASE, "Gemini_Generated_Image_l1qpc6l1qpc6l1qp (1).png"),
-          width=Inches(5.5),
-          caption="Figure A.5  C3MR User Management Page (Rendered Design)")
+          os.path.join(BASE, "uml", "images", "06_mockup_manager_bot.png"),
+          caption="Figure A.4  Manager Bot Mock-up")
+para(doc, space_after=4)
+body(doc, "The Manager Bot provides the following interface elements:", indent=False)
+bullet(doc, "Automatic Notifications: Each time a field officer submits a report, the bot "
+            "sends a message to the manager's Telegram chat containing the customer name, "
+            "payment status, officer name, and submission time.")
+bullet(doc, "/summary Command: The manager sends /summary and the bot replies with a "
+            "real-time summary showing total targets, completed, in-progress, and pending counts.")
 
 page_break(doc)
 
@@ -443,27 +456,11 @@ h3(doc, "Level 0 – Context Diagram")
 body(doc,
      "The Level 0 (Context) Diagram shows the top-level data flows between the "
      "three external entities and the C3MR system:", indent=False)
-
-dfd_text = (
-    "+-----------------+         +-------------------+         +-------------------+\n"
-    "|  Field Officer  | ------> |                   | <------ |     Manager       |\n"
-    "| (Telegram Mini  |  Submit |      C3MR         |  Upload | (Web Admin Portal |\n"
-    "|     App)        |  Report |      System       |  CSV /  |  / Manager Bot)   |\n"
-    "|                 | <------ |                   | ------> |                   |\n"
-    "|                 |  Task   |                   |  Reports|                   |\n"
-    "|                 |  List   |                   |  & Stats|                   |\n"
-    "+-----------------+         +-------------------+         +-------------------+\n"
-    "                                    |     ^\n"
-    "                                    v     |\n"
-    "                            +-------------------+\n"
-    "                            |  Supabase         |\n"
-    "                            |  (PostgreSQL +    |\n"
-    "                            |   Storage)        |\n"
-    "                            +-------------------+"
-)
-p_dfd = doc.add_paragraph()
-r_dfd = p_dfd.add_run(dfd_text)
-set_font(r_dfd, name="Courier New", size=9)
+add_image(doc,
+          os.path.join(BASE, "uml", "images", "10_dfd_level0.png"),
+          width=Inches(5.8),
+          caption="Figure B.0  DFD Level 0 – Context Diagram")
+para(doc, space_after=8)
 
 h3(doc, "Level 1 – Major Processes")
 for proc, desc in [
@@ -489,23 +486,13 @@ for proc, desc in [
     r2 = p.add_run(desc)
     set_font(r2, size=12)
 
-h3(doc, "Level 2 – Report Submission Process (Detailed)")
-seq_text = (
-    "Field Officer          Mini App (UI)         FastAPI Backend       Supabase DB\n"
-    "     |                      |                        |                    |\n"
-    "     |-- Fill form & ------>|                        |                    |\n"
-    "     |   photo              |-- POST /api/reports -->|                    |\n"
-    "     |                      |   (JSON + Image)       |-- Upload image --->|\n"
-    "     |                      |                        |<-- Image URL ------|\n"
-    "     |                      |                        |-- INSERT report -->|\n"
-    "     |                      |                        |   & UPDATE target  |\n"
-    "     |                      |                        |<-- Success --------|\n"
-    "     |                      |<-- HTTP 200 OK --------|                    |\n"
-    "     |<-- Show 'Success' ---|                        |                    |"
-)
-p_seq = doc.add_paragraph()
-r_seq = p_seq.add_run(seq_text)
-set_font(r_seq, name="Courier New", size=9)
+h3(doc, "Level 2 – Report Submission & Notification Process (Detailed)")
+body(doc,
+     "The Level 2 diagram provides a detailed breakdown of the report submission and "
+     "manager notification flow. This is illustrated in Figure B.3 – Sequence Diagram "
+     "(see Section B.5 UML Diagrams), which shows the step-by-step interaction between "
+     "the Field Officer, Telegram Mini App, FastAPI backend, Supabase database, "
+     "Telegram Bot API, and Manager.", indent=False)
 
 h2(doc, "2. Interface Information Between Components")
 
@@ -594,44 +581,19 @@ for lib in ["Supabase – Backend-as-a-Service platform",
 h2(doc, "5. UML Diagrams")
 
 for img_path, caption in [
+    (os.path.join(BASE, "uml", "images", "07_usecase_diagram.png"),
+     "Figure B.1  Use Case Diagram"),
+    (os.path.join(BASE, "uml", "images", "08_activity_diagram.png"),
+     "Figure B.2  Activity Diagram – C3MR Main Workflow"),
     (os.path.join(BASE, "uml", "images", "05_sequence_diagram.png"),
-     "Figure B.1  Sequence Diagram – Report Submission Flow"),
+     "Figure B.3  Sequence Diagram – Report Submission & Manager Notification"),
     (os.path.join(BASE, "uml", "images", "04_component_diagram.png"),
-     "Figure B.2  Component Diagram"),
+     "Figure B.4  Component Diagram"),
+    (os.path.join(BASE, "uml", "images", "09_erd_diagram.png"),
+     "Figure B.5  Entity Relationship Diagram"),
 ]:
-    add_image(doc, img_path, caption=caption)
-    para(doc, space_after=8)
-
-# ERD text
-h3(doc, "Entity Relationship Diagram")
-erd_text = (
-    "+-------------+       +-------------+       +-------------+\n"
-    "|   users     |       |   targets   |       |   reports   |\n"
-    "+-------------+       +-------------+       +-------------+\n"
-    "| PK id       |<--+   | PK id       |<---+  | PK id       |\n"
-    "| telegram_id |   |   | customer_   |    |  | FK target_id|\n"
-    "| name        |   |   |   name      |    |  | FK officer_ |\n"
-    "| role        |   +---| FK assigned_|    +--|   id        |\n"
-    "| created_at  |       |   officer   |       | payment_    |\n"
-    "+-------------+       | address     |       |   status    |\n"
-    "                      | phone       |       | notes       |\n"
-    "                      | amount_due  |       | photo_url   |\n"
-    "                      | status      |       | submitted_at|\n"
-    "                      | created_at  |       +-------------+\n"
-    "                      +-------------+"
-)
-p_erd = doc.add_paragraph()
-r_erd = p_erd.add_run(erd_text)
-set_font(r_erd, name="Courier New", size=9)
-
-body(doc, "Relationships:", indent=False)
-for rel in [
-    "A User (officer) can be assigned to many Targets (1:N).",
-    "A Target can have many Reports (1:N) – e.g., multiple visit attempts.",
-    "A Report belongs to one Target and one User (officer).",
-    "An UploadBatch is created by one User (manager) and generates many Targets.",
-]:
-    bullet(doc, rel)
+    add_image(doc, img_path, width=Inches(6.0), caption=caption)
+    para(doc, space_after=10)
 
 page_break(doc)
 
@@ -649,7 +611,7 @@ standards = [
     ("Encryption",        "TLS 1.3 (RFC 8446)",         "All client-server communication encrypted via HTTPS."),
     ("Database",          "SQL (PostgreSQL 15)",        "Standard SQL with PostgreSQL extensions."),
     ("Modeling",          "UML 2.5",                   "Use case, class, sequence, activity, component, ERD."),
-    ("Diagram Tool",      "PlantUML",                   "All UML diagrams authored in PlantUML markup → PNG."),
+    ("Diagram Tool",      "Python  Pillow (v10.x)",      "All UML & architecture diagrams rendered programmatically as PNG."),
     ("Code Formatter",    "Black (Python)",             "Line length 88 (default settings)."),
     ("Code Formatter",    "Prettier (JS/TS)",           "Frontend JavaScript/TypeScript formatting."),
     ("Linter",            "Ruff (Python)",              "Fast, comprehensive style and error checking."),
@@ -837,18 +799,32 @@ page_break(doc)
 heading(doc, "REFERENCES", level=1, center=True)
 
 refs = [
-    "FastAPI Documentation. (n.d.). Retrieved from https://fastapi.tiangolo.com/",
-    "Supabase Documentation. (n.d.). Retrieved from https://supabase.com/docs",
-    "Telegram Bot API Documentation. (n.d.). Retrieved from https://core.telegram.org/bots/api",
-    "Telegram Mini Apps Documentation. (n.d.). Retrieved from https://core.telegram.org/bots/webapps",
-    "React.js Documentation. (n.d.). Retrieved from https://react.dev/",
-    "PlantUML Documentation. (n.d.). Retrieved from https://plantuml.com/",
-    "Pydantic Documentation. (n.d.). Retrieved from https://docs.pydantic.dev/",
-    "RFC 8259 – The JavaScript Object Notation (JSON) Data Interchange Format. (2017). "
-    "Retrieved from https://datatracker.ietf.org/doc/html/rfc8259",
-    "RFC 7519 – JSON Web Token (JWT). (2015). "
-    "Retrieved from https://datatracker.ietf.org/doc/html/rfc7519",
-    "Tailwind CSS Documentation. (n.d.). Retrieved from https://tailwindcss.com/docs",
+    "Bray, T. (Ed.). (2017). The JavaScript Object Notation (JSON) data interchange format "
+    "(RFC 8259). Internet Engineering Task Force (IETF). "
+    "https://datatracker.ietf.org/doc/html/rfc8259",
+
+    "Jones, M., Bradley, J., & Sakimura, N. (2015). JSON web token (JWT) (RFC 7519). "
+    "Internet Engineering Task Force (IETF). "
+    "https://datatracker.ietf.org/doc/html/rfc7519",
+
+    "Meta Open Source. (n.d.). React documentation. Meta. https://react.dev/",
+
+    "Pillow Contributors. (n.d.). Pillow (PIL fork) documentation. "
+    "https://pillow.readthedocs.io/",
+
+    "Pydantic. (n.d.). Pydantic documentation. https://docs.pydantic.dev/",
+
+    "Ramírez, S. (n.d.). FastAPI documentation. Tiangolo. https://fastapi.tiangolo.com/",
+
+    "Supabase. (n.d.). Supabase documentation. https://supabase.com/docs",
+
+    "Tailwind Labs. (n.d.). Tailwind CSS documentation. https://tailwindcss.com/docs",
+
+    "Telegram. (n.d.). Telegram bot API documentation. "
+    "https://core.telegram.org/bots/api",
+
+    "Telegram. (n.d.). Telegram mini apps documentation. "
+    "https://core.telegram.org/bots/webapps",
 ]
 for ref in refs:
     p = doc.add_paragraph()

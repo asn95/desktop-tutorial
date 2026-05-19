@@ -4,6 +4,8 @@ actor "Field Officer" as FO
 participant "Mini App" as UI
 participant "FastAPI" as API
 database "Supabase" as DB
+participant "Telegram Bot API" as TgAPI
+actor "Manager" as MGR
 
 FO -> UI : Fill form & Photo
 UI -> API : POST /api/reports (JSON+Image)
@@ -13,4 +15,7 @@ API -> DB : INSERT report data & UPDATE target
 DB --> API : Success
 API --> UI : HTTP 200 OK
 UI --> FO : Show "Success"
+note right of API : Notification triggered
+API -> TgAPI : sendMessage(chat_id, text)
+TgAPI --> MGR : 📋 New Report: [Customer] – [Status] by [Officer]
 @enduml

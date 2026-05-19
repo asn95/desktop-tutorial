@@ -1,0 +1,16 @@
+node_modules
+frontend/node_modules
+frontend/dist
+__pycache__
+*.pyc
+.git
+.env
+*.db
+c3mr.db
+.pytest_cache
+backend/uploads/*
+.agents
+tmp_*
+*.zip
+*.pptx
+*.blend

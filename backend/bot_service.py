@@ -146,13 +146,17 @@ def run_bot():
         print("TELEGRAM_BOT_TOKEN not set. Bot not started.")
         return
 
+    import time as _time
+    # Wait briefly so the previous instance's polling connection expires
+    _time.sleep(5)
+
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("summary", summary_command))
     app.add_handler(CommandHandler("report", report_command))
 
     print("C3MR Manager Bot is running...")
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
     run_bot()

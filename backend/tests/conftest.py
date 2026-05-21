@@ -66,6 +66,6 @@ def auth_headers(client, db):
     db.add(user)
     db.commit()
 
-    res = client.post("/api/auth/login", json={"email": "mgr@test.id", "password": "pass123"})
+    res = client.post("/api/auth/login", json={"username": "mgr@test.id", "password": "pass123"})
     token = res.json()["token"]
     return {"Authorization": f"Bearer {token}"}

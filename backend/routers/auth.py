@@ -11,30 +11,30 @@ def _role_str(role) -> str:
     return role.value if hasattr(role, "value") else role
 
 class LoginPayload(BaseModel):
-    email: str
+    username: str
     password: str
 
 class AuthResponse(BaseModel):
     id: str
     name: str
-    email: str
+    username: str
     role: str
     token: str
 
 @router.post("/login", response_model=AuthResponse)
 async def login(payload: LoginPayload, db: Session = Depends(get_db)):
-    user = db.query(DbUser).filter(DbUser.email == payload.email).first()
+    user = db.query(DbUser).filter(DbUser.email == payload.username).first()
     if not user or not user.password_hash:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid username or password")
     if not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid username or password")
 
     role = _role_str(user.role)
     token = create_access_token(user.id, role)
     return {
         "id": user.id,
         "name": user.name,
-        "email": user.email,
+        "username": user.email,
         "role": role,
         "token": token,
     }
@@ -57,10 +57,10 @@ async def seed_admin(payload: SeedPayload, db: Session = Depends(get_db)):
 
     admin = DbUser(
         name="C3MR Administrator",
-        email="admin@c3mr.id",
+        email="admin",
         password_hash=hash_password(payload.password),
         role=UserRole.manager,
     )
     db.add(admin)
     db.commit()
-    return {"message": "Admin created with email admin@c3mr.id"}
+    return {"message": "Admin created with username: admin"}

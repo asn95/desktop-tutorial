@@ -1,12 +1,12 @@
 export interface LoginPayload {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface AuthUser {
   id: string;
   name: string;
-  email: string;
+  username: string;
   role: "manager";
   token: string;
 }

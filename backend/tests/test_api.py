@@ -28,10 +28,10 @@ def test_login_valid(client, db):
     db.add(user)
     db.commit()
 
-    res = client.post("/api/auth/login", json={"email": "test@c3mr.id", "password": "password123"})
+    res = client.post("/api/auth/login", json={"username": "test@c3mr.id", "password": "password123"})
     assert res.status_code == 200
     data = res.json()
-    assert data["email"] == "test@c3mr.id"
+    assert data["username"] == "test@c3mr.id"
     assert "token" in data
     assert len(data["token"]) > 10
 
@@ -45,12 +45,12 @@ def test_login_wrong_password(client, db):
     db.add(user)
     db.commit()
 
-    res = client.post("/api/auth/login", json={"email": "t@c3mr.id", "password": "wrong"})
+    res = client.post("/api/auth/login", json={"username": "t@c3mr.id", "password": "wrong"})
     assert res.status_code == 401
 
 
 def test_login_nonexistent_user(client):
-    res = client.post("/api/auth/login", json={"email": "nobody@c3mr.id", "password": "pass"})
+    res = client.post("/api/auth/login", json={"username": "nobody@c3mr.id", "password": "pass"})
     assert res.status_code == 401
 
 
@@ -237,7 +237,7 @@ def test_officer_cannot_access_users(client, db):
     db.add(officer)
     db.commit()
 
-    res = client.post("/api/auth/login", json={"email": "officer@c3mr.id", "password": "pass123"})
+    res = client.post("/api/auth/login", json={"username": "officer@c3mr.id", "password": "pass123"})
     token = res.json()["token"]
     headers = {"Authorization": f"Bearer {token}"}
 

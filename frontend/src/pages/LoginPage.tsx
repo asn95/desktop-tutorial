@@ -40,7 +40,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, login } = useAuth();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(
@@ -70,7 +70,7 @@ export function LoginPage() {
 
     try {
       setIsSubmitting(true);
-      await login({ email, password });
+      await login({ username, password });
       clearFailures();
       if (rememberDevice) {
         localStorage.setItem("c3mr:remember-device", "true");
@@ -121,18 +121,18 @@ export function LoginPage() {
 
         <form className="space-y-6" onSubmit={onSubmit}>
           <div className="space-y-2">
-            <label htmlFor="email" className="text-[11px] font-black uppercase tracking-wider text-[#1a1c1e]">
-              Corporate Email
+            <label htmlFor="username" className="text-[11px] font-black uppercase tracking-wider text-[#1a1c1e]">
+              Username
             </label>
             <input
-              id="email"
-              type="email"
+              id="username"
+              type="text"
               required
-              autoComplete="email"
+              autoComplete="username"
               className="w-full rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-4 py-3 text-sm outline-none transition focus:border-[#1a1c1e]"
-              placeholder="admin@c3mr.id"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              placeholder="admin"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
               disabled={locked}
             />
           </div>

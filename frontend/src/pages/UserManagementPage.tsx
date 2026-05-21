@@ -51,9 +51,9 @@ export function UserManagementPage() {
     );
   }, [users, query]);
 
-  const officers = users.filter(u => u.role === "officer");
-  const managers = users.filter(u => u.role === "manager");
-  const linked = users.filter(u => u.telegram_id).length;
+  const officers = (users || []).filter(u => u.role === "officer");
+  const managers = (users || []).filter(u => u.role === "manager");
+  const linked = (users || []).filter(u => u.telegram_id).length;
 
   async function handleAddUser(e: React.FormEvent) {
     e.preventDefault();

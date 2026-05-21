@@ -34,7 +34,7 @@ export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefr
     getUsers().then(data => {
       setAllUsers(data);
       setOfficers(data.filter(u => u.role === "officer"));
-    });
+    }).catch(() => {});
   }, []);
 
   function getOfficerName(officerId: string | null): string {

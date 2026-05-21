@@ -117,7 +117,7 @@ export function DashboardPage() {
     { name: "Completed", value: stats.completed },
   ];
 
-  const officers = allUsers.filter(u => u.role === "officer");
+  const officers = (allUsers || []).filter(u => u.role === "officer");
 
   return (
     <AppShell activeTab="DASHBOARD">

@@ -49,7 +49,8 @@ export function DashboardPage() {
         // Fetch recent comments in one call (no N+1)
         try {
           const cmtRes = await apiClient.get("/dashboard/recent-comments?limit=5");
-          setRecentComments(cmtRes.data as (Comment & { customerName: string })[]);
+          const cmtData = cmtRes.data;
+          setRecentComments(Array.isArray(cmtData) ? cmtData : []);
         } catch {
           setRecentComments([]);
         }
@@ -101,7 +102,8 @@ export function DashboardPage() {
     );
   }
 
-  const { stats, targets } = snapshot;
+  const { stats } = snapshot;
+  const targets = Array.isArray(snapshot.targets) ? snapshot.targets : [];
   const totalDue = targets.reduce((s, t) => s + t.amountDue, 0);
   const collected = targets.filter(t => t.status === "completed").reduce((s, t) => s + t.amountDue, 0);
   const rate = totalDue > 0 ? Math.round((collected / totalDue) * 100) : 0;

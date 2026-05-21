@@ -8,7 +8,11 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   if (!USE_MOCK) {
     try {
       const response = await apiClient.get<DashboardSnapshot>("/dashboard");
-      return response.data;
+      const data = response.data;
+      return {
+        stats: data?.stats ?? { totalTargets: 0, completed: 0, inProgress: 0, pending: 0 },
+        targets: Array.isArray(data?.targets) ? data.targets : [],
+      };
     } catch (error) {
       console.error("Failed to fetch dashboard snapshot:", error);
       // Fallback to mock in case of error during development if needed, 

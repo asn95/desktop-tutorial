@@ -8,13 +8,13 @@ from backend.security import hash_password
 
 def test_seed_admin(client, monkeypatch):
     monkeypatch.setenv("SEED_TOKEN", "test-seed-token")
-    res = client.post("/api/auth/seed-admin", json={"token": "test-seed-token"})
+    res = client.post("/api/auth/seed-admin", json={"token": "test-seed-token", "password": "Str0ng!Pass"})
     assert res.status_code == 200
     assert "admin" in res.json()["message"].lower()
 
 def test_seed_admin_wrong_token(client, monkeypatch):
     monkeypatch.setenv("SEED_TOKEN", "real-token")
-    res = client.post("/api/auth/seed-admin", json={"token": "wrong-token"})
+    res = client.post("/api/auth/seed-admin", json={"token": "wrong-token", "password": "x"})
     assert res.status_code == 403
 
 
@@ -52,6 +52,17 @@ def test_login_wrong_password(client, db):
 def test_login_nonexistent_user(client):
     res = client.post("/api/auth/login", json={"username": "nobody@c3mr.id", "password": "pass"})
     assert res.status_code == 401
+
+
+def test_login_rate_limit(client):
+    """Server-side rate limiting: 5 failures from same IP -> 429 Too Many Requests."""
+    from backend.routers.auth import _login_attempts
+    _login_attempts.clear()  # reset state between tests
+    for _ in range(5):
+        client.post("/api/auth/login", json={"username": "brute@force", "password": "wrong"})
+    res = client.post("/api/auth/login", json={"username": "brute@force", "password": "wrong"})
+    assert res.status_code == 429
+    assert "Too many" in res.json()["detail"]
 
 
 # ── Users ────────────────────────────────────────────────────────────

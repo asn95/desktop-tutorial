@@ -7,14 +7,18 @@ import jwt
 import bcrypt
 from datetime import datetime, timedelta, timezone
 
-JWT_SECRET = os.environ.get("JWT_SECRET", "c3mr-secret-key-change-in-production")
+JWT_SECRET = os.environ.get("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET environment variable is required. Set it before starting the server.")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 24
+
+TELEGRAM_AUTH_MAX_AGE = 300  # 5 minutes — reject replayed initData older than this
 
 def validate_telegram_data(init_data: str) -> bool:
     """
     Memvalidasi integritas data yang dikirim dari Telegram Mini App
-    menggunakan algoritma HMAC-SHA256.
+    menggunakan algoritma HMAC-SHA256, termasuk freshness check pada auth_date.
     """
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not bot_token:
@@ -33,22 +37,33 @@ def validate_telegram_data(init_data: str) -> bool:
 
     telegram_hash = parsed_data.pop("hash")
 
-    # 3. Urutkan sisa data berdasarkan abjad (Key)
+    # 3. Freshness check — reject replayed initData older than 5 minutes
+    auth_date_str = parsed_data.get("auth_date")
+    if auth_date_str:
+        try:
+            auth_date = int(auth_date_str)
+            now = int(datetime.now(timezone.utc).timestamp())
+            if now - auth_date > TELEGRAM_AUTH_MAX_AGE:
+                return False
+        except (ValueError, TypeError):
+            return False
+
+    # 4. Urutkan sisa data berdasarkan abjad (Key)
     data_check_arr = []
     for key, value in sorted(parsed_data.items()):
         data_check_arr.append(f"{key}={value}")
 
-    # 4. Gabungkan menjadi satu string (Data Check String)
+    # 5. Gabungkan menjadi satu string (Data Check String)
     data_check_string = "\n".join(data_check_arr)
 
-    # 5. Buat Secret Key (Kunci Rahasia) dari Bot Token
+    # 6. Buat Secret Key (Kunci Rahasia) dari Bot Token
     # Secret key = HMAC_SHA256(bot_token, "WebAppData")
     secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
 
-    # 6. Hitung HMAC-SHA256 dari Data Check String menggunakan Secret Key
+    # 7. Hitung HMAC-SHA256 dari Data Check String menggunakan Secret Key
     calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
 
-    # 7. Bandingkan hash yang kita hitung dengan hash dari Telegram
+    # 8. Bandingkan hash yang kita hitung dengan hash dari Telegram
     # Menggunakan compare_digest untuk mencegah serangan Timing Attack
     return hmac.compare_digest(calculated_hash, telegram_hash)
 

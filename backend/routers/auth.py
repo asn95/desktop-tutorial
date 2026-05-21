@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
+import time
+from collections import defaultdict
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -6,6 +8,30 @@ from ..models import DbUser, UserRole
 from ..security import verify_password, create_access_token, hash_password
 
 router = APIRouter()
+
+# Server-side rate limiting for login
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_WINDOW_SECONDS = 60
+
+
+def _check_rate_limit(client_ip: str):
+    """Block login if client_ip exceeded LOGIN_MAX_ATTEMPTS within the window."""
+    now = time.time()
+    # Prune old entries
+    _login_attempts[client_ip] = [
+        t for t in _login_attempts[client_ip]
+        if now - t < LOGIN_WINDOW_SECONDS
+    ]
+    if len(_login_attempts[client_ip]) >= LOGIN_MAX_ATTEMPTS:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many login attempts. Try again in {LOGIN_WINDOW_SECONDS} seconds.",
+        )
+
+
+def _record_attempt(client_ip: str):
+    _login_attempts[client_ip].append(time.time())
 
 def _role_str(role) -> str:
     return role.value if hasattr(role, "value") else role
@@ -22,11 +48,16 @@ class AuthResponse(BaseModel):
     token: str
 
 @router.post("/login", response_model=AuthResponse)
-async def login(payload: LoginPayload, db: Session = Depends(get_db)):
+async def login(payload: LoginPayload, request: Request, db: Session = Depends(get_db)):
+    client_ip = request.client.host if request.client else "unknown"
+    _check_rate_limit(client_ip)
+
     user = db.query(DbUser).filter(DbUser.email == payload.username).first()
     if not user or not user.password_hash:
+        _record_attempt(client_ip)
         raise HTTPException(status_code=401, detail="Invalid username or password")
     if not verify_password(payload.password, user.password_hash):
+        _record_attempt(client_ip)
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     role = _role_str(user.role)
@@ -41,7 +72,7 @@ async def login(payload: LoginPayload, db: Session = Depends(get_db)):
 
 class SeedPayload(BaseModel):
     token: str
-    password: str = "password123"
+    password: str
 
 @router.post("/seed-admin")
 async def seed_admin(payload: SeedPayload, db: Session = Depends(get_db)):

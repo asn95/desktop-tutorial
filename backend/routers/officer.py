@@ -72,7 +72,7 @@ async def submit_report(
         raise HTTPException(status_code=400, detail="File too large. Maximum size is 10 MB.")
     await photo.seek(0)
 
-    ALLOWED_EXT = {"jpg", "jpeg", "png", "webp", "gif"}
+    ALLOWED_EXT = {"jpg", "jpeg", "png"}
     file_ext = (photo.filename or "").rsplit(".", 1)[-1].lower()
     if file_ext not in ALLOWED_EXT:
         raise HTTPException(status_code=400, detail=f"File type not allowed. Use: {', '.join(ALLOWED_EXT)}")

@@ -149,33 +149,24 @@ def run_bot():
     import time as _time
     import requests as _req
 
-    MAX_RETRIES = 5
-    for attempt in range(1, MAX_RETRIES + 1):
-        # Clear any existing connections before each attempt
-        try:
-            _req.post(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook",
-                      json={"drop_pending_updates": True}, timeout=5)
-        except Exception:
-            pass
+    # Delete webhook and wait for previous deploy's polling to expire
+    try:
+        _req.post(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook",
+                  json={"drop_pending_updates": True}, timeout=5)
+    except Exception:
+        pass
 
-        wait = 10 * attempt  # 10s, 20s, 30s, 40s, 50s
-        print(f"[Attempt {attempt}/{MAX_RETRIES}] Waiting {wait}s for polling lock to clear...", flush=True)
-        _time.sleep(wait)
+    # Wait long enough for the old container's long-poll to time out (default 30s)
+    print("Waiting 35s for previous container to release polling lock...", flush=True)
+    _time.sleep(35)
 
-        try:
-            app = Application.builder().token(TOKEN).build()
-            app.add_handler(CommandHandler("start", start_command))
-            app.add_handler(CommandHandler("summary", summary_command))
-            app.add_handler(CommandHandler("report", report_command))
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("summary", summary_command))
+    app.add_handler(CommandHandler("report", report_command))
 
-            print("C3MR Manager Bot is running...", flush=True)
-            app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
-            break  # Clean exit
-        except Exception as e:
-            print(f"Bot error on attempt {attempt}: {e}", flush=True)
-            if attempt == MAX_RETRIES:
-                print("All retries exhausted. Exiting.", flush=True)
-                raise
+    print("C3MR Manager Bot is running...", flush=True)
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     run_bot()

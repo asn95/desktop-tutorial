@@ -9,6 +9,6 @@ export async function loginManager(payload: LoginPayload): Promise<AuthUser> {
     throw new Error("Password must contain at least 6 characters.");
   }
 
-  const response = await apiClient.post<AuthUser>("/auth/login/", payload);
+  const response = await apiClient.post<AuthUser>("/auth/login", payload);
   return response.data;
 }

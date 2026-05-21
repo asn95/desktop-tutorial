@@ -75,9 +75,6 @@ if FRONTEND_DIR.is_dir():
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         """Serve frontend SPA — falls back to index.html for client-side routing."""
-        # Never intercept API or mini-app routes
-        if full_path.startswith("api/"):
-            return JSONResponse(status_code=404, content={"detail": "API route not found"})
         if full_path.startswith("officer-app"):
             from starlette.responses import RedirectResponse
             return RedirectResponse(url="/officer-app/")

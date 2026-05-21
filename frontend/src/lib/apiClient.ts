@@ -7,6 +7,17 @@ export const apiClient = axios.create({
   timeout: 10_000,
 });
 
+// Ensure trailing slashes on API paths (FastAPI routes require them)
+apiClient.interceptors.request.use((config) => {
+  if (config.url) {
+    const [path, query] = config.url.split("?", 2);
+    if (path && !path.endsWith("/")) {
+      config.url = path + "/" + (query ? "?" + query : "");
+    }
+  }
+  return config;
+});
+
 // Attach JWT token to every request
 apiClient.interceptors.request.use((config) => {
   try {

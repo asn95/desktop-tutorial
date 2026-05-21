@@ -2,7 +2,7 @@ import { apiClient } from "../lib/apiClient";
 import { mockDashboardSnapshot } from "../data/mockDashboard";
 import type { DashboardSnapshot } from "../types/dashboard";
 
-const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? "true") === "true";
+const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? "false") === "true";
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   if (!USE_MOCK) {

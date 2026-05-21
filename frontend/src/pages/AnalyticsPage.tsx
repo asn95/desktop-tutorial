@@ -31,7 +31,7 @@ export function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    apiClient.get<AnalyticsData>("/analytics/summary")
+    apiClient.get<AnalyticsData>("/analytics/summary/")
       .then(res => setData(res.data))
       .finally(() => setIsLoading(false));
   }, []);

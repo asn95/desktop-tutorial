@@ -7,7 +7,7 @@ const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? "true") === "true";
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   if (!USE_MOCK) {
     try {
-      const response = await apiClient.get<DashboardSnapshot>("/dashboard");
+      const response = await apiClient.get<DashboardSnapshot>("/dashboard/");
       const data = response.data;
       return {
         stats: data?.stats ?? { totalTargets: 0, completed: 0, inProgress: 0, pending: 0 },

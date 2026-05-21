@@ -48,7 +48,7 @@ export function DashboardPage() {
 
         // Fetch recent comments in one call (no N+1)
         try {
-          const cmtRes = await apiClient.get("/dashboard/recent-comments?limit=5");
+          const cmtRes = await apiClient.get("/dashboard/recent-comments/?limit=5");
           const cmtData = cmtRes.data;
           setRecentComments(Array.isArray(cmtData) ? cmtData : []);
         } catch {

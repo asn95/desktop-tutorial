@@ -23,14 +23,22 @@ async def get_targets(
 @router.post("/upload")
 async def upload_targets(targets: List[TargetCreate], db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
     try:
-        # model_dump(by_alias=True) converts camelCase fields back to snake_case for the DB
-        db_targets = [DbTarget(**t.model_dump(by_alias=True)) for t in targets]
+        db_targets = [
+            DbTarget(
+                customer_name=t.customerName,
+                address=t.address,
+                phone=t.phone,
+                amount_due=t.amountDue,
+            )
+            for t in targets
+        ]
         db.add_all(db_targets)
         db.commit()
         return {"message": f"Successfully uploaded {len(targets)} targets"}
-    except Exception:
+    except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to upload targets")
+        import traceback; traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to upload targets: {str(e)}")
 
 from ..notifications import send_telegram_notification
 from ..lib.format import format_currency_python # We'll create this helper

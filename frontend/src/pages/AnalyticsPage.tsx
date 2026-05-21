@@ -48,7 +48,10 @@ export function AnalyticsPage() {
 
   if (!data) return null;
 
-  const { revenue, distribution, officer_performance, top_issues } = data;
+  const revenue = data.revenue ?? { total_due: 0, collected: 0, outstanding: 0, collection_rate: 0 };
+  const distribution = data.distribution ?? [];
+  const officer_performance = data.officer_performance ?? [];
+  const top_issues = data.top_issues ?? [];
   const maxAssigned = Math.max(...officer_performance.map(o => o.assigned), 1);
 
   return (

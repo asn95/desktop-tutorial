@@ -143,26 +143,28 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def run_bot():
     if not TOKEN:
-        print("TELEGRAM_BOT_TOKEN not set. Bot not started.")
+        print("TELEGRAM_BOT_TOKEN not set. Bot not started.", flush=True)
         return
 
     import time as _time
     import requests as _req
 
-    # Close previous session and wait for old polling to expire
+    # Close previous session and wait for old polling to expire (long-poll timeout is ~30s)
+    print("Closing previous bot session...", flush=True)
     try:
         _req.post(f"https://api.telegram.org/bot{TOKEN}/close", timeout=5)
-    except Exception:
-        pass
-    print("Waiting for previous instance to release polling lock...")
-    _time.sleep(10)
+        _req.post(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook", json={"drop_pending_updates": True}, timeout=5)
+    except Exception as e:
+        print(f"Cleanup warning: {e}", flush=True)
+    print("Waiting 15s for previous polling lock to expire...", flush=True)
+    _time.sleep(15)
 
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("summary", summary_command))
     app.add_handler(CommandHandler("report", report_command))
 
-    print("C3MR Manager Bot is running...")
+    print("C3MR Manager Bot is running...", flush=True)
     app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":

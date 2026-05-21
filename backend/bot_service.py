@@ -147,8 +147,15 @@ def run_bot():
         return
 
     import time as _time
-    # Wait briefly so the previous instance's polling connection expires
-    _time.sleep(5)
+    import requests as _req
+
+    # Close previous session and wait for old polling to expire
+    try:
+        _req.post(f"https://api.telegram.org/bot{TOKEN}/close", timeout=5)
+    except Exception:
+        pass
+    print("Waiting for previous instance to release polling lock...")
+    _time.sleep(10)
 
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start_command))

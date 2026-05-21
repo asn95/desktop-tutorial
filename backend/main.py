@@ -67,21 +67,25 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(officer.router, prefix="/api/officer", tags=["officer"])
 
-# Serve frontend build (must be AFTER all API routes)
+# Serve frontend build via middleware (does NOT interfere with API routing)
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if FRONTEND_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR / "assets")), name="frontend-assets")
 
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        """Serve frontend SPA — falls back to index.html for client-side routing."""
-        if full_path.startswith("officer-app"):
-            from starlette.responses import RedirectResponse
-            return RedirectResponse(url="/officer-app/")
-        file_path = FRONTEND_DIR / full_path
-        if file_path.is_file():
-            return FileResponse(str(file_path))
-        return FileResponse(str(FRONTEND_DIR / "index.html"))
+    class SPAMiddleware(BaseHTTPMiddleware):
+        """Serve SPA index.html for non-API, non-asset GET requests that return 404."""
+        async def dispatch(self, request: Request, call_next):
+            response = await call_next(request)
+            # Only intercept GET 404s for frontend routes (not API/assets/officer-app)
+            if (
+                request.method == "GET"
+                and response.status_code == 404
+                and not request.url.path.startswith(("/api", "/assets", "/officer-app"))
+            ):
+                return FileResponse(str(FRONTEND_DIR / "index.html"))
+            return response
+
+    app.add_middleware(SPAMiddleware)
 
 if __name__ == "__main__":
     import uvicorn

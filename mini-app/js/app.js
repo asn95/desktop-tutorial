@@ -102,14 +102,23 @@ function showView(viewId) {
     });
     document.getElementById(viewId + '-view').classList.remove('hidden');
 
+    const webBtn = document.getElementById('web-submit-btn');
     if (viewId === 'detail') {
-        tg.BackButton.show();
-        tg.MainButton.setText("FINALIZE SUBMISSION");
-        tg.MainButton.color = "#dc2626";
-        tg.MainButton.show();
+        if (tg.initData) {
+            // Inside Telegram: use native MainButton, hide HTML button
+            tg.BackButton.show();
+            tg.MainButton.setText("FINALIZE SUBMISSION");
+            tg.MainButton.color = "#dc2626";
+            tg.MainButton.show();
+            if (webBtn) webBtn.classList.add('hidden');
+        } else {
+            // Outside Telegram: show HTML button only
+            if (webBtn) webBtn.classList.remove('hidden');
+        }
     } else {
         tg.BackButton.hide();
         tg.MainButton.hide();
+        if (webBtn) webBtn.classList.add('hidden');
     }
 }
 

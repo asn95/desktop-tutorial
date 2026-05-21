@@ -72,7 +72,7 @@ export function TargetsPage() {
           </div>
           
           <div className="space-y-6">
-            <CsvUploadPanel />
+            <CsvUploadPanel onUploadSuccess={refreshData} />
           </div>
         </div>
       </div>

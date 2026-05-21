@@ -6,7 +6,7 @@ const REQUIRED_COLUMNS = ["customer_name", "address", "phone", "amount_due"];
 
 type CsvRow = Record<string, string>;
 
-export function CsvUploadPanel() {
+export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: () => void } = {}) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewRows, setPreviewRows] = useState<CsvRow[]>([]);
   const [fullData, setFullData] = useState<CsvRow[]>([]);
@@ -65,6 +65,7 @@ export function CsvUploadPanel() {
       setFullData([]);
       setPreviewRows([]);
       setSelectedFile(null);
+      if (onUploadSuccess) onUploadSuccess();
     } catch (err: any) {
       setError(err.response?.data?.detail || "Synchronization failed.");
     } finally {

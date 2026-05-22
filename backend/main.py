@@ -86,6 +86,10 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if FRONTEND_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR / "assets")), name="frontend-assets")
 
+    @app.get("/favicon.svg")
+    async def favicon():
+        return FileResponse(str(FRONTEND_DIR / "favicon.svg"))
+
     class SPAMiddleware(BaseHTTPMiddleware):
         """Serve SPA index.html for non-API, non-asset GET requests that return 404."""
         async def dispatch(self, request: Request, call_next):

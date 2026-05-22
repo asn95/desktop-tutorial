@@ -23,9 +23,8 @@ app = FastAPI(title="C3MR API")
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled error on {request.url}: {traceback.format_exc()}")
-    debug = os.environ.get("DEBUG", "false").lower() == "true"
-    detail = str(exc) if debug else "Internal server error"
-    return JSONResponse(status_code=500, content={"detail": detail})
+    # Never expose raw exception details to clients — log only
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 # Serve uploads statically
 if not os.path.exists("backend/uploads"):
@@ -35,8 +34,11 @@ app.mount("/api/uploads", StaticFiles(directory="backend/uploads"), name="upload
 # Serve the Telegram Mini App
 app.mount("/officer-app", StaticFiles(directory="mini-app", html=True), name="mini-app")
 
-# Enable CORS
-ALLOWED_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+# Enable CORS — production uses the Railway URL, dev uses localhost
+_default_origins = "https://c3mr-app-production.up.railway.app"
+if os.environ.get("DEBUG", "false").lower() == "true":
+    _default_origins += ",http://localhost:5173,http://localhost:3000"
+ALLOWED_ORIGINS = os.environ.get("CORS_ORIGINS", _default_origins).split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -44,6 +46,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):

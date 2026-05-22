@@ -121,8 +121,8 @@ export function UserManagementPage() {
   return (
     <AppShell>
       <div className="space-y-12 font-sans">
-        <div className="flex items-end justify-between">
-          <h1 className="font-serif text-3xl font-medium tracking-wide uppercase text-black">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+          <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-wide uppercase text-black">
             Personnel Directory
           </h1>
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -130,7 +130,7 @@ export function UserManagementPage() {
           </p>
         </div>
 
-        <div className="grid gap-12 lg:grid-cols-[1fr_340px]">
+        <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           {/* Main Directory */}
           <section>
             <div className="border-b-2 border-black pb-2 mb-6 flex items-center justify-between">
@@ -152,9 +152,9 @@ export function UserManagementPage() {
                 {query ? "No matching records." : "No registered personnel."}
               </p>
             ) : (
-              <div className="border border-black bg-white">
+              <div className="border border-black bg-white overflow-x-auto">
                 {/* Table header */}
-                <div className="grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 border-b-2 border-black bg-[#f8f8f6] px-6 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <div className="min-w-[560px] grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 border-b-2 border-black bg-[#f8f8f6] px-6 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
                   <span>Name</span>
                   <span>Role</span>
                   <span>Telegram</span>
@@ -169,7 +169,7 @@ export function UserManagementPage() {
                   return (
                     <div
                       key={user.id}
-                      className={`grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 items-center px-6 py-3 ${
+                      className={`min-w-[560px] grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 items-center px-6 py-3 ${
                         i > 0 ? "border-t border-slate-200" : ""
                       }`}
                     >

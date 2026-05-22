@@ -129,7 +129,7 @@ export function DashboardPage() {
         </h1>
 
         {/* Summary Cards */}
-        <section className="grid gap-0 border-l border-t border-black sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-0 border-l border-t border-black grid-cols-2 lg:grid-cols-4">
           <SummaryCard label="Total Targets" value={stats.totalTargets} accent="default" />
           <SummaryCard label="Completed" value={stats.completed} accent="success" />
           <SummaryCard label="In Progress" value={stats.inProgress} accent="warning" />
@@ -137,13 +137,13 @@ export function DashboardPage() {
         </section>
 
         {/* Revenue + Chart Row */}
-        <section className="grid gap-10 lg:grid-cols-3">
+        <section className="grid gap-6 lg:grid-cols-3">
           {/* Collection Revenue */}
-          <div className="border border-black bg-white p-8 lg:col-span-2">
+          <div className="border border-black bg-white p-5 sm:p-8 lg:col-span-2">
             <h3 className="mb-6 text-xs font-black uppercase tracking-widest text-black">
               Collection Revenue
             </h3>
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Total Outstanding</p>
                 <p className="text-2xl font-medium tracking-tight text-[#1a1c1e]">{formatCurrency(totalDue)}</p>
@@ -197,7 +197,7 @@ export function DashboardPage() {
         </section>
 
         {/* Bottom 3-column: Pending / Active / Comments */}
-        <section className="grid gap-10 lg:grid-cols-3">
+        <section className="grid gap-6 lg:grid-cols-3">
           {/* Unassigned Targets (Action Required) */}
           <div className="border border-black bg-white">
             <div className="bg-red-50 border-b border-black px-6 py-4 flex items-center justify-between">
@@ -292,11 +292,11 @@ export function DashboardPage() {
 
         {/* Officer Quick View */}
         <section className="border border-black bg-white">
-          <div className="bg-[#f2f2f2] border-b border-black px-6 py-4 flex items-center justify-between">
+          <div className="bg-[#f2f2f2] border-b border-black px-4 sm:px-6 py-4 flex items-center justify-between">
             <h3 className="text-xs font-black uppercase tracking-widest text-black">Active Officers</h3>
             <span className="text-xs font-black text-slate-500">{officers.length} registered</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-slate-100">
+          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-slate-100">
             {officers.map(o => {
               const assigned = targets.filter(t => t.assignedOfficer === o.id).length;
               const completed = targets.filter(t => t.assignedOfficer === o.id && t.status === "completed").length;

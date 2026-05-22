@@ -91,7 +91,7 @@ export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefr
     <>
       <div className="w-full border border-black">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[11px] font-bold uppercase tracking-wider">
+          <table className="min-w-[640px] w-full text-left text-[11px] font-bold uppercase tracking-wider">
             <thead className="bg-[#f2f2f2] text-[#1a1c1e]">
               <tr className="border-b border-black">
                 <th className="px-4 py-4">ID</th>
@@ -171,8 +171,8 @@ export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefr
 
       {/* Detail Modal */}
       {detailTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDetailTarget(null)}>
-          <div className="bg-white border border-black w-full max-w-lg mx-4 p-0 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={() => setDetailTarget(null)}>
+          <div className="bg-white border border-black w-full sm:max-w-lg sm:mx-4 p-0 max-h-[92vh] sm:max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="border-b border-black px-6 py-4 flex items-center justify-between shrink-0">
               <h2 className="text-xs font-black uppercase tracking-widest">Target Details</h2>
               <button onClick={() => setDetailTarget(null)} className="text-lg font-bold hover:text-red-600">&times;</button>

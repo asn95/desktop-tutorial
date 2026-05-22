@@ -67,18 +67,18 @@ export function AnalyticsPage() {
             <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Revenue Overview</h2>
           </div>
 
-          <div className="grid lg:grid-cols-[1fr_1fr_1fr] gap-0 border border-black">
-            <div className="p-8 border-r border-black">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-black">
+            <div className="p-5 sm:p-8 border-b sm:border-b-0 sm:border-r border-black">
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Total Outstanding</p>
-              <p className="text-4xl font-medium tracking-tighter text-[#1a1c1e]">{formatCurrency(revenue.total_due)}</p>
+              <p className="text-2xl sm:text-4xl font-medium tracking-tighter text-[#1a1c1e]">{formatCurrency(revenue.total_due)}</p>
             </div>
-            <div className="p-8 border-r border-black">
+            <div className="p-5 sm:p-8 border-b sm:border-b-0 sm:border-r border-black">
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Collected</p>
-              <p className="text-4xl font-medium tracking-tighter text-[#1a1c1e]">{formatCurrency(revenue.collected)}</p>
+              <p className="text-2xl sm:text-4xl font-medium tracking-tighter text-[#1a1c1e]">{formatCurrency(revenue.collected)}</p>
             </div>
-            <div className="p-8">
+            <div className="p-5 sm:p-8">
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Outstanding</p>
-              <p className="text-4xl font-medium tracking-tighter text-red-600">{formatCurrency(revenue.outstanding)}</p>
+              <p className="text-2xl sm:text-4xl font-medium tracking-tighter text-red-600">{formatCurrency(revenue.outstanding)}</p>
             </div>
           </div>
 
@@ -100,17 +100,17 @@ export function AnalyticsPage() {
             <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Target Status Breakdown</h2>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-0 border border-black">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-black">
             {distribution.map((d, i) => {
               const pct = data.total_targets > 0 ? Math.round((d.value / data.total_targets) * 100) : 0;
               const colors = ["border-red-500", "border-amber-500", "border-green-500"];
               const textColors = ["text-red-600", "text-amber-600", "text-green-600"];
               return (
-                <div key={d.name} className={`p-8 ${i < 2 ? "border-r border-black" : ""}`}>
+                <div key={d.name} className={`p-5 sm:p-8 ${i < 2 ? "border-b sm:border-b-0 sm:border-r border-black" : ""}`}>
                   <div className={`border-l-4 ${colors[i]} pl-4`}>
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{d.name}</p>
                     <div className="flex items-baseline gap-2 mt-2">
-                      <span className="text-5xl font-medium tracking-tighter text-[#1a1c1e]">{d.value}</span>
+                      <span className="text-4xl sm:text-5xl font-medium tracking-tighter text-[#1a1c1e]">{d.value}</span>
                       <span className={`text-sm font-black ${textColors[i]}`}>{pct}%</span>
                     </div>
                   </div>
@@ -138,24 +138,24 @@ export function AnalyticsPage() {
                   const rate = o.assigned > 0 ? Math.round((o.completed / o.assigned) * 100) : 0;
                   const barW = Math.round((o.assigned / maxAssigned) * 100);
                   return (
-                    <div key={o.name} className={`flex items-center gap-6 px-6 py-5 ${i > 0 ? "border-t border-slate-200" : ""}`}>
-                      <span className="text-slate-300 text-sm font-black w-6 text-right shrink-0">{i + 1}</span>
-                      <div className="w-40 shrink-0">
+                    <div key={o.name} className={`flex items-center gap-3 sm:gap-6 px-4 sm:px-6 py-4 sm:py-5 ${i > 0 ? "border-t border-slate-200" : ""}`}>
+                      <span className="text-slate-300 text-sm font-black w-5 sm:w-6 text-right shrink-0">{i + 1}</span>
+                      <div className="w-28 sm:w-40 shrink-0">
                         <p className="text-xs font-bold text-[#1a1c1e]">{o.name}</p>
                         <p className="text-[9px] text-slate-400 mt-0.5">
                           {o.reports} report{o.reports !== 1 ? "s" : ""} filed
                         </p>
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 hidden sm:block">
                         <div className="w-full h-5 bg-slate-50 relative">
                           <div className="absolute inset-y-0 left-0 bg-slate-200" style={{ width: `${barW}%` }} />
                           <div className="absolute inset-y-0 left-0 bg-[#1a1c1e]" style={{ width: `${Math.round((o.completed / maxAssigned) * 100)}%` }} />
                         </div>
                       </div>
-                      <div className="text-right shrink-0 w-28">
+                      <div className="text-right shrink-0 w-20 sm:w-28">
                         <span className="text-xs font-black text-[#1a1c1e]">{o.completed}</span>
                         <span className="text-xs text-slate-400"> / {o.assigned}</span>
-                        <span className={`ml-2 text-[10px] font-black ${rate >= 50 ? "text-green-600" : rate > 0 ? "text-amber-600" : "text-slate-400"}`}>
+                        <span className={`ml-1 sm:ml-2 text-[10px] font-black ${rate >= 50 ? "text-green-600" : rate > 0 ? "text-amber-600" : "text-slate-400"}`}>
                           {rate}%
                         </span>
                       </div>
@@ -171,7 +171,7 @@ export function AnalyticsPage() {
         </section>
 
         {/* Bottom: Activity + Issues side by side */}
-        <section className="grid lg:grid-cols-[1fr_1fr] gap-10">
+        <section className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-8">
           {/* Activity Summary */}
           <div>
             <div className="border-b-2 border-black pb-2 mb-8">

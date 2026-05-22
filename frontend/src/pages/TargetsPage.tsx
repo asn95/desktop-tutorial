@@ -46,20 +46,20 @@ export function TargetsPage() {
           Target Management Inventory
         </h1>
 
-        <div className="grid gap-10 lg:grid-cols-[1fr_350px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-black pb-4">
-              <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-black pb-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Filter by name/ID..."
-                  className="w-64 border border-black bg-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
+                  className="w-full sm:w-64 border border-black bg-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
                 />
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as FilterValue)}
-                  className="border border-black bg-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
+                  className="w-full sm:w-auto border border-black bg-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
                 >
                   <option value="all">All Records</option>
                   <option value="pending">Pending</option>

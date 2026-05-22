@@ -92,11 +92,8 @@ async def submit_report(
     )
     db.add(db_report)
 
-    # 4. Update Target Status
-    if payment_status == "Paid":
-        target.status = TargetStatus.completed
-    else:
-        target.status = TargetStatus.in_progress
+    # 4. Update Target Status — finalized report means collection is complete
+    target.status = TargetStatus.completed
         
     db.commit()
     

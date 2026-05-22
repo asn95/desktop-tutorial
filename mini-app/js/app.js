@@ -163,12 +163,13 @@ function renderTasks() {
     const active = currentTasks.filter(t => t.status !== 'completed').length;
     document.getElementById('active-cases').textContent = active;
 
-    if (currentTasks.length === 0) {
+    if (active === 0) {
         taskContainer.innerHTML = '<p style="text-align:center;color:#9ca3af;padding:40px 16px;font-size:13px;">No pending assignments.</p>';
         return;
     }
 
-    currentTasks.forEach((task, i) => {
+    const activeTasks = currentTasks.filter(t => t.status !== 'completed');
+    activeTasks.forEach((task, i) => {
         const pri = task.amountDue >= 15000000 ? ['Priority 1','pbadge-1'] :
                     task.amountDue >= 5000000  ? ['Priority 2','pbadge-2'] :
                                                   ['Priority 3','pbadge-3'];

@@ -25,9 +25,19 @@ export function AppShell({
       {/* Official Header */}
       <header className="mx-auto w-full max-w-[1400px] sm:border-x border-t border-black px-4 py-4 sm:px-8 sm:py-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-3xl sm:text-4xl font-black tracking-tighter">
-            <span className="text-[#e11d48]">C</span>
-            <span>3MR</span>
+          <div className="flex items-center gap-2.5">
+            <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-9 sm:h-9">
+              {/* Radar base triangle */}
+              <path d="M20 4 L4 36 L36 36 Z" fill="#1a1c1e" stroke="#1a1c1e" strokeWidth="1.5" strokeLinejoin="round" />
+              {/* Signal waves */}
+              <path d="M28 18 C30 20 30 24 28 26" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+              <path d="M32 14 C36 18 36 28 32 32" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+              {/* Center dot */}
+              <circle cx="20" cy="26" r="2.5" fill="white" />
+            </svg>
+            <div className="text-2xl sm:text-3xl font-black tracking-tighter">
+              <span className="text-[#e11d48]">C</span><span>3MR</span>
+            </div>
           </div>
           <div className="hidden sm:block text-[10px] font-black uppercase tracking-[0.2em] text-[#1a1c1e]">
             Official Management Portal

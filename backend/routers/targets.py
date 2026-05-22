@@ -72,6 +72,27 @@ async def assign_target(target_id: str, officer_id: str, db: Session = Depends(g
     
     return {"message": f"Target assigned to {db_officer.name}"}
 
+@router.get("/{target_id}/reports")
+async def get_target_reports(target_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+    reports = (
+        db.query(DbReport, DbUser)
+        .join(DbUser, DbReport.officer_id == DbUser.id)
+        .filter(DbReport.target_id == target_id)
+        .order_by(DbReport.submitted_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "payment_status": r.payment_status,
+            "notes": r.notes,
+            "photo_url": r.photo_url,
+            "officerName": u.name,
+            "submitted_at": r.submitted_at.isoformat(),
+        }
+        for r, u in reports
+    ]
+
 @router.get("/{target_id}/comments")
 async def get_target_comments(target_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
     comments = (

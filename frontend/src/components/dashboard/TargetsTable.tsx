@@ -13,6 +13,15 @@ interface Comment {
   created_at: string;
 }
 
+interface Report {
+  id: string;
+  payment_status: string;
+  notes: string | null;
+  photo_url: string | null;
+  officerName: string;
+  submitted_at: string;
+}
+
 const TAG_LABELS: Record<string, string> = {
   wrong_address: "Alamat Salah",
   wrong_phone: "Nomor Salah",
@@ -28,6 +37,7 @@ export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefr
   const [detailTarget, setDetailTarget] = useState<Target | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
 
   useEffect(() => {
@@ -60,12 +70,18 @@ export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefr
   async function openDetail(target: Target) {
     setDetailTarget(target);
     setComments([]);
+    setReports([]);
     setLoadingComments(true);
     try {
-      const res = await apiClient.get(`/targets/${target.id}/comments`);
-      setComments(res.data);
+      const [cmtRes, rptRes] = await Promise.all([
+        apiClient.get(`/targets/${target.id}/comments`),
+        apiClient.get(`/targets/${target.id}/reports`),
+      ]);
+      setComments(cmtRes.data);
+      setReports(Array.isArray(rptRes.data) ? rptRes.data : []);
     } catch {
       setComments([]);
+      setReports([]);
     } finally {
       setLoadingComments(false);
     }
@@ -190,6 +206,43 @@ export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefr
                   }`}>{detailTarget.status}</span>
                 </div>
               </div>
+
+              {/* Field Reports Section */}
+              {reports.length > 0 && (
+                <div className="border-t border-slate-200 px-6 py-5">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
+                    Field Reports
+                  </h3>
+                  <div className="space-y-3">
+                    {reports.map(r => (
+                      <div key={r.id} className="border border-slate-200 rounded px-4 py-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[10px] font-bold text-slate-600">{r.officerName}</span>
+                          <span className="text-[8px] font-black uppercase tracking-wider bg-blue-100 text-blue-600 px-2 py-0.5 rounded">
+                            {r.payment_status}
+                          </span>
+                        </div>
+                        {r.notes && <p className="text-xs text-slate-700 leading-relaxed mb-2">{r.notes}</p>}
+                        {r.photo_url && (
+                          <a href={`/api${r.photo_url}`} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={`/api${r.photo_url}`}
+                              alt="Photo evidence"
+                              className="w-full max-h-48 object-cover rounded border border-slate-200 cursor-pointer hover:opacity-90"
+                            />
+                          </a>
+                        )}
+                        <p className="text-[9px] text-slate-400 mt-2">
+                          {new Date(r.submitted_at).toLocaleString("id-ID", {
+                            day: "2-digit", month: "short", year: "numeric",
+                            hour: "2-digit", minute: "2-digit"
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Officer Comments Section */}
               <div className="border-t border-slate-200 px-6 py-5">

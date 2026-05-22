@@ -62,20 +62,36 @@ async def require_manager(update: Update) -> bool:
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    mini_app_url = os.environ.get("MINI_APP_URL", "https://your-domain.com/officer-app")
+    tid = str(user.id)
 
-    keyboard = [[
-        InlineKeyboardButton("Open Field App", web_app=WebAppInfo(url=mini_app_url))
-    ]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    with get_db() as db:
+        mgr = is_manager(tid, db)
 
-    await update.message.reply_text(
-        f"Welcome to *C3MR*, {user.first_name}\\!\n\n"
-        "Collection Case & Customer Management Report\\.\n\n"
-        "Use /summary for stats or /report for recent activities\\.",
-        parse_mode="MarkdownV2",
-        reply_markup=reply_markup
-    )
+    if mgr:
+        web_url = os.environ.get("WEB_ADMIN_URL", "https://c3mr-app-production.up.railway.app")
+        keyboard = [[
+            InlineKeyboardButton("Open Web Dashboard", url=web_url)
+        ]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            f"Welcome, *{user.first_name}*\\!\n\n"
+            "🔐 *C3MR Manager Console*\n\n"
+            "Available commands:\n"
+            "  /summary \\- Collection statistics\n"
+            "  /report  \\- Recent field reports\n\n"
+            "Or open the full dashboard below\\.",
+            parse_mode="MarkdownV2",
+            reply_markup=reply_markup
+        )
+    else:
+        await update.message.reply_text(
+            f"Hello, {user.first_name}\\.\n\n"
+            "⛔ You are not registered as a manager\\.\n"
+            f"Your Telegram ID: `{tid}`\n\n"
+            "Please contact your administrator to get access\\.",
+            parse_mode="MarkdownV2"
+        )
 
 async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await require_manager(update):

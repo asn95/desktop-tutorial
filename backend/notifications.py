@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from dotenv import load_dotenv
 
@@ -6,18 +7,29 @@ load_dotenv()
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
-def send_telegram_notification(telegram_id: str, message: str):
+def send_telegram_notification(telegram_id: str, message: str, include_field_app: bool = False):
     if not TOKEN:
         print("Telegram Bot Token not configured. Notification skipped.")
         return
-    
+
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
         "chat_id": telegram_id,
         "text": message,
         "parse_mode": "Markdown"
     }
-    
+
+    if include_field_app:
+        mini_app_url = os.environ.get(
+            "MINI_APP_URL",
+            "https://c3mr-app-production.up.railway.app/officer-app/"
+        )
+        payload["reply_markup"] = json.dumps({
+            "inline_keyboard": [[
+                {"text": "📋 Open Field App", "web_app": {"url": mini_app_url}}
+            ]]
+        })
+
     try:
         response = requests.post(url, json=payload)
         response.raise_for_status()

@@ -68,7 +68,7 @@ async def assign_target(target_id: str, officer_id: str, db: Session = Depends(g
             f"Location: {db_target.address}\n\n"
             f"Open your C3MR Field App to begin collection."
         )
-        send_telegram_notification(db_officer.telegram_id, msg)
+        send_telegram_notification(db_officer.telegram_id, msg, include_field_app=True)
     
     return {"message": f"Target assigned to {db_officer.name}"}
 

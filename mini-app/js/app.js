@@ -5,6 +5,8 @@ let initDataString = "";
 let currentTasks = [];
 let selectedTask = null;
 let selectedTag = null;
+let loginAttempts = 0;
+const MAX_LOGIN_ATTEMPTS = 5;
 
 // --- HTML Escaping ---
 function esc(str) {
@@ -88,9 +90,13 @@ async function loginSecure() {
 }
 
 function manualLogin() {
-    // Manual login only works when backend is in DEBUG mode
+    if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        alert("Terlalu banyak percobaan login. Coba lagi dalam 5 menit.");
+        return;
+    }
     const tid = document.getElementById('manual-tid').value;
     if (tid) {
+        loginAttempts++;
         initDataString = `user={"id":${tid},"first_name":"Officer"}&hash=dummy_hash`;
         loginSecure();
     }

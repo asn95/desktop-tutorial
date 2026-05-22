@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..database import get_db
-from ..models import DbTarget, DbComment, DbUser, Target, TargetCreate, TargetStatus
+from ..models import DbTarget, DbComment, DbReport, DbUser, Target, TargetCreate, TargetStatus
 from ..security import require_auth
 
 router = APIRouter()

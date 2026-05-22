@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import DbUser, UserRole
-from ..security import verify_password, create_access_token, hash_password
+from ..security import verify_password, create_access_token, hash_password, require_manager
 
 router = APIRouter()
 
@@ -69,6 +69,18 @@ async def login(payload: LoginPayload, request: Request, db: Session = Depends(g
         "role": role,
         "token": token,
     }
+
+class VerifyPasswordPayload(BaseModel):
+    password: str
+
+@router.post("/verify-password")
+async def verify_manager_password(payload: VerifyPasswordPayload, db: Session = Depends(get_db), auth: dict = Depends(require_manager)):
+    user = db.query(DbUser).filter(DbUser.id == auth["user_id"]).first()
+    if not user or not user.password_hash:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    if not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    return {"verified": True}
 
 class SeedPayload(BaseModel):
     token: str

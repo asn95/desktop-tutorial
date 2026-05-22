@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
 import { getUsers, createUser, updateUser, deleteUser } from "../services/userService";
 import { getDashboardSnapshot } from "../services/dashboardService";
+import { apiClient } from "../lib/apiClient";
 import type { User, UserBase } from "../types/user";
 import type { Target } from "../types/target";
+
+type PendingAction = { type: "edit"; user: User } | { type: "delete"; user: User };
 
 export function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -18,6 +21,10 @@ export function UserManagementPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editName, setEditName] = useState("");
   const [editTelegramId, setEditTelegramId] = useState("");
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -83,10 +90,45 @@ export function UserManagementPage() {
     }
   }
 
-  function openEdit(user: User) {
-    setEditingUser(user);
-    setEditName(user.name);
-    setEditTelegramId(user.telegram_id || "");
+  function requestEdit(user: User) {
+    setPendingAction({ type: "edit", user });
+    setConfirmPassword("");
+    setPasswordError(null);
+  }
+
+  function requestDelete(user: User) {
+    setPendingAction({ type: "delete", user });
+    setConfirmPassword("");
+    setPasswordError(null);
+  }
+
+  async function handlePasswordConfirm(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pendingAction || !confirmPassword) return;
+    setIsVerifying(true);
+    setPasswordError(null);
+    try {
+      await apiClient.post("/auth/verify-password", { password: confirmPassword });
+      const action = pendingAction;
+      setPendingAction(null);
+      setConfirmPassword("");
+      if (action.type === "edit") {
+        setEditingUser(action.user);
+        setEditName(action.user.name);
+        setEditTelegramId(action.user.telegram_id || "");
+      } else {
+        try {
+          await deleteUser(action.user.id);
+          loadData();
+        } catch {
+          alert("Failed to delete user.");
+        }
+      }
+    } catch {
+      setPasswordError("Invalid password.");
+    } finally {
+      setIsVerifying(false);
+    }
   }
 
   async function handleUpdate(e: React.FormEvent) {
@@ -101,20 +143,6 @@ export function UserManagementPage() {
       loadData();
     } catch (err: any) {
       alert(err.response?.data?.detail || "Failed to update user.");
-    }
-  }
-
-  async function handleDelete(user: User) {
-    const stats = getOfficerStats(user.id);
-    const extra = stats.assigned > 0
-      ? `\n\nThis officer has ${stats.assigned} assigned target(s). They will become unassigned.`
-      : "";
-    if (!confirm(`Remove ${user.name}?${extra}`)) return;
-    try {
-      await deleteUser(user.id);
-      loadData();
-    } catch (err) {
-      alert("Failed to delete user.");
     }
   }
 
@@ -195,13 +223,13 @@ export function UserManagementPage() {
                       </span>
                       <span className="text-center flex gap-2 justify-center">
                         <button
-                          onClick={() => openEdit(user)}
+                          onClick={() => requestEdit(user)}
                           className="text-[9px] text-blue-600 font-black uppercase tracking-wider hover:underline"
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(user)}
+                          onClick={() => requestDelete(user)}
                           className="text-[9px] text-red-600 font-black uppercase tracking-wider hover:underline"
                         >
                           Remove
@@ -279,6 +307,52 @@ export function UserManagementPage() {
           </section>
         </div>
       </div>
+
+      {/* Password Confirmation Modal */}
+      {pendingAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setPendingAction(null)}>
+          <form
+            onSubmit={handlePasswordConfirm}
+            onClick={e => e.stopPropagation()}
+            className="bg-white border border-black w-full max-w-xs mx-4 p-6 space-y-5"
+          >
+            <div>
+              <h2 className="text-xs font-black uppercase tracking-widest">Confirm Password</h2>
+              <p className="text-[10px] text-slate-500 mt-2">
+                Enter your password to {pendingAction.type === "edit" ? "edit" : "remove"}{" "}
+                <span className="font-bold text-[#1a1c1e]">{pendingAction.user.name}</span>
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Password</label>
+              <input
+                type="password"
+                autoFocus
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                className="w-full border-b border-black bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2"
+              />
+              {passwordError && <p className="text-[10px] font-bold text-red-600">{passwordError}</p>}
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={!confirmPassword || isVerifying}
+                className="flex-1 bg-black text-white py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-30"
+              >
+                {isVerifying ? "Verifying..." : "Confirm"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingAction(null)}
+                className="flex-1 border border-black py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editingUser && (

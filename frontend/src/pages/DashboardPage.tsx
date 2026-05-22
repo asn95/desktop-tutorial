@@ -71,7 +71,7 @@ export function DashboardPage() {
           setAllUsers(users);
         })
         .catch(() => {});
-    }, 30000);
+    }, 10000);
 
     return () => { isMounted = false; clearInterval(interval); };
   }, []);

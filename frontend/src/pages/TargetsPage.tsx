@@ -18,6 +18,10 @@ export function TargetsPage() {
     getDashboardSnapshot()
       .then(setSnapshot)
       .finally(() => setIsLoading(false));
+    const interval = setInterval(() => {
+      getDashboardSnapshot().then(setSnapshot).catch(() => {});
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredTargets = useMemo(() => {

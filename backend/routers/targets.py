@@ -1,8 +1,11 @@
+import csv
+import io
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..database import get_db
-from ..models import DbTarget, DbComment, DbReport, DbUser, Target, TargetCreate, TargetStatus
+from ..models import DbTarget, DbComment, DbReport, DbUser, DbAuditLog, DbNotificationLog, Target, TargetCreate, TargetStatus
 from ..security import require_auth
 
 router = APIRouter()
@@ -33,6 +36,7 @@ async def upload_targets(targets: List[TargetCreate], db: Session = Depends(get_
             for t in targets
         ]
         db.add_all(db_targets)
+        db.add(DbAuditLog(user_id=_auth["sub"], action="upload", detail=f"Uploaded {len(targets)} targets"))
         db.commit()
         return {"message": f"Successfully uploaded {len(targets)} targets"}
     except Exception as e:
@@ -43,22 +47,12 @@ async def upload_targets(targets: List[TargetCreate], db: Session = Depends(get_
 from ..notifications import send_telegram_notification
 from ..lib.format import format_currency_python # We'll create this helper
 
-@router.patch("/{target_id}/assign")
-async def assign_target(target_id: str, officer_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
-    db_target = db.query(DbTarget).filter(DbTarget.id == target_id).first()
-    if not db_target:
-        raise HTTPException(status_code=404, detail="Target not found")
-    
-    # Verify officer exists
-    db_officer = db.query(DbUser).filter(DbUser.id == officer_id).first()
-    if not db_officer:
-        raise HTTPException(status_code=404, detail="Officer not found")
-
-    db_target.assigned_officer = officer_id
+def _assign_one(db_target, db_officer, db, auth_sub):
+    """Assign a single target and send notification. Returns success bool."""
+    db_target.assigned_officer = db_officer.id
     db_target.status = TargetStatus.in_progress
-    db.commit()
+    db.add(DbAuditLog(user_id=auth_sub, action="assign", detail=f"Assigned '{db_target.customer_name}' to {db_officer.name}"))
 
-    # Send Notification if Telegram ID is available
     if db_officer.telegram_id:
         formatted_amount = format_currency_python(db_target.amount_due)
         msg = (
@@ -68,9 +62,68 @@ async def assign_target(target_id: str, officer_id: str, db: Session = Depends(g
             f"Location: {db_target.address}\n\n"
             f"Open your C3MR Field App to begin collection."
         )
-        send_telegram_notification(db_officer.telegram_id, msg, include_field_app=True)
-    
+        success = send_telegram_notification(db_officer.telegram_id, msg, include_field_app=True)
+        db.add(DbNotificationLog(recipient_id=db_officer.id, message=msg, success="true" if success else "false"))
+
+@router.patch("/{target_id}/assign")
+async def assign_target(target_id: str, officer_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+    db_target = db.query(DbTarget).filter(DbTarget.id == target_id).first()
+    if not db_target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    db_officer = db.query(DbUser).filter(DbUser.id == officer_id).first()
+    if not db_officer:
+        raise HTTPException(status_code=404, detail="Officer not found")
+
+    _assign_one(db_target, db_officer, db, _auth["sub"])
+    db.commit()
     return {"message": f"Target assigned to {db_officer.name}"}
+
+from pydantic import BaseModel as _BaseModel
+
+class BulkAssignPayload(_BaseModel):
+    target_ids: List[str]
+    officer_id: str
+
+@router.post("/bulk-assign")
+async def bulk_assign(payload: BulkAssignPayload, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+    db_officer = db.query(DbUser).filter(DbUser.id == payload.officer_id).first()
+    if not db_officer:
+        raise HTTPException(status_code=404, detail="Officer not found")
+
+    targets = db.query(DbTarget).filter(DbTarget.id.in_(payload.target_ids)).all()
+    if not targets:
+        raise HTTPException(status_code=404, detail="No targets found")
+
+    for t in targets:
+        _assign_one(t, db_officer, db, _auth["sub"])
+    db.commit()
+    return {"message": f"{len(targets)} targets assigned to {db_officer.name}"}
+
+@router.get("/export/csv")
+async def export_targets_csv(db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+    targets = db.query(DbTarget).order_by(DbTarget.created_at.desc()).all()
+    users = {u.id: u.name for u in db.query(DbUser).all()}
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Customer Name", "Address", "Phone", "Amount Due", "Officer", "Status", "Created At"])
+    for t in targets:
+        writer.writerow([
+            t.id[:8],
+            t.customer_name,
+            t.address,
+            t.phone,
+            t.amount_due,
+            users.get(t.assigned_officer, "-"),
+            t.status.value if hasattr(t.status, "value") else t.status,
+            t.created_at.strftime("%Y-%m-%d %H:%M") if t.created_at else "",
+        ])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=c3mr_targets_export.csv"},
+    )
 
 @router.get("/{target_id}/reports")
 async def get_target_reports(target_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):

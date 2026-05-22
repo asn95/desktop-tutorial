@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from ..database import get_db
@@ -40,11 +41,23 @@ class AnalyticsSummary(BaseModel):
     top_issues: List[CommentTagCount]
 
 @router.get("/summary", response_model=AnalyticsSummary)
-async def get_analytics_summary(db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def get_analytics_summary(
+    date_from: Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
+    date_to: Optional[str] = Query(None, description="End date YYYY-MM-DD"),
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+):
+    # Build base query with optional date filter
+    base_q = db.query(DbTarget)
+    if date_from:
+        base_q = base_q.filter(DbTarget.created_at >= datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc))
+    if date_to:
+        base_q = base_q.filter(DbTarget.created_at < datetime.strptime(date_to, "%Y-%m-%d").replace(tzinfo=timezone.utc).replace(hour=23, minute=59, second=59))
+
     # Status Distribution
-    pending = db.query(DbTarget).filter(DbTarget.status == TargetStatus.pending).count()
-    in_progress = db.query(DbTarget).filter(DbTarget.status == TargetStatus.in_progress).count()
-    completed = db.query(DbTarget).filter(DbTarget.status == TargetStatus.completed).count()
+    pending = base_q.filter(DbTarget.status == TargetStatus.pending).count()
+    in_progress = base_q.filter(DbTarget.status == TargetStatus.in_progress).count()
+    completed = base_q.filter(DbTarget.status == TargetStatus.completed).count()
 
     distribution = [
         {"name": "Pending", "value": pending},
@@ -52,11 +65,9 @@ async def get_analytics_summary(db: Session = Depends(get_db), _auth: dict = Dep
         {"name": "Completed", "value": completed},
     ]
 
-    # Revenue Breakdown
-    total_due = db.query(func.coalesce(func.sum(DbTarget.amount_due), 0)).scalar()
-    collected = db.query(func.coalesce(func.sum(DbTarget.amount_due), 0)).filter(
-        DbTarget.status == TargetStatus.completed
-    ).scalar()
+    # Revenue Breakdown (respects date filter)
+    total_due = base_q.with_entities(func.coalesce(func.sum(DbTarget.amount_due), 0)).scalar()
+    collected = base_q.filter(DbTarget.status == TargetStatus.completed).with_entities(func.coalesce(func.sum(DbTarget.amount_due), 0)).scalar()
     outstanding = total_due - collected
     collection_rate = (collected / total_due * 100) if total_due > 0 else 0
 

@@ -29,12 +29,20 @@ interface AnalyticsData {
 export function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
-  useEffect(() => {
-    apiClient.get<AnalyticsData>("/analytics/summary")
+  function fetchData(from?: string, to?: string) {
+    setIsLoading(true);
+    const params = new URLSearchParams();
+    if (from) params.set("date_from", from);
+    if (to) params.set("date_to", to);
+    apiClient.get<AnalyticsData>(`/analytics/summary?${params}`)
       .then(res => setData(res.data))
       .finally(() => setIsLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { fetchData(); }, []);
 
   if (isLoading) {
     return (
@@ -57,9 +65,40 @@ export function AnalyticsPage() {
   return (
     <AppShell>
       <div className="space-y-12 font-sans">
-        <h1 className="font-serif text-3xl font-medium tracking-wide uppercase text-black">
-          Analytics & Performance
-        </h1>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-wide uppercase text-black dark:text-white">
+            Analytics & Performance
+          </h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              className="border border-black dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-2 py-1.5 text-[10px] font-bold"
+            />
+            <span className="text-[10px] font-bold text-slate-400">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+              className="border border-black dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-2 py-1.5 text-[10px] font-bold"
+            />
+            <button
+              onClick={() => fetchData(dateFrom, dateTo)}
+              className="border border-black dark:border-slate-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition"
+            >
+              Filter
+            </button>
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(""); setDateTo(""); fetchData(); }}
+                className="text-[10px] font-bold text-red-600 hover:underline"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Revenue Section */}
         <section>

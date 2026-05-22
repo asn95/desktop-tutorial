@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../contexts/ThemeContext";
+import { apiClient } from "../../lib/apiClient";
 import { Link, useLocation } from "react-router-dom";
 
 const tabs = [
@@ -8,6 +10,7 @@ const tabs = [
   { name: "ANALYTICS", path: "/analytics" },
   { name: "USER MANAGEMENT", path: "/users" },
   { name: "TARGETS", path: "/targets" },
+  { name: "AUDIT LOG", path: "/audit" },
 ];
 
 export function AppShell({
@@ -17,46 +20,75 @@ export function AppShell({
   activeTab?: string;
 }) {
   const { logout } = useAuth();
+  const { dark, toggle } = useTheme();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showPwModal, setShowPwModal] = useState(false);
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pwLoading, setPwLoading] = useState(false);
+
+  async function handleChangePw(e: React.FormEvent) {
+    e.preventDefault();
+    setPwLoading(true);
+    setPwMsg(null);
+    try {
+      await apiClient.post("/auth/change-password", { current_password: curPw, new_password: newPw });
+      setPwMsg({ ok: true, text: "Password changed successfully." });
+      setCurPw("");
+      setNewPw("");
+    } catch (err: any) {
+      setPwMsg({ ok: false, text: err.response?.data?.detail || "Failed to change password." });
+    } finally {
+      setPwLoading(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-white font-sans text-[#1a1c1e] overflow-x-hidden">
+    <div className={`min-h-screen font-sans overflow-x-hidden ${dark ? "bg-[#0f1117] text-slate-200" : "bg-white text-[#1a1c1e]"}`}>
       {/* Official Header */}
-      <header className="mx-auto w-full max-w-[1400px] sm:border-x border-t border-black px-4 py-4 sm:px-8 sm:py-6">
+      <header className={`mx-auto w-full max-w-[1400px] sm:border-x border-t px-4 py-4 sm:px-8 sm:py-6 ${dark ? "border-slate-700" : "border-black"}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-9 sm:h-9">
-              {/* Radar base triangle */}
-              <path d="M20 4 L4 36 L36 36 Z" fill="#1a1c1e" stroke="#1a1c1e" strokeWidth="1.5" strokeLinejoin="round" />
-              {/* Signal waves */}
-              <path d="M28 18 C30 20 30 24 28 26" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-              <path d="M32 14 C36 18 36 28 32 32" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-              {/* Center dot */}
+              <path d="M20 4 L4 36 L36 36 Z" fill={dark ? "#e11d48" : "#1a1c1e"} stroke={dark ? "#e11d48" : "#1a1c1e"} strokeWidth="1.5" strokeLinejoin="round" />
+              <path d="M28 18 C30 20 30 24 28 26" stroke={dark ? "white" : "#e11d48"} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+              <path d="M32 14 C36 18 36 28 32 32" stroke={dark ? "white" : "#e11d48"} strokeWidth="2.5" strokeLinecap="round" fill="none" />
               <circle cx="20" cy="26" r="2.5" fill="white" />
             </svg>
             <div className="text-2xl sm:text-3xl font-black tracking-tighter">
               <span className="text-[#e11d48]">C</span><span>3MR</span>
             </div>
           </div>
-          <div className="hidden sm:block text-[10px] font-black uppercase tracking-[0.2em] text-[#1a1c1e]">
-            Official Management Portal
+          <div className="hidden sm:flex items-center gap-4">
+            <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${dark ? "text-slate-400" : "text-[#1a1c1e]"}`}>
+              Official Management Portal
+            </span>
+            <button onClick={toggle} className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 border transition ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-black hover:bg-slate-100"}`}>
+              {dark ? "Light" : "Dark"}
+            </button>
           </div>
           {/* Hamburger — mobile only */}
-          <button
-            className="sm:hidden flex flex-col gap-[5px] p-1"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
-            <span className={`block w-6 h-[2px] bg-[#1a1c1e] transition-transform origin-center ${menuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
-            <span className={`block w-6 h-[2px] bg-[#1a1c1e] transition-opacity ${menuOpen ? "opacity-0" : ""}`} />
-            <span className={`block w-6 h-[2px] bg-[#1a1c1e] transition-transform origin-center ${menuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
-          </button>
+          <div className="flex sm:hidden items-center gap-3">
+            <button onClick={toggle} className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${dark ? "border-slate-600 text-slate-300" : "border-black"}`}>
+              {dark ? "LT" : "DK"}
+            </button>
+            <button
+              className="flex flex-col gap-[5px] p-1"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Toggle menu"
+            >
+              <span className={`block w-6 h-[2px] transition-transform origin-center ${dark ? "bg-slate-200" : "bg-[#1a1c1e]"} ${menuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
+              <span className={`block w-6 h-[2px] transition-opacity ${dark ? "bg-slate-200" : "bg-[#1a1c1e]"} ${menuOpen ? "opacity-0" : ""}`} />
+              <span className={`block w-6 h-[2px] transition-transform origin-center ${dark ? "bg-slate-200" : "bg-[#1a1c1e]"} ${menuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Navigation — desktop: horizontal tabs; mobile: dropdown */}
-      <nav className="mx-auto w-full max-w-[1400px] sm:border-x border-y border-black">
+      {/* Navigation */}
+      <nav className={`mx-auto w-full max-w-[1400px] sm:border-x border-y ${dark ? "border-slate-700" : "border-black"}`}>
         {/* Desktop nav */}
         <div className="hidden sm:flex px-4">
           {tabs.map((tab) => {
@@ -66,7 +98,7 @@ export function AppShell({
                 key={tab.path}
                 to={tab.path}
                 className={`relative px-6 py-5 text-[11px] font-black tracking-widest transition hover:text-[#e11d48] ${
-                  isActive ? "text-[#1a1c1e]" : "text-[#5e6671]"
+                  isActive ? (dark ? "text-white" : "text-[#1a1c1e]") : (dark ? "text-slate-500" : "text-[#5e6671]")
                 }`}
               >
                 {tab.name}
@@ -76,7 +108,13 @@ export function AppShell({
               </Link>
             );
           })}
-          <div className="ml-auto flex items-center px-4">
+          <div className="ml-auto flex items-center gap-4 px-4">
+            <button
+              onClick={() => setShowPwModal(true)}
+              className={`text-[10px] font-black uppercase tracking-widest hover:underline ${dark ? "text-slate-400" : "text-slate-500"}`}
+            >
+              Password
+            </button>
             <button
               onClick={logout}
               className="text-[10px] font-black uppercase tracking-widest text-red-600 hover:underline"
@@ -86,9 +124,9 @@ export function AppShell({
           </div>
         </div>
 
-        {/* Mobile nav — shown when hamburger is open */}
+        {/* Mobile nav */}
         {menuOpen && (
-          <div className="sm:hidden flex flex-col border-t border-black">
+          <div className={`sm:hidden flex flex-col border-t ${dark ? "border-slate-700" : "border-black"}`}>
             {tabs.map((tab) => {
               const isActive = location.pathname === tab.path;
               return (
@@ -96,14 +134,22 @@ export function AppShell({
                   key={tab.path}
                   to={tab.path}
                   onClick={() => setMenuOpen(false)}
-                  className={`px-6 py-4 text-[11px] font-black tracking-widest border-b border-slate-100 transition hover:text-[#e11d48] ${
-                    isActive ? "text-[#1a1c1e] bg-red-50" : "text-[#5e6671]"
+                  className={`px-6 py-4 text-[11px] font-black tracking-widest border-b transition hover:text-[#e11d48] ${
+                    dark ? "border-slate-800" : "border-slate-100"
+                  } ${
+                    isActive ? (dark ? "text-white bg-slate-800" : "text-[#1a1c1e] bg-red-50") : (dark ? "text-slate-500" : "text-[#5e6671]")
                   }`}
                 >
                   {tab.name}
                 </Link>
               );
             })}
+            <button
+              onClick={() => { setMenuOpen(false); setShowPwModal(true); }}
+              className={`px-6 py-4 text-left text-[11px] font-black tracking-widest border-b hover:underline ${dark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}
+            >
+              CHANGE PASSWORD
+            </button>
             <button
               onClick={() => { setMenuOpen(false); logout(); }}
               className="px-6 py-4 text-left text-[11px] font-black tracking-widest text-red-600 hover:underline"
@@ -114,13 +160,64 @@ export function AppShell({
         )}
       </nav>
 
-      <main className="mx-auto w-full max-w-[1400px] sm:border-x border-b border-black p-4 sm:p-8">
+      <main className={`mx-auto w-full max-w-[1400px] sm:border-x border-b p-4 sm:p-8 ${dark ? "border-slate-700" : "border-black"}`}>
         {children}
 
-        <footer className="mt-12 sm:mt-20 border-t border-slate-100 pt-8 text-[10px] font-medium text-slate-400 italic">
+        <footer className={`mt-12 sm:mt-20 border-t pt-8 text-[10px] font-medium italic ${dark ? "border-slate-800 text-slate-600" : "border-slate-100 text-slate-400"}`}>
           Generated by C3MR System - Confidential Document
         </footer>
       </main>
+
+      {/* Change Password Modal */}
+      {showPwModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowPwModal(false)}>
+          <form
+            onSubmit={handleChangePw}
+            onClick={e => e.stopPropagation()}
+            className={`w-full max-w-xs mx-4 p-6 space-y-5 border ${dark ? "bg-slate-800 border-slate-600" : "bg-white border-black"}`}
+          >
+            <h2 className={`text-xs font-black uppercase tracking-widest ${dark ? "text-white" : ""}`}>Change Password</h2>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Current Password</label>
+              <input
+                type="password"
+                autoFocus
+                value={curPw}
+                onChange={e => setCurPw(e.target.value)}
+                className={`w-full border-b bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2 ${dark ? "border-slate-600 text-white" : "border-black"}`}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">New Password</label>
+              <input
+                type="password"
+                value={newPw}
+                onChange={e => setNewPw(e.target.value)}
+                className={`w-full border-b bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2 ${dark ? "border-slate-600 text-white" : "border-black"}`}
+              />
+            </div>
+            {pwMsg && (
+              <p className={`text-[10px] font-bold ${pwMsg.ok ? "text-green-600" : "text-red-600"}`}>{pwMsg.text}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={!curPw || !newPw || pwLoading}
+                className="flex-1 bg-black text-white py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-30 dark:bg-white dark:text-black dark:hover:bg-slate-200"
+              >
+                {pwLoading ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowPwModal(false); setPwMsg(null); setCurPw(""); setNewPw(""); }}
+                className={`flex-1 border py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-700" : "border-black"}`}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

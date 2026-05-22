@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 from ..database import get_db
-from ..models import DbUser, DbTarget, DbReport, DbComment, User, UserBase, UserRole
+from ..models import DbUser, DbTarget, DbReport, DbComment, DbAuditLog, User, UserBase, UserRole
 from ..security import require_manager
 
 router = APIRouter()
@@ -46,6 +46,7 @@ async def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(g
         db_user.telegram_id = payload.telegram_id
     if payload.name is not None:
         db_user.name = payload.name
+    db.add(DbAuditLog(user_id=_auth["sub"], action="edit_user", detail=f"Edited user '{db_user.name}'"))
     db.commit()
     db.refresh(db_user)
     return db_user
@@ -66,6 +67,8 @@ async def delete_user(user_id: str, db: Session = Depends(get_db), _auth: dict =
             detail="Cannot delete user with assigned targets, reports, or comments. Reassign them first."
         )
 
+    user_name = db_user.name
     db.delete(db_user)
+    db.add(DbAuditLog(user_id=_auth["sub"], action="delete_user", detail=f"Removed user '{user_name}'"))
     db.commit()
     return {"message": "User successfully removed"}

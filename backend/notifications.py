@@ -7,10 +7,10 @@ load_dotenv()
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
-def send_telegram_notification(telegram_id: str, message: str, include_field_app: bool = False):
+def send_telegram_notification(telegram_id: str, message: str, include_field_app: bool = False) -> bool:
     if not TOKEN:
         print("Telegram Bot Token not configured. Notification skipped.")
-        return
+        return False
 
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
@@ -33,5 +33,7 @@ def send_telegram_notification(telegram_id: str, message: str, include_field_app
     try:
         response = requests.post(url, json=payload)
         response.raise_for_status()
+        return True
     except Exception as e:
         print(f"Failed to send Telegram notification: {e}")
+        return False

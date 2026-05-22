@@ -62,6 +62,22 @@ class DbReport(Base):
     photo_url = Column(String, nullable=True)
     submitted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+class DbAuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    action = Column(String, nullable=False)  # e.g. "assign", "edit_user", "delete_user", "upload", "change_password"
+    detail = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+class DbNotificationLog(Base):
+    __tablename__ = "notification_logs"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    recipient_id = Column(String, ForeignKey("users.id"), nullable=False)
+    message = Column(Text, nullable=False)
+    success = Column(String, default="true")  # "true" or "false"
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
 class DbComment(Base):
     __tablename__ = "comments"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))

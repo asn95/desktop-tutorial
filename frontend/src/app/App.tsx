@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../contexts/AuthContext";
+import { ThemeProvider } from "../contexts/ThemeContext";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ProtectedRoute } from "../components/routing/ProtectedRoute";
 import { LoginPage } from "../pages/LoginPage";
@@ -7,11 +8,13 @@ import { DashboardPage } from "../pages/DashboardPage";
 import { AnalyticsPage } from "../pages/AnalyticsPage";
 import { UserManagementPage } from "../pages/UserManagementPage";
 import { TargetsPage } from "../pages/TargetsPage";
+import { AuditLogPage } from "../pages/AuditLogPage";
 import { OfficerAppPage } from "../pages/OfficerAppPage";
 
 export function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <ErrorBoundary>
         <Routes>
@@ -24,12 +27,14 @@ export function App() {
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/users" element={<UserManagementPage />} />
             <Route path="/targets" element={<TargetsPage />} />
+            <Route path="/audit" element={<AuditLogPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
         </ErrorBoundary>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

@@ -7,13 +7,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import time
 from .database import engine, Base
 from fastapi.staticfiles import StaticFiles
-from .routers import targets, dashboard, auth, users, analytics, officer
+from .routers import targets, dashboard, auth, users, analytics, officer, audit
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Import all models so Base.metadata knows about them
-from .models import DbUser, DbTarget, DbReport, DbComment  # noqa: F401
+from .models import DbUser, DbTarget, DbReport, DbComment, DbAuditLog, DbNotificationLog  # noqa: F401
 
 # Create all tables on startup
 Base.metadata.create_all(bind=engine)
@@ -80,6 +80,7 @@ app.include_router(targets.router, prefix="/api/targets", tags=["targets"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(officer.router, prefix="/api/officer", tags=["officer"])
+app.include_router(audit.router, prefix="/api/audit", tags=["audit"])
 
 # Serve frontend build via middleware (does NOT interfere with API routing)
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"

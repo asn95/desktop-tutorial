@@ -30,7 +30,16 @@ const TAG_LABELS: Record<string, string> = {
   other: "Lainnya",
 };
 
-export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefresh?: () => void }) {
+interface TableProps {
+  targets: Target[];
+  onRefresh?: () => void;
+  selected?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onToggleAll?: () => void;
+  pendingCount?: number;
+}
+
+export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onToggleAll, pendingCount }: TableProps) {
   const [officers, setOfficers] = useState<User[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
@@ -94,6 +103,11 @@ export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefr
           <table className="min-w-[640px] w-full text-left text-[11px] font-bold uppercase tracking-wider">
             <thead className="bg-[#f2f2f2] text-[#1a1c1e]">
               <tr className="border-b border-black">
+                {onToggleSelect && (
+                  <th className="px-3 py-4 w-8">
+                    <input type="checkbox" checked={selected?.size === pendingCount && (pendingCount ?? 0) > 0} onChange={onToggleAll} />
+                  </th>
+                )}
                 <th className="px-4 py-4">ID</th>
                 <th className="px-4 py-4">Customer Name</th>
                 <th className="px-4 py-4">Address</th>
@@ -106,13 +120,20 @@ export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefr
             <tbody className="divide-y divide-slate-100 bg-white">
               {targets.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-[#5e6671] normal-case italic">
+                  <td colSpan={onToggleSelect ? 8 : 7} className="px-4 py-10 text-center text-[#5e6671] normal-case italic">
                     No records available.
                   </td>
                 </tr>
               ) : (
                 targets.map((target) => (
                   <tr key={target.id} className="text-[#1a1c1e] transition hover:bg-slate-50/50">
+                    {onToggleSelect && (
+                      <td className="px-3 py-4 w-8">
+                        {target.status === "pending" ? (
+                          <input type="checkbox" checked={selected?.has(target.id) ?? false} onChange={() => onToggleSelect(target.id)} />
+                        ) : <span />}
+                      </td>
+                    )}
                     <td className="px-4 py-4 text-slate-500">{target.id.slice(0, 6).toUpperCase()}</td>
                     <td className="px-4 py-4">{target.customerName}</td>
                     <td className="px-4 py-4 normal-case font-medium text-[#5e6671]">{target.address}</td>

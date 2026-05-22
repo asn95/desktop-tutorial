@@ -132,7 +132,7 @@ export function UserManagementPage() {
 
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           {/* Main Directory */}
-          <section>
+          <section className="min-w-0">
             <div className="border-b-2 border-black pb-2 mb-6 flex items-center justify-between">
               <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Registered Personnel</h2>
               <input
@@ -152,7 +152,7 @@ export function UserManagementPage() {
                 {query ? "No matching records." : "No registered personnel."}
               </p>
             ) : (
-              <div className="border border-black bg-white overflow-x-auto">
+              <div className="border border-black bg-white overflow-x-auto overflow-hidden">
                 {/* Table header */}
                 <div className="min-w-[560px] grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 border-b-2 border-black bg-[#f8f8f6] px-6 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
                   <span>Name</span>

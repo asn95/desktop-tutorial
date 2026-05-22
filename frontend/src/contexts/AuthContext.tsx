@@ -1,7 +1,9 @@
-import { createContext, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { loginManager } from "../services/authService";
 import type { AuthUser, LoginPayload } from "../types/auth";
+
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -36,16 +38,38 @@ function readStoredUser(): AuthUser | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    localStorage.removeItem(STORAGE_KEY);
+  }, []);
+
+  const resetIdleTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(logout, IDLE_TIMEOUT_MS);
+  }, [logout]);
+
+  // Set up idle listeners when authenticated
+  useEffect(() => {
+    if (!user) return;
+
+    const events = ["mousedown", "keydown", "touchstart", "scroll"];
+    const handler = () => resetIdleTimer();
+
+    resetIdleTimer(); // start timer on mount
+    events.forEach(e => window.addEventListener(e, handler, { passive: true }));
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      events.forEach(e => window.removeEventListener(e, handler));
+    };
+  }, [user, resetIdleTimer]);
 
   const login = async (payload: LoginPayload) => {
     const authenticatedUser = await loginManager(payload);
     setUser(authenticatedUser);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(authenticatedUser));
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
   };
 
   const value = useMemo<AuthContextValue>(
@@ -55,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
     }),
-    [user]
+    [user, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

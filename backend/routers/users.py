@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
 from ..database import get_db
 from ..models import DbUser, DbTarget, DbReport, DbComment, User, UserBase, UserRole
 from ..security import require_manager
@@ -25,6 +26,26 @@ async def create_user(user: UserBase, db: Session = Depends(get_db), _auth: dict
         role=user.role
     )
     db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    telegram_id: Optional[str] = None
+
+@router.patch("/{user_id}", response_model=User)
+async def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
+    db_user = db.query(DbUser).filter(DbUser.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if payload.telegram_id is not None:
+        existing = db.query(DbUser).filter(DbUser.telegram_id == payload.telegram_id, DbUser.id != user_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Telegram ID already registered to another user")
+        db_user.telegram_id = payload.telegram_id
+    if payload.name is not None:
+        db_user.name = payload.name
     db.commit()
     db.refresh(db_user)
     return db_user

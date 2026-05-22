@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
-import { getUsers, createUser, deleteUser } from "../services/userService";
+import { getUsers, createUser, updateUser, deleteUser } from "../services/userService";
 import { getDashboardSnapshot } from "../services/dashboardService";
 import type { User, UserBase } from "../types/user";
 import type { Target } from "../types/target";
@@ -15,6 +15,9 @@ export function UserManagementPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editTelegramId, setEditTelegramId] = useState("");
 
   useEffect(() => {
     loadData();
@@ -80,6 +83,27 @@ export function UserManagementPage() {
     }
   }
 
+  function openEdit(user: User) {
+    setEditingUser(user);
+    setEditName(user.name);
+    setEditTelegramId(user.telegram_id || "");
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingUser) return;
+    try {
+      await updateUser(editingUser.id, {
+        name: editName,
+        telegram_id: editTelegramId || undefined,
+      });
+      setEditingUser(null);
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Failed to update user.");
+    }
+  }
+
   async function handleDelete(user: User) {
     const stats = getOfficerStats(user.id);
     const extra = stats.assigned > 0
@@ -130,7 +154,7 @@ export function UserManagementPage() {
             ) : (
               <div className="border border-black bg-white">
                 {/* Table header */}
-                <div className="grid grid-cols-[1fr_80px_100px_60px_60px_60px] gap-0 border-b-2 border-black bg-[#f8f8f6] px-6 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <div className="grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 border-b-2 border-black bg-[#f8f8f6] px-6 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
                   <span>Name</span>
                   <span>Role</span>
                   <span>Telegram</span>
@@ -145,7 +169,7 @@ export function UserManagementPage() {
                   return (
                     <div
                       key={user.id}
-                      className={`grid grid-cols-[1fr_80px_100px_60px_60px_60px] gap-0 items-center px-6 py-3 ${
+                      className={`grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 items-center px-6 py-3 ${
                         i > 0 ? "border-t border-slate-200" : ""
                       }`}
                     >
@@ -169,7 +193,13 @@ export function UserManagementPage() {
                       <span className="text-center text-xs font-bold text-green-700">
                         {stats.completed || <span className="text-slate-300">&mdash;</span>}
                       </span>
-                      <span className="text-center">
+                      <span className="text-center flex gap-2 justify-center">
+                        <button
+                          onClick={() => openEdit(user)}
+                          className="text-[9px] text-blue-600 font-black uppercase tracking-wider hover:underline"
+                        >
+                          Edit
+                        </button>
                         <button
                           onClick={() => handleDelete(user)}
                           className="text-[9px] text-red-600 font-black uppercase tracking-wider hover:underline"
@@ -249,6 +279,44 @@ export function UserManagementPage() {
           </section>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditingUser(null)}>
+          <form
+            onSubmit={handleUpdate}
+            onClick={e => e.stopPropagation()}
+            className="bg-white border border-black w-full max-w-sm mx-4 p-6 space-y-5"
+          >
+            <h2 className="text-xs font-black uppercase tracking-widest">Edit {editingUser.name}</h2>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Name</label>
+              <input
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                className="w-full border-b border-black bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Telegram ID</label>
+              <input
+                value={editTelegramId}
+                onChange={e => setEditTelegramId(e.target.value)}
+                placeholder="e.g. 123456789"
+                className="w-full border-b border-black bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none focus:border-b-2"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button type="submit" className="flex-1 bg-black text-white py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-800">
+                Save
+              </button>
+              <button type="button" onClick={() => setEditingUser(null)} className="flex-1 border border-black py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </AppShell>
   );
 }

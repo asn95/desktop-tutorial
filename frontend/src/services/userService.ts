@@ -11,6 +11,11 @@ export async function createUser(payload: UserBase): Promise<User> {
   return response.data;
 }
 
+export async function updateUser(userId: string, payload: { name?: string; telegram_id?: string }): Promise<User> {
+  const response = await apiClient.patch<User>(`/users/${userId}`, payload);
+  return response.data;
+}
+
 export async function deleteUser(userId: string): Promise<void> {
   await apiClient.delete(`/users/${userId}`);
 }

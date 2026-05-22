@@ -8,8 +8,6 @@ import type { DashboardSnapshot } from "../types/dashboard";
 
 import type { User } from "../types/user";
 import { getUsers } from "../services/userService";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-
 interface Comment {
   id: string;
   message: string;
@@ -18,7 +16,6 @@ interface Comment {
   created_at: string;
 }
 
-const STATUS_COLORS = ["#ef4444", "#f59e0b", "#10b981"];
 const TAG_LABELS: Record<string, string> = {
   wrong_address: "Alamat Salah",
   wrong_phone: "Nomor Salah",
@@ -104,20 +101,11 @@ export function DashboardPage() {
 
   const { stats } = snapshot;
   const targets = Array.isArray(snapshot.targets) ? snapshot.targets : [];
-  const totalDue = targets.reduce((s, t) => s + t.amountDue, 0);
-  const collected = targets.filter(t => t.status === "completed").reduce((s, t) => s + t.amountDue, 0);
-  const rate = totalDue > 0 ? Math.round((collected / totalDue) * 100) : 0;
 
   const pendingTargets = targets.filter(t => t.status === "pending");
   const recentAssigned = targets
     .filter(t => t.status === "in_progress")
     .slice(0, 5);
-
-  const distribution = [
-    { name: "Pending", value: stats.pending },
-    { name: "In Progress", value: stats.inProgress },
-    { name: "Completed", value: stats.completed },
-  ];
 
   const officers = (allUsers || []).filter(u => u.role === "officer");
 
@@ -136,67 +124,7 @@ export function DashboardPage() {
           <SummaryCard label="Pending" value={stats.pending} accent="danger" />
         </section>
 
-        {/* Revenue + Chart Row */}
-        <section className="grid gap-6 lg:grid-cols-3">
-          {/* Collection Revenue */}
-          <div className="border border-black bg-white p-5 sm:p-8 lg:col-span-2">
-            <h3 className="mb-6 text-xs font-black uppercase tracking-widest text-black">
-              Collection Revenue
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Total Outstanding</p>
-                <p className="text-2xl font-medium tracking-tight text-[#1a1c1e]">{formatCurrency(totalDue)}</p>
-              </div>
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Collected</p>
-                <p className="text-2xl font-medium tracking-tight text-green-600">{formatCurrency(collected)}</p>
-              </div>
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Collection Rate</p>
-                <p className={`text-2xl font-medium tracking-tight ${rate >= 50 ? "text-green-600" : "text-red-600"}`}>{rate}%</p>
-              </div>
-            </div>
-            {/* Progress bar */}
-            <div className="mt-6 h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${rate}%` }} />
-            </div>
-            <div className="mt-2 flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-              <span>0%</span>
-              <span>{rate}% collected</span>
-              <span>100%</span>
-            </div>
-          </div>
-
-          {/* Mini Status Chart */}
-          <div className="border border-black bg-white p-6 flex flex-col items-center">
-            <h3 className="mb-4 text-xs font-black uppercase tracking-widest text-black self-start">
-              Status Overview
-            </h3>
-            <div className="h-[180px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={distribution} innerRadius={50} outerRadius={70} paddingAngle={4} dataKey="value">
-                    {distribution.map((_e, i) => (
-                      <Cell key={i} fill={STATUS_COLORS[i]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex gap-4 mt-2">
-              {distribution.map((d, i) => (
-                <div key={d.name} className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: STATUS_COLORS[i] }} />
-                  <span className="text-[9px] font-bold text-slate-500">{d.name} ({d.value})</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Bottom 3-column: Pending / Active / Comments */}
+        {/* Operational Panels: Pending / Active / Comments */}
         <section className="grid gap-6 lg:grid-cols-3">
           {/* Unassigned Targets (Action Required) */}
           <div className="border border-black bg-white">

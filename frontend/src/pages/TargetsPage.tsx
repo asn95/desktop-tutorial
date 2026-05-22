@@ -47,7 +47,7 @@ export function TargetsPage() {
         </h1>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-black pb-4">
               <div className="flex flex-col sm:flex-row gap-3">
                 <input

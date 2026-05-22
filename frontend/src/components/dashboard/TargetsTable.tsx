@@ -89,7 +89,7 @@ export function TargetsTable({ targets, onRefresh }: { targets: Target[], onRefr
 
   return (
     <>
-      <div className="w-full border border-black">
+      <div className="w-full border border-black overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-[640px] w-full text-left text-[11px] font-bold uppercase tracking-wider">
             <thead className="bg-[#f2f2f2] text-[#1a1c1e]">

@@ -21,9 +21,9 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-[#1a1c1e]">
+    <div className="min-h-screen bg-white font-sans text-[#1a1c1e] overflow-x-hidden">
       {/* Official Header */}
-      <header className="mx-auto w-full max-w-[1400px] border-x border-t border-black px-4 py-4 sm:px-8 sm:py-6">
+      <header className="mx-auto w-full max-w-[1400px] sm:border-x border-t border-black px-4 py-4 sm:px-8 sm:py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-3xl sm:text-4xl font-black tracking-tighter">
             <span className="text-[#e11d48]">C</span>
@@ -46,7 +46,7 @@ export function AppShell({
       </header>
 
       {/* Navigation — desktop: horizontal tabs; mobile: dropdown */}
-      <nav className="mx-auto w-full max-w-[1400px] border-x border-y border-black">
+      <nav className="mx-auto w-full max-w-[1400px] sm:border-x border-y border-black">
         {/* Desktop nav */}
         <div className="hidden sm:flex px-4">
           {tabs.map((tab) => {
@@ -104,7 +104,7 @@ export function AppShell({
         )}
       </nav>
 
-      <main className="mx-auto w-full max-w-[1400px] border-x border-b border-black p-4 sm:p-8">
+      <main className="mx-auto w-full max-w-[1400px] sm:border-x border-b border-black p-4 sm:p-8">
         {children}
 
         <footer className="mt-12 sm:mt-20 border-t border-slate-100 pt-8 text-[10px] font-medium text-slate-400 italic">

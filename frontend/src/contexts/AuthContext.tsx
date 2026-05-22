@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { loginManager } from "../services/authService";
 import type { AuthUser, LoginPayload } from "../types/auth";
 
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 interface AuthContextValue {
   user: AuthUser | null;

@@ -8,6 +8,7 @@ import time
 from .database import engine, Base
 from fastapi.staticfiles import StaticFiles
 from .routers import targets, dashboard, auth, users, analytics, officer, audit
+from .maintenance import maintenance_state
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -69,9 +70,55 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(RequestLoggingMiddleware)
 
+# Maintenance mode middleware — blocks non-manager API requests when enabled
+class MaintenanceMiddleware(BaseHTTPMiddleware):
+    # Paths that bypass maintenance mode so managers can still login and toggle it off
+    BYPASS_PREFIXES = ("/api/auth/login", "/api/admin/maintenance", "/assets", "/favicon")
+
+    async def dispatch(self, request: Request, call_next):
+        if maintenance_state.enabled and request.url.path.startswith("/api"):
+            # Allow bypass paths
+            if not any(request.url.path.startswith(p) for p in self.BYPASS_PREFIXES):
+                # Allow requests with a valid manager JWT through
+                from .security import decode_access_token
+                auth_header = request.headers.get("authorization", "")
+                is_manager = False
+                if auth_header.startswith("Bearer "):
+                    try:
+                        payload = decode_access_token(auth_header.split(" ", 1)[1])
+                        is_manager = payload.get("role") == "manager"
+                    except Exception:
+                        pass
+                if not is_manager:
+                    return JSONResponse(
+                        status_code=503,
+                        content={"detail": maintenance_state.message},
+                    )
+        return await call_next(request)
+
+app.add_middleware(MaintenanceMiddleware)
+
 @app.get("/api")
 async def api_root():
     return {"message": "Welcome to C3MR API"}
+
+# Maintenance mode endpoints
+from .security import require_manager
+from fastapi import Depends
+from pydantic import BaseModel
+
+class MaintenancePayload(BaseModel):
+    enabled: bool
+    message: str | None = None
+
+@app.get("/api/admin/maintenance")
+async def get_maintenance_status():
+    return {"enabled": maintenance_state.enabled, "message": maintenance_state.message}
+
+@app.post("/api/admin/maintenance")
+async def set_maintenance(payload: MaintenancePayload, _auth: dict = Depends(require_manager)):
+    maintenance_state.toggle(payload.enabled, payload.message)
+    return {"enabled": maintenance_state.enabled, "message": maintenance_state.message}
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])

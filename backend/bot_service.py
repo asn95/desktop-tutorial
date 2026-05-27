@@ -148,7 +148,7 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             lines.append(
                 f"• *{target.customer_name}*\n"
                 f"  Officer: {officer.name}\n"
-                f"  Status: {report.payment_status}\n"
+                f"  Status: {report.payment_status.value if hasattr(report.payment_status, 'value') else report.payment_status}\n"
                 f"  Notes: {report.notes or '-'}\n"
             )
 

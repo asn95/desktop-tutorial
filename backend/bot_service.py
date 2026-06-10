@@ -6,12 +6,13 @@ Commands:
   /start   - Welcome message
   /summary - Daily collection statistics
   /report  - Recent field reports
+  /ask     - AI-powered natural language queries and workflow automation
 """
 import os
 import asyncio
 from dotenv import load_dotenv
 from telegram import Update, WebAppInfo, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from sqlalchemy import func, text
 from .database import SessionLocal
 from .models import DbTarget, DbReport, DbUser, TargetStatus, PaymentStatus
@@ -79,8 +80,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🔐 *C3MR Manager Console*\n\n"
             "Available commands:\n"
             "  /summary \\- Collection statistics\n"
-            "  /report  \\- Recent field reports\n\n"
-            "Or open the full dashboard below\\.",
+            "  /report  \\- Recent field reports\n"
+            "  /ask     \\- AI assistant \\(natural language\\)\n\n"
+            "Or just type a question directly\\!",
             parse_mode="MarkdownV2",
             reply_markup=reply_markup
         )
@@ -157,6 +159,72 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Error in report_command: {e}")
         await update.message.reply_text("Failed to retrieve reports. Please try again later.")
 
+async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /ask <question> — AI-powered workflow agent."""
+    if not await require_manager(update):
+        return
+
+    # Get the question text after /ask
+    question = " ".join(context.args) if context.args else ""
+    if not question:
+        await update.message.reply_text(
+            "Usage: /ask <your question>\n\n"
+            "Examples:\n"
+            "  /ask What's our collection rate?\n"
+            "  /ask Which targets are overdue?\n"
+            "  /ask Auto-assign pending Jakarta targets\n"
+            "  /ask Who's the top performing officer?\n"
+            "  /ask Generate daily report"
+        )
+        return
+
+    # Show typing indicator
+    await update.message.chat.send_action("typing")
+
+    try:
+        from .agent import run_agent
+        response = await run_agent(question)
+
+        # Telegram max message is 4096 chars
+        if len(response) > 4000:
+            for i in range(0, len(response), 4000):
+                await update.message.reply_text(response[i:i + 4000])
+        else:
+            await update.message.reply_text(response)
+    except Exception as e:
+        print(f"Agent error: {e}", flush=True)
+        await update.message.reply_text(
+            f"Agent error: {str(e)[:200]}\n\n"
+            "Make sure GEMINI_API_KEY is set in your environment."
+        )
+
+
+async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle plain text messages as agent queries (if from a manager)."""
+    tid = str(update.effective_user.id)
+    with get_db() as db:
+        if not is_manager(tid, db):
+            return  # Silently ignore non-manager messages
+
+    question = update.message.text.strip()
+    if not question:
+        return
+
+    await update.message.chat.send_action("typing")
+
+    try:
+        from .agent import run_agent
+        response = await run_agent(question)
+        if len(response) > 4000:
+            for i in range(0, len(response), 4000):
+                await update.message.reply_text(response[i:i + 4000])
+        else:
+            await update.message.reply_text(response)
+    except Exception as e:
+        print(f"Agent error: {e}", flush=True)
+        await update.message.reply_text(f"Agent error: {str(e)[:200]}")
+
+
 def run_bot():
     if not TOKEN:
         print("TELEGRAM_BOT_TOKEN not set. Bot not started.", flush=True)
@@ -180,8 +248,10 @@ def run_bot():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("summary", summary_command))
     app.add_handler(CommandHandler("report", report_command))
+    app.add_handler(CommandHandler("ask", ask_command))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
 
-    print("C3MR Manager Bot is running...", flush=True)
+    print("C3MR Manager Bot is running (with AI Agent)...", flush=True)
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":

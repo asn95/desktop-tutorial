@@ -25,6 +25,13 @@ Thumbs.db
 
 # Temp directories
 tmp_*/
+_temp/
+
+# Graphify
+graphify-out/
+
+# Temp lock files
+~$*
 
 # Claude/AI
 .claude/

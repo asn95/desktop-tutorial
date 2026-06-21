@@ -161,15 +161,15 @@ export function LoginPage() {
               {/* Username */}
               <div>
                 <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Email
+                  Username
                 </label>
                 <input
                   id="username"
-                  type="email"
+                  type="text"
                   required
                   autoComplete="username"
                   className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-[#E81E28] focus:outline-none focus:ring-2 focus:ring-[#E81E28]/20 disabled:bg-gray-50 disabled:text-gray-400"
-                  placeholder="name@email.com"
+                  placeholder="admin"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
                   disabled={locked}

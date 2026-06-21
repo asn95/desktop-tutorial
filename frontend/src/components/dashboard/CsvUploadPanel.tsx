@@ -74,8 +74,8 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: () => vo
   };
 
   return (
-    <div className="border border-black bg-white p-6 shadow-sm">
-      <h3 className="text-xs font-black uppercase tracking-widest text-black">Data Synchronization</h3>
+    <div className="border border-gray-200 bg-white p-6 shadow-sm">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-black">Data Synchronization</h3>
       <p className="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
         Import batch collection targets
       </p>
@@ -94,7 +94,7 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: () => vo
         <button
           onClick={handleUpload}
           disabled={!fullData.length || isUploading}
-          className="w-full border border-black bg-black py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-slate-800 disabled:opacity-30"
+          className="w-full border border-gray-200 bg-black py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#c8161f] disabled:opacity-30"
         >
           {isUploading ? "Processing..." : "Authorize Batch Upload"}
         </button>
@@ -104,9 +104,9 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: () => vo
       {error && <p className="mt-4 text-[10px] font-bold uppercase text-red-600 tracking-wider">{error}</p>}
 
       {previewRows.length > 0 && (
-        <div className="mt-6 overflow-hidden border border-black">
+        <div className="mt-6 overflow-hidden border border-gray-200">
           <table className="w-full text-left text-[9px] font-bold uppercase tracking-tighter">
-            <thead className="bg-[#f2f2f2] border-b border-black">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>{previewHeaders.slice(0, 3).map(h => <th key={h} className="px-2 py-2">{h}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

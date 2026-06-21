@@ -98,11 +98,11 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
 
   return (
     <>
-      <div className="w-full border border-black overflow-hidden">
+      <div className="w-full rounded-2xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-[640px] w-full text-left text-[11px] font-bold uppercase tracking-wider">
-            <thead className="bg-[#f2f2f2] text-[#1a1c1e]">
-              <tr className="border-b border-black">
+            <thead className="bg-gray-50 text-[#1a1c1e]">
+              <tr className="border-b border-gray-200">
                 {onToggleSelect && (
                   <th className="px-3 py-4 w-8">
                     <input type="checkbox" checked={selected?.size === pendingCount && (pendingCount ?? 0) > 0} onChange={onToggleAll} />
@@ -142,7 +142,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                       {selectedTarget === target.id ? (
                         <select
                           autoFocus
-                          className="border border-black bg-white px-2 py-1 text-[10px] outline-none"
+                          className="border border-gray-200 bg-white px-2 py-1 text-[10px] outline-none"
                           onChange={(e) => handleAssign(target.id, e.target.value)}
                           onBlur={() => setSelectedTarget(null)}
                           disabled={isAssigning}
@@ -158,7 +158,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                         </span>
                       )}
                     </td>
-                    <td className={`px-4 py-4 font-black ${
+                    <td className={`px-4 py-4 font-semibold ${
                       target.status === 'completed' ? 'text-green-600' :
                       target.status === 'pending' ? 'text-red-600' :
                       'text-amber-600'
@@ -169,14 +169,14 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                       {!target.assignedOfficer ? (
                         <button
                           onClick={() => setSelectedTarget(target.id)}
-                          className="border border-black px-3 py-1 hover:bg-black hover:text-white transition"
+                          className="border border-gray-200 px-3 py-1 hover:bg-gray-50 transition"
                         >
                           Assign
                         </button>
                       ) : (
                         <button
                           onClick={() => openDetail(target)}
-                          className="border border-black px-3 py-1 hover:bg-black hover:text-white transition"
+                          className="border border-gray-200 px-3 py-1 hover:bg-gray-50 transition"
                         >
                           View Details
                         </button>
@@ -193,34 +193,34 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
       {/* Detail Modal */}
       {detailTarget && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={() => setDetailTarget(null)}>
-          <div className="bg-white border border-black w-full sm:max-w-lg sm:mx-4 p-0 max-h-[92vh] sm:max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="border-b border-black px-6 py-4 flex items-center justify-between shrink-0">
-              <h2 className="text-xs font-black uppercase tracking-widest">Target Details</h2>
+          <div className="bg-white rounded-2xl border border-gray-100 w-full sm:max-w-lg sm:mx-4 p-0 max-h-[92vh] sm:max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
+              <h2 className="text-xs font-semibold uppercase tracking-wide">Target Details</h2>
               <button onClick={() => setDetailTarget(null)} className="text-lg font-bold hover:text-red-600">&times;</button>
             </div>
             <div className="overflow-y-auto flex-1">
               <div className="px-6 py-6 space-y-4 text-sm">
                 <div className="grid grid-cols-[120px_1fr] gap-y-3">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">ID</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">ID</span>
                   <span className="font-mono text-xs">{detailTarget.id}</span>
 
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Customer</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Customer</span>
                   <span className="font-bold">{detailTarget.customerName}</span>
 
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Phone</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Phone</span>
                   <span className="font-medium">{detailTarget.phone || "—"}</span>
 
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Address</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Address</span>
                   <span className="font-medium">{detailTarget.address}</span>
 
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Amount Due</span>
-                  <span className="font-black text-red-600">{formatCurrency(detailTarget.amountDue)}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Amount Due</span>
+                  <span className="font-semibold text-red-600">{formatCurrency(detailTarget.amountDue)}</span>
 
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Officer</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Officer</span>
                   <span className="font-bold">{getOfficerName(detailTarget.assignedOfficer)}</span>
 
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Status</span>
-                  <span className={`font-black uppercase ${
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</span>
+                  <span className={`font-semibold uppercase ${
                     detailTarget.status === 'completed' ? 'text-green-600' :
                     detailTarget.status === 'pending' ? 'text-red-600' :
                     'text-amber-600'
@@ -231,7 +231,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
               {/* Field Reports Section */}
               {reports.length > 0 && (
                 <div className="border-t border-slate-200 px-6 py-5">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
+                  <h3 className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-3">
                     Field Reports
                   </h3>
                   <div className="space-y-3">
@@ -239,7 +239,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                       <div key={r.id} className="border border-slate-200 rounded px-4 py-3">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-[10px] font-bold text-slate-600">{r.officerName}</span>
-                          <span className="text-[8px] font-black uppercase tracking-wider bg-blue-100 text-blue-600 px-2 py-0.5 rounded">
+                          <span className="text-[8px] font-semibold uppercase tracking-wider bg-blue-100 text-blue-600 px-2 py-0.5 rounded">
                             {r.payment_status}
                           </span>
                         </div>
@@ -267,7 +267,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
 
               {/* Officer Comments Section */}
               <div className="border-t border-slate-200 px-6 py-5">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
+                <h3 className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-3">
                   Officer Comments
                 </h3>
                 {loadingComments ? (
@@ -281,7 +281,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[10px] font-bold text-slate-600">{c.officerName}</span>
                           {c.tag && (
-                            <span className="text-[8px] font-black uppercase tracking-wider bg-red-100 text-red-600 px-2 py-0.5 rounded">
+                            <span className="text-[8px] font-semibold uppercase tracking-wider bg-red-100 text-red-600 px-2 py-0.5 rounded">
                               {TAG_LABELS[c.tag] || c.tag}
                             </span>
                           )}
@@ -299,10 +299,10 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                 )}
               </div>
             </div>
-            <div className="border-t border-black px-6 py-4 shrink-0">
+            <div className="border-t border-gray-200 px-6 py-4 shrink-0">
               <button
                 onClick={() => setDetailTarget(null)}
-                className="w-full bg-black text-white py-2 text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition"
+                className="w-full bg-[#E81E28] text-white py-2 text-xs font-semibold uppercase tracking-wide hover:bg-[#c8161f] transition"
               >
                 Close
               </button>

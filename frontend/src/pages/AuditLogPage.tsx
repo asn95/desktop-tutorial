@@ -47,18 +47,18 @@ export function AuditLogPage() {
   return (
     <AppShell>
       <div className="space-y-8">
-        <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-wide uppercase text-black dark:text-white">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black dark:text-white">
           Audit Log
         </h1>
 
-        <div className="flex gap-0 border border-black dark:border-slate-600">
+        <div className="flex gap-0 border border-gray-200 dark:border-slate-600">
           {(["audit", "notifications"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition ${
+              className={`flex-1 py-3 text-[10px] font-semibold uppercase tracking-wide transition ${
                 tab === t
-                  ? "bg-black text-white dark:bg-white dark:text-black"
+                  ? "bg-[#E81E28] text-white"
                   : "bg-white text-slate-500 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400"
               }`}
             >
@@ -68,13 +68,13 @@ export function AuditLogPage() {
         </div>
 
         {loading ? (
-          <p className="py-16 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <p className="py-16 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
             Loading...
           </p>
         ) : tab === "audit" ? (
-          <div className="border border-black dark:border-slate-600 bg-white dark:bg-slate-800">
+          <div className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800">
             {logs.length === 0 ? (
-              <p className="px-6 py-16 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              <p className="px-6 py-16 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
                 No activity recorded yet.
               </p>
             ) : (
@@ -85,7 +85,7 @@ export function AuditLogPage() {
                     i > 0 ? "border-t border-slate-200 dark:border-slate-700" : ""
                   }`}
                 >
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded w-fit">
+                  <span className="text-[9px] font-semibold uppercase tracking-wider bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded w-fit">
                     {ACTION_LABELS[log.action] || log.action}
                   </span>
                   <span className="text-xs font-bold text-[#1a1c1e] dark:text-white flex-1">
@@ -105,9 +105,9 @@ export function AuditLogPage() {
             )}
           </div>
         ) : (
-          <div className="border border-black dark:border-slate-600 bg-white dark:bg-slate-800">
+          <div className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800">
             {notifs.length === 0 ? (
-              <p className="px-6 py-16 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              <p className="px-6 py-16 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
                 No notifications sent yet.
               </p>
             ) : (
@@ -119,7 +119,7 @@ export function AuditLogPage() {
                   }`}
                 >
                   <span
-                    className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded w-fit ${
+                    className={`text-[9px] font-semibold uppercase tracking-wider px-2 py-1 rounded w-fit ${
                       n.success
                         ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
                         : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"

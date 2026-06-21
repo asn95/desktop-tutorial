@@ -4,13 +4,50 @@ import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../contexts/ThemeContext";
 import { apiClient } from "../../lib/apiClient";
 import { Link, useLocation } from "react-router-dom";
+import telkomLogo from "../../assets/telkom-logo.png";
+
+type IconProps = { className?: string };
+const I = {
+  dashboard: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" />
+      <rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" />
+    </svg>
+  ),
+  analytics: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M3 3v18h18" /><path d="M7 14l3-4 3 3 4-6" />
+    </svg>
+  ),
+  users: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <circle cx="9" cy="8" r="3" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 20c0-2.4-1-4.5-2.5-5.8" />
+    </svg>
+  ),
+  targets: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3.5" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+    </svg>
+  ),
+  audit: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" />
+    </svg>
+  ),
+  assistant: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M12 3l1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7z" /><path d="M18.5 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z" />
+    </svg>
+  ),
+};
 
 const tabs = [
-  { name: "DASHBOARD", path: "/dashboard" },
-  { name: "ANALYTICS", path: "/analytics" },
-  { name: "USER MANAGEMENT", path: "/users" },
-  { name: "TARGETS", path: "/targets" },
-  { name: "AUDIT LOG", path: "/audit" },
+  { name: "Dashboard", path: "/dashboard", icon: I.dashboard },
+  { name: "Analytics", path: "/analytics", icon: I.analytics },
+  { name: "User Management", path: "/users", icon: I.users },
+  { name: "Targets", path: "/targets", icon: I.targets },
+  { name: "Audit Log", path: "/audit", icon: I.audit },
+  { name: "AI Assistant", path: "/assistant", icon: I.assistant },
 ];
 
 export function AppShell({
@@ -34,7 +71,6 @@ export function AppShell({
   const [showMaintModal, setShowMaintModal] = useState(false);
   const [maintCustomMsg, setMaintCustomMsg] = useState("");
 
-  // Fetch maintenance status on mount
   useEffect(() => {
     apiClient.get("/admin/maintenance")
       .then(res => {
@@ -44,6 +80,9 @@ export function AppShell({
       })
       .catch(() => {});
   }, []);
+
+  // close mobile drawer on route change
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
   async function handleToggleMaintenance() {
     setMaintToggling(true);
@@ -78,190 +117,126 @@ export function AppShell({
     }
   }
 
+  const sidebar = (
+    <div className="flex h-full flex-col">
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-6 py-6">
+        <img src={telkomLogo} alt="Telkom Indonesia" className="h-9 w-9 object-contain" />
+        <div className="leading-tight">
+          <div className="text-lg font-extrabold tracking-tight"><span className="text-[#E81E28]">C</span>3MR</div>
+          <div className={`text-[10px] font-medium ${dark ? "text-slate-500" : "text-gray-400"}`}>Management Portal</div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 space-y-1 px-3 py-2">
+        {tabs.map((tab) => {
+          const isActive = location.pathname === tab.path;
+          const Icon = tab.icon;
+          return (
+            <Link
+              key={tab.path}
+              to={tab.path}
+              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? "bg-[#E81E28]/10 text-[#E81E28]"
+                  : dark
+                  ? "text-slate-400 hover:bg-slate-800/70 hover:text-slate-100"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              }`}
+            >
+              <Icon className={`h-[18px] w-[18px] transition-transform duration-200 ${isActive ? "" : "group-hover:scale-110"}`} />
+              {tab.name}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Actions */}
+      <div className={`mt-auto space-y-1 border-t px-3 py-4 ${dark ? "border-slate-800" : "border-gray-100"}`}>
+        <button onClick={toggle} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
+          {dark ? "Light mode" : "Dark mode"}
+        </button>
+        <button onClick={() => { setMaintCustomMsg(maintMsg); setShowMaintModal(true); }} className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${maintenance ? "text-amber-600 hover:bg-amber-50" : dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
+          Maintenance
+          {maintenance && <span className="h-2 w-2 rounded-full bg-amber-500" />}
+        </button>
+        <button onClick={() => setShowPwModal(true)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
+          Change password
+        </button>
+        <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#E81E28] transition-colors hover:bg-red-50">
+          Logout
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className={`min-h-screen font-sans overflow-x-hidden ${dark ? "bg-[#0f1117] text-slate-200" : "bg-white text-[#1a1c1e]"}`}>
-      {/* Maintenance Banner */}
+    <div className={`min-h-screen font-sans ${dark ? "bg-[#0f1117] text-slate-200" : "bg-[#f4f5f7] text-gray-900"}`}>
       {maintenance && (
-        <div className="bg-amber-500 text-black px-4 py-2 text-center text-[10px] font-black uppercase tracking-widest">
-          Maintenance Mode Active — Only managers can access the system
+        <div className="relative z-50 bg-amber-500 px-4 py-2 text-center text-xs font-semibold text-black">
+          Maintenance mode active — only managers can access the system
         </div>
       )}
 
-      {/* Official Header */}
-      <header className={`mx-auto w-full max-w-[1400px] sm:border-x border-t px-4 py-4 sm:px-8 sm:py-6 ${dark ? "border-slate-700" : "border-black"}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-9 sm:h-9">
-              <path d="M20 4 L4 36 L36 36 Z" fill={dark ? "#e11d48" : "#1a1c1e"} stroke={dark ? "#e11d48" : "#1a1c1e"} strokeWidth="1.5" strokeLinejoin="round" />
-              <path d="M28 18 C30 20 30 24 28 26" stroke={dark ? "white" : "#e11d48"} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-              <path d="M32 14 C36 18 36 28 32 32" stroke={dark ? "white" : "#e11d48"} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-              <circle cx="20" cy="26" r="2.5" fill="white" />
-            </svg>
-            <div className="text-2xl sm:text-3xl font-black tracking-tighter">
-              <span className="text-[#e11d48]">C</span><span>3MR</span>
-            </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-4">
-            <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${dark ? "text-slate-400" : "text-[#1a1c1e]"}`}>
-              Official Management Portal
-            </span>
-            <button onClick={toggle} className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 border transition ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-black hover:bg-slate-100"}`}>
-              {dark ? "Light" : "Dark"}
-            </button>
-          </div>
-          {/* Hamburger — mobile only */}
-          <div className="flex sm:hidden items-center gap-3">
-            <button onClick={toggle} className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 border ${dark ? "border-slate-600 text-slate-300" : "border-black"}`}>
-              {dark ? "LT" : "DK"}
-            </button>
-            <button
-              className="flex flex-col gap-[5px] p-1"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
-            >
-              <span className={`block w-6 h-[2px] transition-transform origin-center ${dark ? "bg-slate-200" : "bg-[#1a1c1e]"} ${menuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
-              <span className={`block w-6 h-[2px] transition-opacity ${dark ? "bg-slate-200" : "bg-[#1a1c1e]"} ${menuOpen ? "opacity-0" : ""}`} />
-              <span className={`block w-6 h-[2px] transition-transform origin-center ${dark ? "bg-slate-200" : "bg-[#1a1c1e]"} ${menuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Desktop sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-40 hidden w-64 lg:block ${dark ? "bg-[#13151d]" : "bg-white shadow-[1px_0_24px_-12px_rgba(16,24,40,0.12)]"} ${maintenance ? "lg:top-[36px]" : ""}`}>
+        {sidebar}
+      </aside>
 
-      {/* Navigation */}
-      <nav className={`mx-auto w-full max-w-[1400px] sm:border-x border-y ${dark ? "border-slate-700" : "border-black"}`}>
-        {/* Desktop nav */}
-        <div className="hidden sm:flex px-4">
-          {tabs.map((tab) => {
-            const isActive = location.pathname === tab.path;
-            return (
-              <Link
-                key={tab.path}
-                to={tab.path}
-                className={`relative px-6 py-5 text-[11px] font-black tracking-widest transition hover:text-[#e11d48] ${
-                  isActive ? (dark ? "text-white" : "text-[#1a1c1e]") : (dark ? "text-slate-500" : "text-[#5e6671]")
-                }`}
-              >
-                {tab.name}
-                {isActive && (
-                  <div className="absolute bottom-[-1px] left-0 h-[3px] w-full bg-[#e11d48]" />
-                )}
-              </Link>
-            );
-          })}
-          <div className="ml-auto flex items-center gap-4 px-4">
-            <button
-              onClick={() => { setMaintCustomMsg(maintMsg); setShowMaintModal(true); }}
-              className={`text-[10px] font-black uppercase tracking-widest hover:underline ${maintenance ? "text-amber-500" : dark ? "text-slate-400" : "text-slate-500"}`}
-            >
-              {maintenance ? "Maint: ON" : "Maint"}
-            </button>
-            <button
-              onClick={() => setShowPwModal(true)}
-              className={`text-[10px] font-black uppercase tracking-widest hover:underline ${dark ? "text-slate-400" : "text-slate-500"}`}
-            >
-              Password
-            </button>
-            <button
-              onClick={logout}
-              className="text-[10px] font-black uppercase tracking-widest text-red-600 hover:underline"
-            >
-              Logout
-            </button>
+      {/* Mobile drawer */}
+      <div className={`fixed inset-0 z-50 lg:hidden ${menuOpen ? "" : "pointer-events-none"}`}>
+        <div className={`absolute inset-0 bg-gray-900/40 transition-opacity duration-300 ${menuOpen ? "opacity-100" : "opacity-0"}`} onClick={() => setMenuOpen(false)} />
+        <aside className={`absolute inset-y-0 left-0 w-72 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${dark ? "bg-[#13151d]" : "bg-white"} ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+          {sidebar}
+        </aside>
+      </div>
+
+      {/* Content */}
+      <div className="lg:pl-64">
+        {/* Mobile top bar */}
+        <header className={`sticky top-0 z-30 flex items-center justify-between border-b px-4 py-3 backdrop-blur lg:hidden ${dark ? "border-slate-800 bg-[#0f1117]/85" : "border-gray-200 bg-white/85"}`}>
+          <div className="flex items-center gap-2">
+            <img src={telkomLogo} alt="Telkom" className="h-7 w-7 object-contain" />
+            <span className="text-lg font-extrabold tracking-tight"><span className="text-[#E81E28]">C</span>3MR</span>
           </div>
-        </div>
+          <button className="flex flex-col gap-[5px] p-1" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+            <span className={`block h-[2px] w-6 ${dark ? "bg-slate-200" : "bg-gray-900"}`} />
+            <span className={`block h-[2px] w-6 ${dark ? "bg-slate-200" : "bg-gray-900"}`} />
+            <span className={`block h-[2px] w-6 ${dark ? "bg-slate-200" : "bg-gray-900"}`} />
+          </button>
+        </header>
 
-        {/* Mobile nav */}
-        {menuOpen && (
-          <div className={`sm:hidden flex flex-col border-t ${dark ? "border-slate-700" : "border-black"}`}>
-            {tabs.map((tab) => {
-              const isActive = location.pathname === tab.path;
-              return (
-                <Link
-                  key={tab.path}
-                  to={tab.path}
-                  onClick={() => setMenuOpen(false)}
-                  className={`px-6 py-4 text-[11px] font-black tracking-widest border-b transition hover:text-[#e11d48] ${
-                    dark ? "border-slate-800" : "border-slate-100"
-                  } ${
-                    isActive ? (dark ? "text-white bg-slate-800" : "text-[#1a1c1e] bg-red-50") : (dark ? "text-slate-500" : "text-[#5e6671]")
-                  }`}
-                >
-                  {tab.name}
-                </Link>
-              );
-            })}
-            <button
-              onClick={() => { setMenuOpen(false); setMaintCustomMsg(maintMsg); setShowMaintModal(true); }}
-              className={`px-6 py-4 text-left text-[11px] font-black tracking-widest border-b hover:underline ${maintenance ? "text-amber-500 border-amber-500/20" : dark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}
-            >
-              {maintenance ? "MAINTENANCE: ON" : "MAINTENANCE MODE"}
-            </button>
-            <button
-              onClick={() => { setMenuOpen(false); setShowPwModal(true); }}
-              className={`px-6 py-4 text-left text-[11px] font-black tracking-widest border-b hover:underline ${dark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}
-            >
-              CHANGE PASSWORD
-            </button>
-            <button
-              onClick={() => { setMenuOpen(false); logout(); }}
-              className="px-6 py-4 text-left text-[11px] font-black tracking-widest text-red-600 hover:underline"
-            >
-              LOGOUT
-            </button>
-          </div>
-        )}
-      </nav>
-
-      <main className={`mx-auto w-full max-w-[1400px] sm:border-x border-b p-4 sm:p-8 ${dark ? "border-slate-700" : "border-black"}`}>
-        {children}
-
-        <footer className={`mt-12 sm:mt-20 border-t pt-8 text-[10px] font-medium italic ${dark ? "border-slate-800 text-slate-600" : "border-slate-100 text-slate-400"}`}>
-          Generated by C3MR System - Confidential Document
-        </footer>
-      </main>
+        <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
+          {children}
+          <footer className={`mt-16 pt-6 text-xs ${dark ? "text-slate-600" : "text-gray-400"}`}>
+            C3MR — PT Telkom Indonesia (Persero) Tbk · Confidential
+          </footer>
+        </main>
+      </div>
 
       {/* Maintenance Mode Modal */}
       {showMaintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowMaintModal(false)}>
-          <div
-            onClick={e => e.stopPropagation()}
-            className={`w-full max-w-sm mx-4 p-6 space-y-5 border ${dark ? "bg-slate-800 border-slate-600" : "bg-white border-black"}`}
-          >
-            <div>
-              <h2 className={`text-xs font-black uppercase tracking-widest ${dark ? "text-white" : ""}`}>Maintenance Mode</h2>
-              <p className={`text-[10px] mt-2 ${dark ? "text-slate-400" : "text-slate-500"}`}>
-                {maintenance
-                  ? "System is currently in maintenance mode. Officers and external users cannot access the API."
-                  : "Enable maintenance mode to block all non-manager access to the system."
-                }
-              </p>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 px-4" onClick={() => setShowMaintModal(false)}>
+          <div onClick={e => e.stopPropagation()} className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
+            <h2 className="text-lg font-bold text-gray-900">Maintenance mode</h2>
+            <p className="mt-1.5 text-sm text-gray-500">
+              {maintenance
+                ? "System is currently in maintenance mode. Officers and external users cannot access the API."
+                : "Enable maintenance mode to block all non-manager access to the system."}
+            </p>
+            <div className="mt-5 space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Message shown to users</label>
+              <input value={maintCustomMsg} onChange={e => setMaintCustomMsg(e.target.value)} placeholder="System is under maintenance…"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20" />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Message shown to users</label>
-              <input
-                value={maintCustomMsg}
-                onChange={e => setMaintCustomMsg(e.target.value)}
-                placeholder="System is under maintenance..."
-                className={`w-full border-b bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2 ${dark ? "border-slate-600 text-white" : "border-black"}`}
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleToggleMaintenance}
-                disabled={maintToggling}
-                className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest disabled:opacity-30 ${
-                  maintenance
-                    ? "bg-green-600 text-white hover:bg-green-700"
-                    : "bg-amber-500 text-black hover:bg-amber-600"
-                }`}
-              >
-                {maintToggling ? "Updating..." : maintenance ? "Disable Maintenance" : "Enable Maintenance"}
+            <div className="mt-6 flex gap-3">
+              <button onClick={handleToggleMaintenance} disabled={maintToggling}
+                className={`flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-40 ${maintenance ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-500 text-black hover:bg-amber-600"}`}>
+                {maintToggling ? "Updating…" : maintenance ? "Disable maintenance" : "Enable maintenance"}
               </button>
-              <button
-                type="button"
-                onClick={() => setShowMaintModal(false)}
-                className={`flex-1 border py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-700" : "border-black"}`}
-              >
+              <button type="button" onClick={() => setShowMaintModal(false)}
+                className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
                 Cancel
               </button>
             </div>
@@ -271,48 +246,29 @@ export function AppShell({
 
       {/* Change Password Modal */}
       {showPwModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowPwModal(false)}>
-          <form
-            onSubmit={handleChangePw}
-            onClick={e => e.stopPropagation()}
-            className={`w-full max-w-xs mx-4 p-6 space-y-5 border ${dark ? "bg-slate-800 border-slate-600" : "bg-white border-black"}`}
-          >
-            <h2 className={`text-xs font-black uppercase tracking-widest ${dark ? "text-white" : ""}`}>Change Password</h2>
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Current Password</label>
-              <input
-                type="password"
-                autoFocus
-                value={curPw}
-                onChange={e => setCurPw(e.target.value)}
-                className={`w-full border-b bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2 ${dark ? "border-slate-600 text-white" : "border-black"}`}
-              />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 px-4" onClick={() => setShowPwModal(false)}>
+          <form onSubmit={handleChangePw} onClick={e => e.stopPropagation()} className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
+            <h2 className="text-lg font-bold text-gray-900">Change password</h2>
+            <div className="mt-5 space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700">Current password</label>
+                <input type="password" autoFocus value={curPw} onChange={e => setCurPw(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700">New password</label>
+                <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">New Password</label>
-              <input
-                type="password"
-                value={newPw}
-                onChange={e => setNewPw(e.target.value)}
-                className={`w-full border-b bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2 ${dark ? "border-slate-600 text-white" : "border-black"}`}
-              />
-            </div>
-            {pwMsg && (
-              <p className={`text-[10px] font-bold ${pwMsg.ok ? "text-green-600" : "text-red-600"}`}>{pwMsg.text}</p>
-            )}
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={!curPw || !newPw || pwLoading}
-                className="flex-1 bg-black text-white py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-30 dark:bg-white dark:text-black dark:hover:bg-slate-200"
-              >
-                {pwLoading ? "Saving..." : "Save"}
+            {pwMsg && <p className={`mt-3 text-sm font-medium ${pwMsg.ok ? "text-emerald-600" : "text-[#E81E28]"}`}>{pwMsg.text}</p>}
+            <div className="mt-6 flex gap-3">
+              <button type="submit" disabled={!curPw || !newPw || pwLoading}
+                className="flex-1 rounded-lg bg-[#E81E28] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#c8161f] disabled:opacity-40">
+                {pwLoading ? "Saving…" : "Save"}
               </button>
-              <button
-                type="button"
-                onClick={() => { setShowPwModal(false); setPwMsg(null); setCurPw(""); setNewPw(""); }}
-                className={`flex-1 border py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-700" : "border-black"}`}
-              >
+              <button type="button" onClick={() => { setShowPwModal(false); setPwMsg(null); setCurPw(""); setNewPw(""); }}
+                className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
                 Cancel
               </button>
             </div>

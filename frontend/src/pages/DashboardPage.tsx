@@ -82,9 +82,7 @@ export function DashboardPage() {
   if (isLoading) {
     return (
       <AppShell activeTab="DASHBOARD">
-        <div className="py-20 text-center text-sm font-bold uppercase tracking-widest text-slate-400">
-          Initializing System Data...
-        </div>
+        <div className="py-24 text-center text-sm font-medium text-gray-400">Loading dashboard…</div>
       </AppShell>
     );
   }
@@ -92,7 +90,7 @@ export function DashboardPage() {
   if (error || !snapshot) {
     return (
       <AppShell activeTab="DASHBOARD">
-        <div className="rounded-lg bg-red-50 p-6 text-center text-sm font-bold text-red-600">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm font-medium text-[#E81E28]">
           {error || "Failed to load data."}
         </div>
       </AppShell>
@@ -111,13 +109,14 @@ export function DashboardPage() {
 
   return (
     <AppShell activeTab="DASHBOARD">
-      <div className="space-y-10">
-        <h1 className="font-serif text-3xl font-medium tracking-wide uppercase text-black">
-          Operational Dashboard
-        </h1>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Operational Dashboard</h1>
+          <p className="mt-1 text-sm text-gray-500">Real-time overview of collection targets and field activity.</p>
+        </div>
 
         {/* Summary Cards */}
-        <section className="grid gap-0 border-l border-t border-black grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <SummaryCard label="Total Targets" value={stats.totalTargets} accent="default" />
           <SummaryCard label="Completed" value={stats.completed} accent="success" />
           <SummaryCard label="In Progress" value={stats.inProgress} accent="warning" />
@@ -125,26 +124,22 @@ export function DashboardPage() {
         </section>
 
         {/* Operational Panels: Pending / Active / Comments */}
-        <section className="grid gap-6 lg:grid-cols-3">
+        <section className="grid gap-5 lg:grid-cols-3">
           {/* Unassigned Targets (Action Required) */}
-          <div className="border border-black bg-white">
-            <div className="bg-red-50 border-b border-black px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xs font-black uppercase tracking-widest text-red-700">
-                Needs Assignment
-              </h3>
-              <span className="text-xs font-black text-red-600">{pendingTargets.length}</span>
+          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <h3 className="text-sm font-semibold text-gray-900">Needs Assignment</h3>
+              <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-[#E81E28]">{pendingTargets.length}</span>
             </div>
-            <div className="divide-y divide-slate-100 max-h-[320px] overflow-y-auto">
+            <div className="max-h-[320px] divide-y divide-gray-100 overflow-y-auto">
               {pendingTargets.length === 0 ? (
-                <p className="px-6 py-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  All targets assigned
-                </p>
+                <p className="px-5 py-8 text-center text-xs text-gray-400">All targets assigned</p>
               ) : (
                 pendingTargets.slice(0, 8).map(t => (
-                  <div key={t.id} className="px-6 py-3">
-                    <p className="text-xs font-bold text-[#1a1c1e]">{t.customerName}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5 truncate">{t.address}</p>
-                    <p className="text-xs font-black text-red-600 mt-1">{formatCurrency(t.amountDue)}</p>
+                  <div key={t.id} className="px-5 py-3">
+                    <p className="text-sm font-medium text-gray-900">{t.customerName}</p>
+                    <p className="mt-0.5 truncate text-xs text-gray-400">{t.address}</p>
+                    <p className="mt-1 text-sm font-semibold text-[#E81E28]">{formatCurrency(t.amountDue)}</p>
                   </div>
                 ))
               )}
@@ -152,27 +147,23 @@ export function DashboardPage() {
           </div>
 
           {/* Recently Assigned (In Progress) */}
-          <div className="border border-black bg-white">
-            <div className="bg-amber-50 border-b border-black px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xs font-black uppercase tracking-widest text-amber-700">
-                Active Assignments
-              </h3>
-              <span className="text-xs font-black text-amber-600">{stats.inProgress}</span>
+          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <h3 className="text-sm font-semibold text-gray-900">Active Assignments</h3>
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600">{stats.inProgress}</span>
             </div>
-            <div className="divide-y divide-slate-100 max-h-[320px] overflow-y-auto">
+            <div className="max-h-[320px] divide-y divide-gray-100 overflow-y-auto">
               {recentAssigned.length === 0 ? (
-                <p className="px-6 py-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  No active assignments
-                </p>
+                <p className="px-5 py-8 text-center text-xs text-gray-400">No active assignments</p>
               ) : (
                 recentAssigned.map(t => (
-                  <div key={t.id} className="px-6 py-3">
+                  <div key={t.id} className="px-5 py-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold text-[#1a1c1e]">{t.customerName}</p>
-                      <p className="text-[10px] font-black text-amber-600">{formatCurrency(t.amountDue)}</p>
+                      <p className="text-sm font-medium text-gray-900">{t.customerName}</p>
+                      <p className="text-xs font-semibold text-amber-600">{formatCurrency(t.amountDue)}</p>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      Officer: <span className="font-bold">{getOfficerName(t.assignedOfficer)}</span>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      Officer: <span className="font-medium text-gray-700">{getOfficerName(t.assignedOfficer)}</span>
                     </p>
                   </div>
                 ))
@@ -181,32 +172,28 @@ export function DashboardPage() {
           </div>
 
           {/* Recent Officer Comments */}
-          <div className="border border-black bg-white">
-            <div className="bg-slate-50 border-b border-black px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">
-                Officer Feedback
-              </h3>
-              <span className="text-xs font-black text-slate-500">{recentComments.length}</span>
+          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <h3 className="text-sm font-semibold text-gray-900">Officer Feedback</h3>
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">{recentComments.length}</span>
             </div>
-            <div className="divide-y divide-slate-100 max-h-[320px] overflow-y-auto">
+            <div className="max-h-[320px] divide-y divide-gray-100 overflow-y-auto">
               {recentComments.length === 0 ? (
-                <p className="px-6 py-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  No comments yet
-                </p>
+                <p className="px-5 py-8 text-center text-xs text-gray-400">No comments yet</p>
               ) : (
                 recentComments.map(c => (
-                  <div key={c.id} className="px-6 py-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold text-slate-600">{c.officerName}</span>
+                  <div key={c.id} className="px-5 py-3">
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="text-xs font-medium text-gray-700">{c.officerName}</span>
                       {c.tag && (
-                        <span className="text-[8px] font-black uppercase tracking-wider bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
+                        <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-[#E81E28]">
                           {TAG_LABELS[c.tag] || c.tag}
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-500 truncate">{c.customerName}</p>
-                    <p className="text-[11px] text-[#1a1c1e] mt-0.5 line-clamp-2">{c.message}</p>
-                    <p className="text-[9px] text-slate-400 mt-1">
+                    <p className="truncate text-xs text-gray-400">{c.customerName}</p>
+                    <p className="mt-0.5 line-clamp-2 text-sm text-gray-700">{c.message}</p>
+                    <p className="mt-1 text-[11px] text-gray-400">
                       {new Date(c.created_at).toLocaleString("id-ID", {
                         day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
                       })}
@@ -219,24 +206,22 @@ export function DashboardPage() {
         </section>
 
         {/* Officer Quick View */}
-        <section className="border border-black bg-white">
-          <div className="bg-[#f2f2f2] border-b border-black px-4 sm:px-6 py-4 flex items-center justify-between">
-            <h3 className="text-xs font-black uppercase tracking-widest text-black">Active Officers</h3>
-            <span className="text-xs font-black text-slate-500">{officers.length} registered</span>
+        <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+            <h3 className="text-sm font-semibold text-gray-900">Active Officers</h3>
+            <span className="text-xs text-gray-400">{officers.length} registered</span>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-slate-100">
+          <div className="grid grid-cols-3 gap-px bg-gray-100 lg:grid-cols-6">
             {officers.map(o => {
               const assigned = targets.filter(t => t.assignedOfficer === o.id).length;
               const completed = targets.filter(t => t.assignedOfficer === o.id && t.status === "completed").length;
               return (
-                <div key={o.id} className="px-5 py-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-slate-200 mx-auto mb-2 flex items-center justify-center text-xs font-black text-slate-500">
+                <div key={o.id} className="bg-white px-4 py-5 text-center">
+                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500">
                     {o.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                   </div>
-                  <p className="text-[10px] font-bold text-[#1a1c1e] truncate">{o.name}</p>
-                  <p className="text-[9px] text-slate-400 mt-1">
-                    {assigned} assigned · {completed} done
-                  </p>
+                  <p className="truncate text-xs font-medium text-gray-900">{o.name}</p>
+                  <p className="mt-1 text-[11px] text-gray-400">{assigned} assigned · {completed} done</p>
                 </div>
               );
             })}

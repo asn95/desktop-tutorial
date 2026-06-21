@@ -120,6 +120,29 @@ async def set_maintenance(payload: MaintenancePayload, _auth: dict = Depends(req
     maintenance_state.toggle(payload.enabled, payload.message)
     return {"enabled": maintenance_state.enabled, "message": maintenance_state.message}
 
+
+# AI Assistant — web access to the Gemini workflow agent (manager-only).
+# Reuses the same run_agent() that powers the Telegram /ask command.
+from fastapi import HTTPException
+
+
+class AgentQuery(BaseModel):
+    question: str
+
+
+@app.post("/api/agent/ask")
+async def agent_ask(payload: AgentQuery, _auth: dict = Depends(require_manager)):
+    question = (payload.question or "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required.")
+    try:
+        from .agent import run_agent
+        answer = await run_agent(question)
+        return {"answer": answer}
+    except Exception as e:
+        logger.exception("AI agent error")
+        raise HTTPException(status_code=500, detail=f"Agent error: {e}")
+
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])

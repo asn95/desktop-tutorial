@@ -29,7 +29,7 @@
     -webkit-font-smoothing: antialiased;
     margin: 0;
     min-height: 100vh;
-    font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: "Plus Jakarta Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
   * {
@@ -54,10 +54,10 @@
   .dark .bg-\[\#1a1c1e\] { background-color: #e2e4e9 !important; }
 
   /* ─── Border overrides ─── */
-  .dark .border-black { border-color: var(--c3mr-border) !important; }
+  .dark .border-gray-200 { border-color: var(--c3mr-border) !important; }
   .dark .border-slate-100,
   .dark .border-slate-200 { border-color: var(--c3mr-border-soft) !important; }
-  .dark .border-b-2.border-black { border-color: var(--c3mr-border) !important; }
+  .dark .border-b-2.border-gray-200 { border-color: var(--c3mr-border) !important; }
   .dark .border-\[\#e2e8f0\] { border-color: var(--c3mr-border) !important; }
   .dark .border-\[\#f1f5f9\] { border-color: var(--c3mr-border-soft) !important; }
   .dark .border-\[\#1a1c1e\] { border-color: #e2e4e9 !important; }
@@ -107,4 +107,23 @@
 
   /* ─── Dashed upload area ─── */
   .dark .border-dashed { border-color: #3d4150 !important; }
+
+  /* ─── Clean theme (Telkom restyle) ─── */
+  .dark .bg-\[\#f3f4f6\] { background-color: var(--c3mr-bg) !important; }
+  .dark .bg-gray-50 { background-color: var(--c3mr-surface-alt) !important; }
+  .dark .bg-gray-100 { background-color: var(--c3mr-surface-alt) !important; }
+  .dark .border-gray-100,
+  .dark .border-gray-200,
+  .dark .border-gray-300 { border-color: var(--c3mr-border-soft) !important; }
+  .dark .text-gray-900,
+  .dark .text-gray-800 { color: var(--c3mr-text) !important; }
+  .dark .text-gray-700 { color: #b0b5bf !important; }
+  .dark .text-gray-600 { color: #9ba0ab !important; }
+  .dark .text-gray-500 { color: var(--c3mr-text-muted) !important; }
+  .dark .text-gray-400 { color: #6b7080 !important; }
+  .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+  .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--c3mr-border-soft) !important; }
+  .dark .hover\:bg-gray-50:hover,
+  .dark .hover\:bg-gray-100:hover { background-color: #232733 !important; }
+  .dark .ring-black\/5 { --tw-ring-color: rgba(255, 255, 255, 0.08) !important; }
 }

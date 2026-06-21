@@ -150,10 +150,10 @@ export function UserManagementPage() {
     <AppShell>
       <div className="space-y-12 font-sans">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-          <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-wide uppercase text-black">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black">
             Personnel Directory
           </h1>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
             {users.length} Total &middot; {officers.length} Officers &middot; {managers.length} Managers
           </p>
         </div>
@@ -161,28 +161,28 @@ export function UserManagementPage() {
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           {/* Main Directory */}
           <section className="min-w-0">
-            <div className="border-b-2 border-black pb-2 mb-6 flex items-center justify-between">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Registered Personnel</h2>
+            <div className="border-b-2 border-gray-200 pb-2 mb-6 flex items-center justify-between">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Registered Personnel</h2>
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search name or ID..."
-                className="w-52 border-b border-black bg-transparent px-1 py-1 text-[10px] font-bold uppercase tracking-wider outline-none placeholder:text-slate-300"
+                className="w-52 border-b border-gray-200 bg-transparent px-1 py-1 text-[10px] font-bold uppercase tracking-wider outline-none placeholder:text-slate-300"
               />
             </div>
 
             {isLoading ? (
-              <p className="py-16 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <p className="py-16 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                 Loading Personnel Records...
               </p>
             ) : filteredUsers.length === 0 ? (
-              <p className="py-16 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <p className="py-16 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                 {query ? "No matching records." : "No registered personnel."}
               </p>
             ) : (
-              <div className="border border-black bg-white overflow-x-auto overflow-hidden">
+              <div className="border border-gray-200 bg-white overflow-x-auto overflow-hidden">
                 {/* Table header */}
-                <div className="min-w-[560px] grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 border-b-2 border-black bg-[#f8f8f6] px-6 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <div className="min-w-[560px] grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 border-b-2 border-gray-200 bg-[#f8f8f6] px-6 py-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                   <span>Name</span>
                   <span>Role</span>
                   <span>Telegram</span>
@@ -207,7 +207,7 @@ export function UserManagementPage() {
                           {new Date(user.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                         </p>
                       </div>
-                      <span className={`text-[9px] font-black uppercase tracking-wider ${
+                      <span className={`text-[9px] font-semibold uppercase tracking-wider ${
                         user.role === "manager" ? "text-slate-700" : "text-slate-400"
                       }`}>
                         {user.role}
@@ -224,13 +224,13 @@ export function UserManagementPage() {
                       <span className="text-center flex gap-2 justify-center">
                         <button
                           onClick={() => requestEdit(user)}
-                          className="text-[9px] text-blue-600 font-black uppercase tracking-wider hover:underline"
+                          className="text-[9px] text-blue-600 font-semibold uppercase tracking-wider hover:underline"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => requestDelete(user)}
-                          className="text-[9px] text-red-600 font-black uppercase tracking-wider hover:underline"
+                          className="text-[9px] text-red-600 font-semibold uppercase tracking-wider hover:underline"
                         >
                           Remove
                         </button>
@@ -256,27 +256,27 @@ export function UserManagementPage() {
 
           {/* Sidebar: Registration */}
           <section>
-            <div className="border-b-2 border-black pb-2 mb-6">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Register Officer</h2>
+            <div className="border-b-2 border-gray-200 pb-2 mb-6">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Register Officer</h2>
             </div>
 
-            <form onSubmit={handleAddUser} className="border border-black bg-white p-6 space-y-5">
+            <form onSubmit={handleAddUser} className="border border-gray-200 bg-white p-6 space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Full Name *</label>
+                <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Full Name *</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter officer name"
-                  className="w-full border-b border-black bg-transparent px-0 py-2 text-sm font-bold outline-none placeholder:text-slate-300 focus:border-b-2"
+                  className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold outline-none placeholder:text-slate-300 focus:border-b-2"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Telegram ID</label>
+                <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Telegram ID</label>
                 <input
                   value={telegramId}
                   onChange={(e) => setTelegramId(e.target.value)}
                   placeholder="e.g. 123456789"
-                  className="w-full border-b border-black bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
+                  className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
                 />
                 <p className="text-[9px] text-slate-400">
                   Required for Mini App access and notifications.
@@ -288,7 +288,7 @@ export function UserManagementPage() {
 
               <button
                 disabled={isSubmitting || !name}
-                className="w-full border-2 border-black bg-black py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-white hover:text-black disabled:opacity-30"
+                className="w-full border-2 border-gray-200 bg-black py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white hover:text-black disabled:opacity-30"
               >
                 {isSubmitting ? "Processing..." : "Register"}
               </button>
@@ -296,8 +296,8 @@ export function UserManagementPage() {
 
             {/* Quick Stats */}
             <div className="mt-8 space-y-3">
-              <div className="border-b-2 border-black pb-2 mb-4">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Summary</h2>
+              <div className="border-b-2 border-gray-200 pb-2 mb-4">
+                <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Summary</h2>
               </div>
               <Row label="Total Personnel" value={users.length} />
               <Row label="Field Officers" value={officers.length} />
@@ -314,23 +314,23 @@ export function UserManagementPage() {
           <form
             onSubmit={handlePasswordConfirm}
             onClick={e => e.stopPropagation()}
-            className="bg-white border border-black w-full max-w-xs mx-4 p-6 space-y-5"
+            className="bg-white rounded-2xl border border-gray-100 w-full max-w-xs mx-4 p-6 space-y-5"
           >
             <div>
-              <h2 className="text-xs font-black uppercase tracking-widest">Confirm Password</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wide">Confirm Password</h2>
               <p className="text-[10px] text-slate-500 mt-2">
                 Enter your password to {pendingAction.type === "edit" ? "edit" : "remove"}{" "}
                 <span className="font-bold text-[#1a1c1e]">{pendingAction.user.name}</span>
               </p>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Password</label>
+              <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Password</label>
               <input
                 type="password"
                 autoFocus
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
-                className="w-full border-b border-black bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2"
+                className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2"
               />
               {passwordError && <p className="text-[10px] font-bold text-red-600">{passwordError}</p>}
             </div>
@@ -338,14 +338,14 @@ export function UserManagementPage() {
               <button
                 type="submit"
                 disabled={!confirmPassword || isVerifying}
-                className="flex-1 bg-black text-white py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-30"
+                className="flex-1 bg-[#E81E28] text-white py-2.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-[#c8161f] disabled:opacity-30"
               >
                 {isVerifying ? "Verifying..." : "Confirm"}
               </button>
               <button
                 type="button"
                 onClick={() => setPendingAction(null)}
-                className="flex-1 border border-black py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100"
+                className="flex-1 border border-gray-200 py-2.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-slate-100"
               >
                 Cancel
               </button>
@@ -360,31 +360,31 @@ export function UserManagementPage() {
           <form
             onSubmit={handleUpdate}
             onClick={e => e.stopPropagation()}
-            className="bg-white border border-black w-full max-w-sm mx-4 p-6 space-y-5"
+            className="bg-white rounded-2xl border border-gray-100 w-full max-w-sm mx-4 p-6 space-y-5"
           >
-            <h2 className="text-xs font-black uppercase tracking-widest">Edit {editingUser.name}</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide">Edit {editingUser.name}</h2>
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Name</label>
+              <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Name</label>
               <input
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
-                className="w-full border-b border-black bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2"
+                className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Telegram ID</label>
+              <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Telegram ID</label>
               <input
                 value={editTelegramId}
                 onChange={e => setEditTelegramId(e.target.value)}
                 placeholder="e.g. 123456789"
-                className="w-full border-b border-black bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none focus:border-b-2"
+                className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none focus:border-b-2"
               />
             </div>
             <div className="flex gap-3">
-              <button type="submit" className="flex-1 bg-black text-white py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-800">
+              <button type="submit" className="flex-1 bg-[#E81E28] text-white py-2.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-[#c8161f]">
                 Save
               </button>
-              <button type="button" onClick={() => setEditingUser(null)} className="flex-1 border border-black py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100">
+              <button type="button" onClick={() => setEditingUser(null)} className="flex-1 border border-gray-200 py-2.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-slate-100">
                 Cancel
               </button>
             </div>

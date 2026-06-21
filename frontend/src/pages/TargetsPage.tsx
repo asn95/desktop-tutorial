@@ -103,12 +103,12 @@ export function TargetsPage() {
     <AppShell>
       <div className="space-y-10">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-          <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-wide uppercase text-black dark:text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black dark:text-white">
             Target Management Inventory
           </h1>
           <button
             onClick={handleExport}
-            className="border border-black dark:border-slate-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition w-fit"
+            className="border border-gray-200 dark:border-slate-600 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide hover:bg-gray-50 transition w-fit"
           >
             Export CSV
           </button>
@@ -116,18 +116,18 @@ export function TargetsPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
           <div className="space-y-6 min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-black dark:border-slate-600 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-200 dark:border-slate-600 pb-4">
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Filter by name/ID..."
-                  className="w-full sm:w-64 border border-black dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
+                  className="w-full sm:w-64 border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
                 />
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as FilterValue)}
-                  className="w-full sm:w-auto border border-black dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
+                  className="w-full sm:w-auto border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
                 >
                   <option value="all">All Records</option>
                   <option value="pending">Pending</option>
@@ -146,7 +146,7 @@ export function TargetsPage() {
                 <select
                   value={bulkOfficer}
                   onChange={e => setBulkOfficer(e.target.value)}
-                  className="border border-black dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-2 py-1 text-[10px] font-bold"
+                  className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-2 py-1 text-[10px] font-bold"
                 >
                   <option value="">Select Officer</option>
                   {officers.map(o => (
@@ -156,7 +156,7 @@ export function TargetsPage() {
                 <button
                   onClick={handleBulkAssign}
                   disabled={!bulkOfficer || bulkAssigning}
-                  className="bg-black text-white dark:bg-white dark:text-black px-4 py-1.5 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+                  className="bg-[#E81E28] text-white px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide disabled:opacity-30"
                 >
                   {bulkAssigning ? "Assigning..." : "Assign All"}
                 </button>
@@ -170,7 +170,7 @@ export function TargetsPage() {
             )}
 
             {isLoading ? (
-              <p className="py-10 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Records...</p>
+              <p className="py-10 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">Loading Records...</p>
             ) : (
               <TargetsTable
                 targets={filteredTargets}

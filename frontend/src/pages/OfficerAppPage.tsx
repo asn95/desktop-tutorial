@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "../lib/apiClient";
 import { formatCurrency } from "../lib/format";
 import type { Target } from "../types/target";
+import telkomLogo from "../assets/telkom-logo.png";
 
 type ViewState = "login" | "list" | "detail";
 
@@ -103,30 +104,32 @@ export function OfficerAppPage() {
 
   if (view === "login") {
     return (
-      <div className="min-h-screen bg-[#e9eff6] flex items-center justify-center p-6 font-sans">
-        <div className="w-full max-w-[400px] bg-white rounded-2xl p-10 shadow-2xl">
-          <div className="text-center mb-8">
-            <div className="text-3xl font-black tracking-tighter mb-2">
-              <span className="text-[#e11d48]">C</span>3MR FIELD
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#f4f5f7] p-6 font-sans">
+        <div className="w-full max-w-[400px] rounded-2xl bg-white p-8 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)]">
+          <div className="mb-8 flex flex-col items-center text-center">
+            <img src={telkomLogo} alt="Telkom Indonesia" className="mb-4 h-12 w-12 object-contain" />
+            <div className="text-2xl font-extrabold tracking-tight text-gray-900">
+              <span className="text-[#E81E28]">C</span>3MR Field
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operative Access</p>
+            <p className="mt-1 text-sm text-gray-500">Officer portal — sign in to continue</p>
           </div>
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[11px] font-black uppercase text-slate-500">Telegram identity</label>
-              <input 
+          <div className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Telegram ID</label>
+              <input
                 value={telegramId}
                 onChange={(e) => setTelegramId(e.target.value)}
-                placeholder="Enter your ID"
-                className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-4 text-sm font-bold outline-none focus:border-black transition"
+                placeholder="e.g. 123456789"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20"
               />
             </div>
-            <button 
+            <button
               onClick={handleLogin}
-              className="w-full bg-black text-white rounded-xl py-4 text-xs font-black uppercase tracking-widest shadow-xl active:scale-95 transition"
+              className="w-full rounded-xl bg-[#E81E28] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(232,30,40,0.5)] transition-colors hover:bg-[#c8161f] active:scale-[0.98]"
             >
-              Verify Identity
+              Sign in
             </button>
+            <p className="text-center text-xs text-gray-400">Use the Telegram ID registered by your manager.</p>
           </div>
         </div>
       </div>
@@ -135,35 +138,38 @@ export function OfficerAppPage() {
 
   if (view === "list") {
     return (
-      <div className="min-h-screen bg-[#f8fafc] font-sans pb-10">
-        <header className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-10 flex items-center justify-between">
-          <div className="font-black tracking-tighter text-xl"><span className="text-[#e11d48]">C</span>3MR</div>
-          <div className="text-[9px] font-black uppercase tracking-widest bg-black text-white px-3 py-1 rounded-full">Officer App</div>
+      <div className="min-h-[100dvh] bg-[#f4f5f7] font-sans pb-10">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white/90 px-5 py-4 backdrop-blur">
+          <div className="flex items-center gap-2">
+            <img src={telkomLogo} alt="Telkom" className="h-7 w-7 object-contain" />
+            <span className="text-lg font-extrabold tracking-tight"><span className="text-[#E81E28]">C</span>3MR</span>
+          </div>
+          <span className="rounded-full bg-[#E81E28]/10 px-3 py-1 text-xs font-semibold text-[#E81E28]">Officer</span>
         </header>
-        
-        <div className="p-6 space-y-6">
-          <h2 className="text-2xl font-black text-slate-800">Assigned Tasks</h2>
-          <div className="space-y-4">
+
+        <div className="space-y-5 p-5">
+          <h2 className="text-xl font-bold tracking-tight text-gray-900">Assigned Tasks</h2>
+          <div className="space-y-3">
             {tasks.length === 0 ? (
-              <p className="text-slate-400 italic text-sm py-10 text-center">No assignments found.</p>
+              <p className="py-12 text-center text-sm text-gray-400">No assignments found.</p>
             ) : (
               tasks.map(task => (
-                <div 
+                <div
                   key={task.id}
                   onClick={() => { setSelectedTarget(task); setView("detail"); }}
-                  className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm active:bg-slate-50 transition cursor-pointer"
+                  className="cursor-pointer rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_2px_16px_-6px_rgba(16,24,40,0.12)] transition-all duration-200 active:scale-[0.99]"
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">#{task.id.slice(0,6)}</span>
-                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
-                      task.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                  <div className="mb-3 flex items-start justify-between">
+                    <span className="text-xs font-medium uppercase tracking-wide text-gray-400">#{task.id.slice(0, 6)}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                      task.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
                     }`}>
                       {task.status}
                     </span>
                   </div>
-                  <h3 className="font-bold text-slate-800 mb-1">{task.customerName}</h3>
-                  <p className="text-xs text-slate-500 mb-4 line-clamp-1">{task.address}</p>
-                  <div className="text-lg font-black text-red-600">{formatCurrency(task.amountDue)}</div>
+                  <h3 className="font-semibold text-gray-900">{task.customerName}</h3>
+                  <p className="mt-0.5 line-clamp-1 text-xs text-gray-400">{task.address}</p>
+                  <div className="mt-3 text-lg font-bold text-[#E81E28]">{formatCurrency(task.amountDue)}</div>
                 </div>
               ))
             )}
@@ -175,32 +181,32 @@ export function OfficerAppPage() {
 
   if (view === "detail" && selectedTask) {
     return (
-      <div className="min-h-screen bg-white font-sans pb-10">
-        <header className="px-6 py-5 flex items-center gap-4">
-          <button onClick={() => setView("list")} className="text-slate-400 hover:text-black">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
+      <div className="min-h-[100dvh] bg-white font-sans pb-10">
+        <header className="flex items-center gap-3 px-5 py-4">
+          <button onClick={() => setView("list")} className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <div className="font-black uppercase text-[10px] tracking-widest text-slate-400">Task Detail</div>
+          <div className="text-sm font-semibold text-gray-500">Task detail</div>
         </header>
 
-        <div className="px-6 space-y-8">
+        <div className="space-y-8 px-5">
           <section>
-            <h2 className="text-3xl font-black text-slate-800 mb-2 leading-tight">{selectedTask.customerName}</h2>
-            <p className="text-sm font-medium text-slate-500 leading-relaxed">{selectedTask.address}</p>
-            <div className="mt-6 inline-block bg-red-50 px-4 py-2 rounded-xl text-xl font-black text-red-600">
+            <h2 className="text-2xl font-bold leading-tight tracking-tight text-gray-900">{selectedTask.customerName}</h2>
+            <p className="mt-1 text-sm leading-relaxed text-gray-500">{selectedTask.address}</p>
+            <div className="mt-5 inline-block rounded-xl bg-red-50 px-4 py-2 text-xl font-bold text-[#E81E28]">
               {formatCurrency(selectedTask.amountDue)}
             </div>
           </section>
 
-          <div className="h-[1px] bg-slate-100" />
+          <div className="h-px bg-gray-100" />
 
-          <form onSubmit={handleSubmitReport} className="space-y-8">
-            <div className="space-y-3">
-              <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">Collection Status</label>
-              <select 
+          <form onSubmit={handleSubmitReport} className="space-y-6">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Collection status</label>
+              <select
                 value={paymentStatus}
                 onChange={(e) => setPaymentStatus(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-sm font-bold outline-none appearance-none"
+                className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20"
               >
                 <option>Promise to Pay</option>
                 <option>Paid</option>
@@ -210,33 +216,33 @@ export function OfficerAppPage() {
               </select>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">Visit Notes</label>
-              <textarea 
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Visit notes</label>
+              <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-sm font-bold outline-none"
-                placeholder="Describe visit outcome..."
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20"
+                placeholder="Describe the visit outcome…"
               />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">Photo Evidence</label>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 bg-slate-50 rounded-2xl cursor-pointer hover:bg-slate-100 transition">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Photo evidence</label>
+              <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 transition-colors hover:bg-gray-100">
                 <div className="text-center">
-                  <svg className="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase">{photo ? photo.name : "Capture Photo Proof"}</p>
+                  <svg className="mx-auto mb-2 h-7 w-7 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  <p className="text-xs font-medium text-gray-500">{photo ? photo.name : "Tap to capture photo"}</p>
                 </div>
                 <input type="file" className="hidden" accept="image/*" capture="environment" onChange={(e) => setPhoto(e.target.files?.[0] || null)} />
               </label>
             </div>
 
-            <button 
+            <button
               disabled={isSubmitting || !photo}
-              className="w-full bg-[#0f172a] text-white rounded-2xl py-5 text-sm font-black uppercase tracking-[0.2em] shadow-2xl active:scale-[0.98] transition disabled:opacity-30"
+              className="w-full rounded-2xl bg-[#E81E28] py-4 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(232,30,40,0.5)] transition-all hover:bg-[#c8161f] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
             >
-              {isSubmitting ? "Uploading Data..." : "Submit Official Report"}
+              {isSubmitting ? "Uploading…" : "Submit report"}
             </button>
           </form>
         </div>

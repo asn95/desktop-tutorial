@@ -9,6 +9,7 @@ import { AnalyticsPage } from "../pages/AnalyticsPage";
 import { UserManagementPage } from "../pages/UserManagementPage";
 import { TargetsPage } from "../pages/TargetsPage";
 import { AuditLogPage } from "../pages/AuditLogPage";
+import { AssistantPage } from "../pages/AssistantPage";
 import { OfficerAppPage } from "../pages/OfficerAppPage";
 
 export function App() {
@@ -28,6 +29,7 @@ export function App() {
             <Route path="/users" element={<UserManagementPage />} />
             <Route path="/targets" element={<TargetsPage />} />
             <Route path="/audit" element={<AuditLogPage />} />
+            <Route path="/assistant" element={<AssistantPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

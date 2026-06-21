@@ -1,11 +1,21 @@
 customer_name,address,phone,amount_due
-Ahmad Subagja,"Jl. Jend. Sudirman No. 1, Jakarta",08123456789,2500000
-Siti Rahayu,"Jl. Gatot Subroto No. 45, Bekasi",08219876543,1200000
-Joko Widodo,"Jl. Merdeka Barat No. 15, Jakarta",08111111111,5000000
-Lutfi Hakim,"Jl. Diponegoro No. 2, Bandung",081333444555,3400000
-Maria Ulfa,"Jl. Veteran No. 3, Surabaya",081222333444,1800000
-Budi Santoso,"Jl. Imam Bonjol No. 10, Semarang",08567890123,950000
-Ani Yudhoyono,"Jl. Cikeas No. 1, Bogor",0811999888,2750000
-Prabowo Subianto,"Jl. Kertanegara No. 4, Jakarta",08120000000,4200000
-Megawati Sukarnoputri,"Jl. Teuku Umar No. 27, Jakarta",0813888777,3100000
-Yusuf Maulana,"Jl. Cempaka No. 4, Bekasi",0812999000,5950000
+Ahmad Subagja,Jl. Jend. Sudirman No. 1 Jakarta Selatan,081234567890,2500000
+Siti Rahayu,Jl. Gatot Subroto No. 45 Bekasi,082198765432,1200000
+Joko Widodo,Jl. Merdeka Barat No. 15 Jakarta Pusat,085311223344,5000000
+Lutfi Hakim,Jl. Diponegoro No. 2 Bandung,087655443322,3400000
+Maria Ulfa,Jl. Veteran No. 3 Surabaya,081377889900,1800000
+Budi Santoso,Jl. Asia Afrika No. 20 Bandung,089912345678,750000
+Dewi Lestari,Jl. Pemuda No. 11 Semarang,081299887766,4200000
+Rizki Pratama,Jl. Thamrin No. 8 Jakarta Pusat,085644332211,920000
+Nurhayati,Jl. Kartini No. 33 Yogyakarta,082155667788,3100000
+Eko Prasetyo,Jl. Pahlawan No. 5 Malang,087699001122,1500000
+Rina Wati,Jl. Imam Bonjol No. 7 Medan,081388776655,6500000
+Hendra Gunawan,Jl. Cendrawasih No. 12 Makassar,089922334455,2800000
+Fitri Handayani,Jl. Hayam Wuruk No. 9 Denpasar,085677889900,980000
+Agus Setiawan,Jl. Ahmad Yani No. 18 Palembang,082111223344,4700000
+Yuni Astuti,Jl. Gajah Mada No. 22 Tangerang,081544556677,1350000
+Bambang Hermawan,Jl. Raya Bogor No. 55 Depok,087633445566,2100000
+Sri Wahyuni,Jl. Pangeran Antasari No. 14 Banjarmasin,089911002233,3800000
+Dian Permata,Jl. Teuku Umar No. 6 Balikpapan,085699887766,560000
+Surya Dharma,Jl. Sultan Hasanuddin No. 31 Manado,082177665544,7200000
+Anisa Putri,Jl. Cut Nyak Dien No. 4 Padang,081266778899,1650000

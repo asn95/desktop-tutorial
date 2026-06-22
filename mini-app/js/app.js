@@ -114,7 +114,7 @@ function showView(viewId) {
             // Inside Telegram: use native MainButton, hide HTML button
             tg.BackButton.show();
             tg.MainButton.setText("KIRIM LAPORAN");
-            tg.MainButton.color = "#dc2626";
+            tg.MainButton.color = "#E81E28";
             tg.MainButton.show();
             if (webBtn) webBtn.classList.add('hidden');
         } else {
@@ -170,9 +170,6 @@ function renderTasks() {
 
     const activeTasks = currentTasks.filter(t => t.status !== 'completed');
     activeTasks.forEach((task, i) => {
-        const pri = task.amountDue >= 15000000 ? ['Prioritas 1','pbadge-1'] :
-                    task.amountDue >= 5000000  ? ['Prioritas 2','pbadge-2'] :
-                                                  ['Prioritas 3','pbadge-3'];
         const caseNum = '2025-' + String(8394 - i * 3012).replace('-','');
 
         const div = document.createElement('div');
@@ -181,7 +178,6 @@ function renderTasks() {
             '<div class="tcard-case">Kasus #' + esc(caseNum) + '</div>' +
             '<div class="tcard-name">' + esc(task.customerName) + '</div>' +
             '<div class="tcard-addr">' + esc(task.address) + '</div>' +
-            '<div class="pbadge ' + pri[1] + '">' + pri[0] + '</div>' +
             '<div class="tcard-bottom">' +
                 '<span class="tcard-amt">Rp ' + task.amountDue.toLocaleString('id-ID') + '</span>' +
                 '<button class="tcard-btn">Proses Laporan &rarr;</button>' +

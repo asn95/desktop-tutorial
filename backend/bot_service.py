@@ -80,7 +80,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         mgr = is_manager(tid, db)
 
     if mgr:
-        web_url = os.environ.get("WEB_ADMIN_URL", "https://c3mr-app-production.up.railway.app")
+        web_url = os.environ.get("WEB_ADMIN_URL", "https://c3mr-app-production-b353.up.railway.app")
         keyboard = [[
             InlineKeyboardButton("Buka Dasbor Web", url=web_url)
         ]]

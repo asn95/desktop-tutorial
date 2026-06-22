@@ -36,7 +36,7 @@ app.mount("/api/uploads", StaticFiles(directory="backend/uploads"), name="upload
 app.mount("/officer-app", StaticFiles(directory="mini-app", html=True), name="mini-app")
 
 # Enable CORS — production uses the Railway URL, dev uses localhost
-_default_origins = "https://c3mr-app-production.up.railway.app"
+_default_origins = "https://c3mr-app-production-b353.up.railway.app"
 if os.environ.get("DEBUG", "false").lower() == "true":
     _default_origins += ",http://localhost:5173,http://localhost:3000"
 ALLOWED_ORIGINS = os.environ.get("CORS_ORIGINS", _default_origins).split(",")

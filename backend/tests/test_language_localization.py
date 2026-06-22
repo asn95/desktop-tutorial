@@ -63,13 +63,34 @@ DISALLOWED_ENGLISH_PHRASES = [
 ]
 
 
+# Prefixes/markers that identify a line as developer-only (not shown to users),
+# so an English phrase there is not a localization defect.
+_COMMENT_PREFIXES = ("//", "#", "<!--", "-->", "*", "/*")
+
+
+def _is_non_user_facing(line: str) -> bool:
+    s = line.strip()
+    if not s:
+        return True
+    if s.startswith(_COMMENT_PREFIXES):
+        return True
+    # console.log/error/warn, print(), and logger.* are diagnostics, never user copy
+    if "console." in s or s.startswith("print(") or "logger." in s:
+        return True
+    return False
+
+
 def test_user_facing_copy_is_indonesian():
     offenders = []
 
     for relative_path in USER_FACING_FILES:
-        text = (ROOT / relative_path).read_text(encoding="utf-8")
-        for phrase in DISALLOWED_ENGLISH_PHRASES:
-            if phrase in text:
-                offenders.append(f"{relative_path}: {phrase}")
+        for lineno, line in enumerate(
+            (ROOT / relative_path).read_text(encoding="utf-8").splitlines(), 1
+        ):
+            if _is_non_user_facing(line):
+                continue
+            for phrase in DISALLOWED_ENGLISH_PHRASES:
+                if phrase in line:
+                    offenders.append(f"{relative_path}:{lineno}: {phrase}")
 
-    assert offenders == []
+    assert offenders == [], f"English user-facing copy found: {offenders}"

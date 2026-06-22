@@ -35,7 +35,7 @@ def get_current_officer(x_telegram_auth: str = Header(None), db: Session = Depen
         user_data = json.loads(user_data_str)
         telegram_id = str(user_data.get("id"))
     except (json.JSONDecodeError, KeyError, TypeError):
-        raise HTTPException(status_code=400, detail="Failed to parse Telegram user data")
+        raise HTTPException(status_code=400, detail="Gagal membaca data pengguna Telegram")
 
     # 3. Cari Officer di Database
     officer = db.query(DbUser).filter(DbUser.telegram_id == telegram_id).first()

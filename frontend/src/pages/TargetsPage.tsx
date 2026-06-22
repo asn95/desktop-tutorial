@@ -79,7 +79,7 @@ export function TargetsPage() {
       refreshData();
       setBulkOfficer("");
     } catch {
-      alert("Failed to bulk assign.");
+      alert("Gagal menugaskan massal.");
     } finally {
       setBulkAssigning(false);
     }
@@ -95,7 +95,7 @@ export function TargetsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Failed to export.");
+      alert("Gagal mengekspor.");
     }
   }
 

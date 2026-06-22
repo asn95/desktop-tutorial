@@ -2,11 +2,11 @@
 C3MR Manager Bot - Bot Telegram untuk notifikasi dan statistik collection
 bagi manajer.
 
-Commands:
-  /start   - Welcome message
-  /summary - Daily collection statistics
-  /report  - Recent field reports
-  /ask     - AI-powered natural language queries and workflow automation
+Perintah:
+  /start   - Pesan sambutan
+  /summary - Statistik collection harian
+  /report  - Laporan lapangan terbaru
+  /ask     - Kueri bahasa alami & otomasi alur kerja bertenaga AI
 """
 import os
 import asyncio

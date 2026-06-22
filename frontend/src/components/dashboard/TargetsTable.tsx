@@ -70,7 +70,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
       setSelectedTarget(null);
       if (onRefresh) onRefresh();
     } catch (err) {
-      alert("Failed to assign officer.");
+      alert("Gagal menugaskan petugas.");
     } finally {
       setIsAssigning(false);
     }

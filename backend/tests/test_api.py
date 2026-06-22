@@ -62,7 +62,7 @@ def test_login_rate_limit(client):
         client.post("/api/auth/login", json={"username": "brute@force", "password": "wrong"})
     res = client.post("/api/auth/login", json={"username": "brute@force", "password": "wrong"})
     assert res.status_code == 429
-    assert "Too many" in res.json()["detail"]
+    assert "Terlalu banyak" in res.json()["detail"]
 
 
 # ── Users ────────────────────────────────────────────────────────────

@@ -201,7 +201,7 @@ def assign_targets_to_officer(target_ids: list[str], officer_id: str) -> dict:
         if officer.telegram_id and updated > 0:
             send_telegram_notification(
                 officer.telegram_id,
-                f"You have been assigned {updated} new target(s). Open the Field App to view.",
+                f"Anda mendapat {updated} target baru. Buka Aplikasi Lapangan untuk melihat.",
                 include_field_app=True,
             )
 
@@ -257,7 +257,7 @@ def auto_assign_pending_targets(address_filter: str | None = None) -> dict:
             if count > 0 and o.telegram_id:
                 send_telegram_notification(
                     o.telegram_id,
-                    f"You have been assigned {count} new target(s). Open the Field App to view.",
+                    f"Anda mendapat {count} target baru. Buka Aplikasi Lapangan untuk melihat.",
                     include_field_app=True,
                 )
             summary.append({"officer": o.name, "new_assignments": count})
@@ -266,6 +266,52 @@ def auto_assign_pending_targets(address_filter: str | None = None) -> dict:
             "success": True,
             "total_assigned": len(pending),
             "distribution": summary,
+        }
+
+
+def assign_all_pending_to_officer(officer: str, address_filter: str | None = None) -> dict:
+    """Assign ALL unassigned pending targets to a SINGLE officer (bulk).
+
+    `officer` may be the officer's id or name (case-insensitive partial match).
+    Returns only a summary count — never the full target list — so the result
+    stays small and the agent request never exceeds provider payload limits.
+    """
+    with get_db() as db:
+        person = db.query(DbUser).filter(
+            DbUser.role == UserRole.officer, DbUser.id == officer
+        ).first()
+        if not person:
+            person = db.query(DbUser).filter(
+                DbUser.role == UserRole.officer, DbUser.name.ilike(f"%{officer}%")
+            ).first()
+        if not person:
+            return {"success": False, "error": f"Officer '{officer}' not found"}
+
+        q = db.query(DbTarget).filter(
+            DbTarget.status == TargetStatus.pending,
+            DbTarget.assigned_officer.is_(None),
+        )
+        if address_filter:
+            q = q.filter(DbTarget.address.ilike(f"%{address_filter}%"))
+
+        count = 0
+        for target in q.all():
+            target.assigned_officer = person.id
+            target.status = TargetStatus.in_progress
+            count += 1
+        db.commit()
+
+        if count > 0 and person.telegram_id:
+            send_telegram_notification(
+                person.telegram_id,
+                f"Anda mendapat {count} target baru. Buka Aplikasi Lapangan untuk melihat.",
+                include_field_app=True,
+            )
+
+        return {
+            "success": True,
+            "officer_name": person.name,
+            "targets_assigned": count,
         }
 
 
@@ -455,6 +501,24 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "assign_all_pending_to_officer",
+        "description": "Assign ALL unassigned pending targets to ONE specific officer (bulk). Use this when the user wants every remaining/pending target given to a single officer (e.g. 'assign all remaining tasks to Budi'). The officer is given by name or id. Optionally filter by address area. Returns only a count — prefer this over fetching every target id yourself.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "officer": {
+                    "type": "string",
+                    "description": "Officer name (partial match) or officer id to receive all pending targets",
+                },
+                "address_filter": {
+                    "type": "string",
+                    "description": "Only assign targets whose address contains this text (e.g. 'Jakarta')",
+                },
+            },
+            "required": ["officer"],
+        },
+    },
+    {
         "name": "get_officer_performance",
         "description": "Get detailed performance metrics for all officers: completion rate, reports submitted, revenue collected.",
         "input_schema": {
@@ -488,6 +552,7 @@ TOOL_FUNCTIONS = {
     "get_flagged_targets": lambda **kw: get_flagged_targets(**kw),
     "assign_targets_to_officer": lambda **kw: assign_targets_to_officer(**kw),
     "auto_assign_pending_targets": lambda **kw: auto_assign_pending_targets(**kw),
+    "assign_all_pending_to_officer": lambda **kw: assign_all_pending_to_officer(**kw),
     "get_officer_performance": lambda **kw: get_officer_performance(**kw),
     "generate_daily_report": lambda **kw: generate_daily_report(),
 }

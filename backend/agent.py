@@ -58,6 +58,9 @@ RESPONSE FORMAT:
 
 MAX_TOOL_ROUNDS = 10
 MAX_TOKENS = 2048
+# Cap each tool result so a big list doesn't blow the provider's per-request
+# payload limit (Groq free tier returns 413 on oversized requests).
+MAX_TOOL_RESULT_CHARS = 6000
 
 
 def _to_openai_tools(tool_definitions: list[dict]) -> list[dict]:
@@ -133,6 +136,8 @@ async def run_agent(user_message: str) -> str:
                     content = json.dumps({"error": f"Unknown tool: {tc.function.name}"})
                 else:
                     content = json.dumps(fn(**args), default=str, ensure_ascii=False)
+                    if len(content) > MAX_TOOL_RESULT_CHARS:
+                        content = content[:MAX_TOOL_RESULT_CHARS] + ' …[hasil dipotong; persempit filter atau gunakan tool ringkasan]'
             except Exception as e:
                 content = json.dumps({"error": str(e)})
             messages.append({

@@ -56,7 +56,7 @@ export function AppShell({
   children: ReactNode;
   activeTab?: string;
 }) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { dark, toggle } = useTheme();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -171,6 +171,17 @@ export function AppShell({
     </div>
   );
 
+  const activeTab = tabs.find((t) => location.pathname === t.path);
+  const pageTitle = activeTab?.name ?? "Portal Manajemen";
+  const initials =
+    (user?.name ?? "")
+      .trim()
+      .split(/\s+/)
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "M";
+
   return (
     <div className={`min-h-screen font-sans ${dark ? "bg-[#0f1117] text-slate-200" : "bg-[#f4f5f7] text-gray-900"}`}>
       {maintenance && (
@@ -194,17 +205,61 @@ export function AppShell({
 
       {/* Content */}
       <div className="lg:pl-64">
-        {/* Mobile top bar */}
-        <header className={`sticky top-0 z-30 flex items-center justify-between border-b px-4 py-3 backdrop-blur lg:hidden ${dark ? "border-slate-800 bg-[#0f1117]/85" : "border-gray-200 bg-white/85"}`}>
-          <div className="flex items-center gap-2">
-            <img src={telkomLogo} alt="Telkom" className="h-7 w-7 object-contain" />
-            <span className="text-lg font-extrabold tracking-tight"><span className="text-[#E81E28]">C</span>3MR</span>
+        {/* Top header */}
+        <header
+          className={`sticky top-0 z-30 border-b backdrop-blur-xl transition-colors ${
+            dark
+              ? "border-slate-800 bg-[#0f1117]/80"
+              : "border-gray-200/70 bg-white/80 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+          } ${maintenance ? "lg:top-[36px]" : ""}`}
+        >
+          <div className="flex items-center justify-between gap-4 px-5 py-3 sm:px-8">
+            {/* Left: menu (mobile) + page title */}
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                onClick={() => setMenuOpen(true)}
+                aria-label="Buka menu"
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-95 lg:hidden ${
+                  dark ? "text-slate-300 hover:bg-slate-800/70" : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <span className="flex flex-col gap-[5px]">
+                  <span className="block h-[2px] w-5 rounded-full bg-current" />
+                  <span className="block h-[2px] w-5 rounded-full bg-current" />
+                  <span className="block h-[2px] w-5 rounded-full bg-current" />
+                </span>
+              </button>
+              <div className="min-w-0">
+                <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${dark ? "text-slate-500" : "text-gray-400"}`}>
+                  Portal Manajemen
+                </p>
+                <h1 className={`truncate text-lg font-bold leading-tight tracking-tight ${dark ? "text-slate-100" : "text-gray-900"}`}>
+                  {pageTitle}
+                </h1>
+              </div>
+            </div>
+
+            {/* Right: user chip */}
+            <div
+              className={`group flex shrink-0 items-center gap-2.5 rounded-full py-1 pl-3.5 pr-1.5 ring-1 transition-all duration-300 ${
+                dark
+                  ? "bg-slate-800/40 ring-white/10"
+                  : "bg-white ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.05)]"
+              }`}
+            >
+              <div className="hidden flex-col items-end leading-tight sm:flex">
+                <span className={`max-w-[160px] truncate text-[13px] font-semibold ${dark ? "text-slate-100" : "text-gray-900"}`}>
+                  {user?.name ?? "Manajer"}
+                </span>
+                <span className={`text-[10px] font-medium uppercase tracking-[0.14em] ${dark ? "text-slate-500" : "text-gray-400"}`}>
+                  Manajer
+                </span>
+              </div>
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#E81E28] text-[13px] font-bold text-white ring-2 ring-[#E81E28]/15 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
+                {initials}
+              </div>
+            </div>
           </div>
-          <button className="flex flex-col gap-[5px] p-1" onClick={() => setMenuOpen(true)} aria-label="Buka menu">
-            <span className={`block h-[2px] w-6 ${dark ? "bg-slate-200" : "bg-gray-900"}`} />
-            <span className={`block h-[2px] w-6 ${dark ? "bg-slate-200" : "bg-gray-900"}`} />
-            <span className={`block h-[2px] w-6 ${dark ? "bg-slate-200" : "bg-gray-900"}`} />
-          </button>
         </header>
 
         <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">

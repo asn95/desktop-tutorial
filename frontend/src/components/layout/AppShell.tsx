@@ -42,12 +42,12 @@ const I = {
 };
 
 const tabs = [
-  { name: "Dashboard", path: "/dashboard", icon: I.dashboard },
-  { name: "Analytics", path: "/analytics", icon: I.analytics },
-  { name: "User Management", path: "/users", icon: I.users },
-  { name: "Targets", path: "/targets", icon: I.targets },
-  { name: "Audit Log", path: "/audit", icon: I.audit },
-  { name: "AI Assistant", path: "/assistant", icon: I.assistant },
+  { name: "Dasbor", path: "/dashboard", icon: I.dashboard },
+  { name: "Analitik", path: "/analytics", icon: I.analytics },
+  { name: "Manajemen Pengguna", path: "/users", icon: I.users },
+  { name: "Target", path: "/targets", icon: I.targets },
+  { name: "Log Audit", path: "/audit", icon: I.audit },
+  { name: "Asisten AI", path: "/assistant", icon: I.assistant },
 ];
 
 export function AppShell({
@@ -66,7 +66,7 @@ export function AppShell({
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pwLoading, setPwLoading] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
-  const [maintMsg, setMaintMsg] = useState("System is under maintenance. Please try again later.");
+  const [maintMsg, setMaintMsg] = useState("Sistem sedang dalam pemeliharaan. Silakan coba lagi nanti.");
   const [maintToggling, setMaintToggling] = useState(false);
   const [showMaintModal, setShowMaintModal] = useState(false);
   const [maintCustomMsg, setMaintCustomMsg] = useState("");
@@ -107,11 +107,11 @@ export function AppShell({
     setPwMsg(null);
     try {
       await apiClient.post("/auth/change-password", { current_password: curPw, new_password: newPw });
-      setPwMsg({ ok: true, text: "Password changed successfully." });
+      setPwMsg({ ok: true, text: "Kata sandi berhasil diubah." });
       setCurPw("");
       setNewPw("");
     } catch (err: any) {
-      setPwMsg({ ok: false, text: err.response?.data?.detail || "Failed to change password." });
+      setPwMsg({ ok: false, text: err.response?.data?.detail || "Gagal mengubah kata sandi." });
     } finally {
       setPwLoading(false);
     }
@@ -124,7 +124,7 @@ export function AppShell({
         <img src={telkomLogo} alt="Telkom Indonesia" className="h-9 w-9 object-contain" />
         <div className="leading-tight">
           <div className="text-lg font-extrabold tracking-tight"><span className="text-[#E81E28]">C</span>3MR</div>
-          <div className={`text-[10px] font-medium ${dark ? "text-slate-500" : "text-gray-400"}`}>Management Portal</div>
+          <div className={`text-[10px] font-medium ${dark ? "text-slate-500" : "text-gray-400"}`}>Portal Manajemen</div>
         </div>
       </div>
 
@@ -155,17 +155,17 @@ export function AppShell({
       {/* Actions */}
       <div className={`mt-auto space-y-1 border-t px-3 py-4 ${dark ? "border-slate-800" : "border-gray-100"}`}>
         <button onClick={toggle} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
-          {dark ? "Light mode" : "Dark mode"}
+          {dark ? "Mode Terang" : "Mode Gelap"}
         </button>
         <button onClick={() => { setMaintCustomMsg(maintMsg); setShowMaintModal(true); }} className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${maintenance ? "text-amber-600 hover:bg-amber-50" : dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
-          Maintenance
+          Pemeliharaan
           {maintenance && <span className="h-2 w-2 rounded-full bg-amber-500" />}
         </button>
         <button onClick={() => setShowPwModal(true)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
-          Change password
+          Ubah Kata Sandi
         </button>
         <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#E81E28] transition-colors hover:bg-red-50">
-          Logout
+          Keluar
         </button>
       </div>
     </div>
@@ -175,7 +175,7 @@ export function AppShell({
     <div className={`min-h-screen font-sans ${dark ? "bg-[#0f1117] text-slate-200" : "bg-[#f4f5f7] text-gray-900"}`}>
       {maintenance && (
         <div className="relative z-50 bg-amber-500 px-4 py-2 text-center text-xs font-semibold text-black">
-          Maintenance mode active — only managers can access the system
+          Mode pemeliharaan aktif — hanya manajer yang dapat mengakses sistem
         </div>
       )}
 
@@ -200,7 +200,7 @@ export function AppShell({
             <img src={telkomLogo} alt="Telkom" className="h-7 w-7 object-contain" />
             <span className="text-lg font-extrabold tracking-tight"><span className="text-[#E81E28]">C</span>3MR</span>
           </div>
-          <button className="flex flex-col gap-[5px] p-1" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+          <button className="flex flex-col gap-[5px] p-1" onClick={() => setMenuOpen(true)} aria-label="Buka menu">
             <span className={`block h-[2px] w-6 ${dark ? "bg-slate-200" : "bg-gray-900"}`} />
             <span className={`block h-[2px] w-6 ${dark ? "bg-slate-200" : "bg-gray-900"}`} />
             <span className={`block h-[2px] w-6 ${dark ? "bg-slate-200" : "bg-gray-900"}`} />
@@ -210,7 +210,7 @@ export function AppShell({
         <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
           {children}
           <footer className={`mt-16 pt-6 text-xs ${dark ? "text-slate-600" : "text-gray-400"}`}>
-            C3MR — PT Telkom Indonesia (Persero) Tbk · Confidential
+            C3MR — PT Telkom Indonesia (Persero) Tbk · Rahasia
           </footer>
         </main>
       </div>
@@ -219,25 +219,25 @@ export function AppShell({
       {showMaintModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 px-4" onClick={() => setShowMaintModal(false)}>
           <div onClick={e => e.stopPropagation()} className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
-            <h2 className="text-lg font-bold text-gray-900">Maintenance mode</h2>
+            <h2 className="text-lg font-bold text-gray-900">Mode Pemeliharaan</h2>
             <p className="mt-1.5 text-sm text-gray-500">
               {maintenance
-                ? "System is currently in maintenance mode. Officers and external users cannot access the API."
-                : "Enable maintenance mode to block all non-manager access to the system."}
+                ? "Sistem sedang dalam mode pemeliharaan. Petugas dan pengguna eksternal tidak dapat mengakses API."
+                : "Aktifkan mode pemeliharaan untuk memblokir semua akses non-manajer ke sistem."}
             </p>
             <div className="mt-5 space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Message shown to users</label>
-              <input value={maintCustomMsg} onChange={e => setMaintCustomMsg(e.target.value)} placeholder="System is under maintenance…"
+              <label className="block text-sm font-medium text-gray-700">Pesan yang ditampilkan ke pengguna</label>
+              <input value={maintCustomMsg} onChange={e => setMaintCustomMsg(e.target.value)} placeholder="Sistem sedang dalam pemeliharaan…"
                 className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20" />
             </div>
             <div className="mt-6 flex gap-3">
               <button onClick={handleToggleMaintenance} disabled={maintToggling}
                 className={`flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-40 ${maintenance ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-500 text-black hover:bg-amber-600"}`}>
-                {maintToggling ? "Updating…" : maintenance ? "Disable maintenance" : "Enable maintenance"}
+                {maintToggling ? "Memperbarui…" : maintenance ? "Nonaktifkan pemeliharaan" : "Aktifkan pemeliharaan"}
               </button>
               <button type="button" onClick={() => setShowMaintModal(false)}
                 className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-                Cancel
+                Batal
               </button>
             </div>
           </div>
@@ -248,15 +248,15 @@ export function AppShell({
       {showPwModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 px-4" onClick={() => setShowPwModal(false)}>
           <form onSubmit={handleChangePw} onClick={e => e.stopPropagation()} className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
-            <h2 className="text-lg font-bold text-gray-900">Change password</h2>
+            <h2 className="text-lg font-bold text-gray-900">Ubah Kata Sandi</h2>
             <div className="mt-5 space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700">Current password</label>
+                <label className="block text-sm font-medium text-gray-700">Kata sandi saat ini</label>
                 <input type="password" autoFocus value={curPw} onChange={e => setCurPw(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700">New password</label>
+                <label className="block text-sm font-medium text-gray-700">Kata sandi baru</label>
                 <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20" />
               </div>
@@ -265,11 +265,11 @@ export function AppShell({
             <div className="mt-6 flex gap-3">
               <button type="submit" disabled={!curPw || !newPw || pwLoading}
                 className="flex-1 rounded-lg bg-[#E81E28] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#c8161f] disabled:opacity-40">
-                {pwLoading ? "Saving…" : "Save"}
+                {pwLoading ? "Menyimpan…" : "Simpan"}
               </button>
               <button type="button" onClick={() => { setShowPwModal(false); setPwMsg(null); setCurPw(""); setNewPw(""); }}
                 className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-                Cancel
+                Batal
               </button>
             </div>
           </form>

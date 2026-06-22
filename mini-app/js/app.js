@@ -63,7 +63,7 @@ async function loginSecure() {
 
         const user = tg.initDataUnsafe?.user;
         if (user) {
-            const name = user.first_name || 'Officer';
+            const name = user.first_name || 'Petugas';
             document.getElementById('officer-id').textContent =
                 name.toUpperCase().slice(0, 4) + '-' + String(user.id).slice(-3);
         }
@@ -81,9 +81,9 @@ async function loginSecure() {
             currentTasks = cached;
             renderTasks();
             showView('list');
-            document.getElementById('sync-time').textContent = 'OFFLINE';
+            document.getElementById('sync-time').textContent = 'LURING';
         } else {
-            alert("Akses Ditolak: Validasi Kriptografi Gagal atau Officer Tidak Terdaftar.");
+            alert("Akses ditolak: validasi kriptografi gagal atau petugas belum terdaftar.");
             showView('login');
         }
     }
@@ -97,7 +97,7 @@ function manualLogin() {
     const tid = document.getElementById('manual-tid').value;
     if (tid) {
         loginAttempts++;
-        initDataString = `user={"id":${tid},"first_name":"Officer"}&hash=dummy_hash`;
+        initDataString = `user={"id":${tid},"first_name":"Petugas"}&hash=dummy_hash`;
         loginSecure();
     }
 }
@@ -113,7 +113,7 @@ function showView(viewId) {
         if (tg.initData) {
             // Inside Telegram: use native MainButton, hide HTML button
             tg.BackButton.show();
-            tg.MainButton.setText("FINALIZE SUBMISSION");
+            tg.MainButton.setText("KIRIM LAPORAN");
             tg.MainButton.color = "#dc2626";
             tg.MainButton.show();
             if (webBtn) webBtn.classList.add('hidden');
@@ -133,7 +133,7 @@ tg.BackButton.onClick(() => showView('list'));
 
 tg.MainButton.onClick(async () => {
     const photo = document.getElementById('photo-input').files[0];
-    if (!photo) { tg.showAlert("Photo evidence is mandatory."); return; }
+    if (!photo) { tg.showAlert("Bukti foto wajib dilampirkan."); return; }
 
     tg.MainButton.showProgress();
     const fd = new FormData();
@@ -150,9 +150,9 @@ tg.MainButton.onClick(async () => {
         });
         if (!res.ok) throw new Error();
         tg.HapticFeedback.notificationOccurred('success');
-        tg.showAlert("Report Submitted Successfully!", () => loginSecure());
+        tg.showAlert("Laporan berhasil dikirim!", () => loginSecure());
     } catch (err) {
-        tg.showAlert("Submission failed.");
+        tg.showAlert("Pengiriman gagal.");
     } finally {
         tg.MainButton.hideProgress();
     }
@@ -164,27 +164,27 @@ function renderTasks() {
     document.getElementById('active-cases').textContent = active;
 
     if (active === 0) {
-        taskContainer.innerHTML = '<p style="text-align:center;color:#9ca3af;padding:40px 16px;font-size:13px;">No pending assignments.</p>';
+        taskContainer.innerHTML = '<p style="text-align:center;color:#9ca3af;padding:40px 16px;font-size:13px;">Tidak ada tugas tertunda.</p>';
         return;
     }
 
     const activeTasks = currentTasks.filter(t => t.status !== 'completed');
     activeTasks.forEach((task, i) => {
-        const pri = task.amountDue >= 15000000 ? ['Priority 1','pbadge-1'] :
-                    task.amountDue >= 5000000  ? ['Priority 2','pbadge-2'] :
-                                                  ['Priority 3','pbadge-3'];
+        const pri = task.amountDue >= 15000000 ? ['Prioritas 1','pbadge-1'] :
+                    task.amountDue >= 5000000  ? ['Prioritas 2','pbadge-2'] :
+                                                  ['Prioritas 3','pbadge-3'];
         const caseNum = '2025-' + String(8394 - i * 3012).replace('-','');
 
         const div = document.createElement('div');
         div.className = 'tcard';
         div.innerHTML =
-            '<div class="tcard-case">Case #' + esc(caseNum) + '</div>' +
+            '<div class="tcard-case">Kasus #' + esc(caseNum) + '</div>' +
             '<div class="tcard-name">' + esc(task.customerName) + '</div>' +
             '<div class="tcard-addr">' + esc(task.address) + '</div>' +
             '<div class="pbadge ' + pri[1] + '">' + pri[0] + '</div>' +
             '<div class="tcard-bottom">' +
                 '<span class="tcard-amt">Rp ' + task.amountDue.toLocaleString('id-ID') + '</span>' +
-                '<button class="tcard-btn">Process Report &rarr;</button>' +
+                '<button class="tcard-btn">Proses Laporan &rarr;</button>' +
             '</div>';
 
         div.querySelector('.tcard-btn').addEventListener('click', () => showDetail(task));
@@ -200,10 +200,10 @@ function showDetail(task) {
     selectedTag = null;
     document.getElementById('target-name').textContent = task.customerName;
     document.getElementById('target-address').textContent = task.address;
-    document.getElementById('target-amount').textContent = 'Balance: Rp ' + task.amountDue.toLocaleString('id-ID');
+    document.getElementById('target-amount').textContent = 'Saldo: Rp ' + task.amountDue.toLocaleString('id-ID');
     document.getElementById('report-form').reset();
     document.getElementById('photo-area').className = 'upbox';
-    document.getElementById('photo-preview').innerHTML = '<p class="upbox-ph">Tap to capture photo proof</p>';
+    document.getElementById('photo-preview').innerHTML = '<p class="upbox-ph">Ketuk untuk mengambil bukti foto</p>';
     document.getElementById('cmt-input').value = '';
     document.querySelectorAll('.cmt-tag').forEach(t => t.classList.remove('active'));
     loadComments(task.id);
@@ -300,7 +300,7 @@ async function loadComments(targetId) {
                 const time = new Date(c.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
                 return '<div class="cmt-item">' + tagHtml +
                     '<div class="cmt-item-msg">' + esc(c.message) + '</div>' +
-                    '<div class="cmt-item-time">' + esc(time) + ' (cached)</div></div>';
+                '<div class="cmt-item-time">' + esc(time) + ' (tersimpan)</div></div>';
             }).join('');
         } else {
             list.innerHTML = '<p class="cmt-empty">Gagal memuat komentar.</p>';
@@ -310,10 +310,10 @@ async function loadComments(targetId) {
 
 async function submitReportWeb() {
     const photo = document.getElementById('photo-input').files[0];
-    if (!photo) { alert("Photo evidence is mandatory."); return; }
+    if (!photo) { alert("Bukti foto wajib dilampirkan."); return; }
 
     const btn = document.getElementById('web-submit-btn');
-    btn.textContent = "Processing...";
+    btn.textContent = "Memproses...";
     btn.disabled = true;
 
     const fd = new FormData();
@@ -329,12 +329,12 @@ async function submitReportWeb() {
             body: fd
         });
         if (!res.ok) throw new Error();
-        alert("Report Submitted Successfully!");
+        alert("Laporan berhasil dikirim!");
         loginSecure();
     } catch (err) {
-        alert("Submission failed.");
+        alert("Pengiriman gagal.");
     } finally {
-        btn.textContent = "Finalize Submission";
+        btn.textContent = "Kirim Laporan";
         btn.disabled = false;
     }
 }
@@ -345,6 +345,6 @@ document.getElementById('photo-input').onchange = (e) => {
         document.getElementById('photo-area').className = 'upbox attached';
         document.getElementById('photo-preview').innerHTML =
             '<p class="upbox-file">' + file.name.toUpperCase() + '</p>' +
-            '<p class="upbox-repl">Replace Photo</p>';
+            '<p class="upbox-repl">Ganti Foto</p>';
     }
 };

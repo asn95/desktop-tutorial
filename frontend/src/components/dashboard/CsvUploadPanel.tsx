@@ -28,7 +28,7 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: () => vo
     setFullData([]);
 
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      setError("Only .csv files are accepted.");
+      setError("Hanya file .csv yang diterima.");
       return;
     }
 
@@ -40,13 +40,13 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: () => vo
         const missingColumns = REQUIRED_COLUMNS.filter((column) => !normalizedHeaders.includes(column));
 
         if (missingColumns.length > 0) {
-          setError(`Missing required columns: ${missingColumns.join(", ")}`);
+          setError(`Kolom wajib tidak ada: ${missingColumns.join(", ")}`);
           return;
         }
 
         setFullData(data);
         setPreviewRows(data.slice(0, 5));
-        setMessage(`Ready: ${data.length} records parsed.`);
+        setMessage(`Siap: ${data.length} baris terbaca.`);
       },
       error: (parseError) => {
         setError(parseError.message);
@@ -61,13 +61,13 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: () => vo
     setMessage(null);
     try {
       await apiClient.post("/targets/upload", fullData);
-      setMessage(`Successfully synchronized ${fullData.length} records.`);
+      setMessage(`Berhasil menyinkronkan ${fullData.length} baris.`);
       setFullData([]);
       setPreviewRows([]);
       setSelectedFile(null);
       if (onUploadSuccess) onUploadSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Synchronization failed.");
+      setError(err.response?.data?.detail || "Sinkronisasi gagal.");
     } finally {
       setIsUploading(false);
     }
@@ -75,16 +75,16 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: () => vo
 
   return (
     <div className="border border-gray-200 bg-white p-6 shadow-sm">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-black">Data Synchronization</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-black">Sinkronisasi Data</h3>
       <p className="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-        Import batch collection targets
+        Impor target penagihan secara massal
       </p>
 
       <div className="mt-6 space-y-4">
         <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center border-2 border-dashed border-slate-200 bg-slate-50 transition hover:bg-slate-100">
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
             <p className="mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-              {selectedFile ? selectedFile.name : "Select CSV Source"}
+              {selectedFile ? selectedFile.name : "Pilih Sumber CSV"}
             </p>
             <p className="text-[10px] font-medium text-slate-400">customer_name, address, phone, amount_due</p>
           </div>
@@ -94,9 +94,9 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: () => vo
         <button
           onClick={handleUpload}
           disabled={!fullData.length || isUploading}
-          className="w-full border border-gray-200 bg-black py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#c8161f] disabled:opacity-30"
+          className="w-full rounded-lg bg-[#E81E28] py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#c8161f] disabled:opacity-30"
         >
-          {isUploading ? "Processing..." : "Authorize Batch Upload"}
+          {isUploading ? "Memproses..." : "Unggah Batch"}
         </button>
       </div>
 

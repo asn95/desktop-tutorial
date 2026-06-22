@@ -36,13 +36,13 @@ async def upload_targets(targets: List[TargetCreate], db: Session = Depends(get_
             for t in targets
         ]
         db.add_all(db_targets)
-        db.add(DbAuditLog(user_id=_auth["sub"], action="upload", detail=f"Uploaded {len(targets)} targets"))
+        db.add(DbAuditLog(user_id=_auth["sub"], action="upload", detail=f"Mengunggah {len(targets)} target"))
         db.commit()
-        return {"message": f"Successfully uploaded {len(targets)} targets"}
+        return {"message": f"Berhasil mengunggah {len(targets)} target"}
     except Exception as e:
         db.rollback()
         import traceback; traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to upload targets: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Gagal mengunggah target: {str(e)}")
 
 from ..notifications import send_telegram_notification
 from ..lib.format import format_currency_python # We'll create this helper
@@ -51,16 +51,16 @@ def _assign_one(db_target, db_officer, db, auth_sub):
     """Assign a single target and send notification. Returns success bool."""
     db_target.assigned_officer = db_officer.id
     db_target.status = TargetStatus.in_progress
-    db.add(DbAuditLog(user_id=auth_sub, action="assign", detail=f"Assigned '{db_target.customer_name}' to {db_officer.name}"))
+    db.add(DbAuditLog(user_id=auth_sub, action="assign", detail=f"Menugaskan '{db_target.customer_name}' ke {db_officer.name}"))
 
     if db_officer.telegram_id:
         formatted_amount = format_currency_python(db_target.amount_due)
         msg = (
-            f"🚨 *NEW ASSIGNMENT*\n\n"
+            f"🚨 *TUGAS BARU*\n\n"
             f"Target: *{db_target.customer_name}*\n"
-            f"Amount: *{formatted_amount}*\n"
-            f"Location: {db_target.address}\n\n"
-            f"Open your C3MR Field App to begin collection."
+            f"Jumlah: *{formatted_amount}*\n"
+            f"Lokasi: {db_target.address}\n\n"
+            f"Buka C3MR Field App untuk mulai melakukan collection."
         )
         success = send_telegram_notification(db_officer.telegram_id, msg, include_field_app=True)
         db.add(DbNotificationLog(recipient_id=db_officer.id, message=msg, success="true" if success else "false"))
@@ -69,14 +69,14 @@ def _assign_one(db_target, db_officer, db, auth_sub):
 async def assign_target(target_id: str, officer_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
     db_target = db.query(DbTarget).filter(DbTarget.id == target_id).first()
     if not db_target:
-        raise HTTPException(status_code=404, detail="Target not found")
+        raise HTTPException(status_code=404, detail="Target tidak ditemukan")
     db_officer = db.query(DbUser).filter(DbUser.id == officer_id).first()
     if not db_officer:
-        raise HTTPException(status_code=404, detail="Officer not found")
+        raise HTTPException(status_code=404, detail="Petugas tidak ditemukan")
 
     _assign_one(db_target, db_officer, db, _auth["sub"])
     db.commit()
-    return {"message": f"Target assigned to {db_officer.name}"}
+    return {"message": f"Target berhasil ditugaskan ke {db_officer.name}"}
 
 from pydantic import BaseModel as _BaseModel
 
@@ -88,16 +88,16 @@ class BulkAssignPayload(_BaseModel):
 async def bulk_assign(payload: BulkAssignPayload, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
     db_officer = db.query(DbUser).filter(DbUser.id == payload.officer_id).first()
     if not db_officer:
-        raise HTTPException(status_code=404, detail="Officer not found")
+        raise HTTPException(status_code=404, detail="Petugas tidak ditemukan")
 
     targets = db.query(DbTarget).filter(DbTarget.id.in_(payload.target_ids)).all()
     if not targets:
-        raise HTTPException(status_code=404, detail="No targets found")
+        raise HTTPException(status_code=404, detail="Tidak ada target yang ditemukan")
 
     for t in targets:
         _assign_one(t, db_officer, db, _auth["sub"])
     db.commit()
-    return {"message": f"{len(targets)} targets assigned to {db_officer.name}"}
+    return {"message": f"{len(targets)} target berhasil ditugaskan ke {db_officer.name}"}
 
 @router.get("/export/csv")
 async def export_targets_csv(db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
@@ -106,7 +106,7 @@ async def export_targets_csv(db: Session = Depends(get_db), _auth: dict = Depend
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["ID", "Customer Name", "Address", "Phone", "Amount Due", "Officer", "Status", "Created At"])
+    writer.writerow(["ID", "Nama Nasabah", "Alamat", "Telepon", "Jumlah Tagihan", "Petugas", "Status", "Dibuat Pada"])
     for t in targets:
         writer.writerow([
             t.id[:8],

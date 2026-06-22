@@ -26,6 +26,20 @@ interface AnalyticsData {
   top_issues: { tag: string; count: number }[];
 }
 
+const DIST_LABELS: Record<string, string> = {
+  "Pending": "Menunggu",
+  "In Progress": "Sedang Berjalan",
+  "Completed": "Selesai",
+};
+
+const TAG_LABELS: Record<string, string> = {
+  wrong_address: "Alamat Salah",
+  wrong_phone: "Nomor Salah",
+  customer_moved: "Customer Pindah",
+  not_found: "Tidak Ditemukan",
+  other: "Lainnya",
+};
+
 export function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +62,7 @@ export function AnalyticsPage() {
     return (
       <AppShell>
         <p className="py-20 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-          Processing Analytics Data...
+          Memproses data analitik...
         </p>
       </AppShell>
     );
@@ -67,7 +81,7 @@ export function AnalyticsPage() {
       <div className="space-y-12 font-sans">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black dark:text-white">
-            Analytics & Performance
+            Analitik & Kinerja
           </h1>
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -76,7 +90,7 @@ export function AnalyticsPage() {
               onChange={e => setDateFrom(e.target.value)}
               className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-2 py-1.5 text-[10px] font-bold"
             />
-            <span className="text-[10px] font-bold text-slate-400">to</span>
+            <span className="text-[10px] font-bold text-slate-400">s/d</span>
             <input
               type="date"
               value={dateTo}
@@ -94,7 +108,7 @@ export function AnalyticsPage() {
                 onClick={() => { setDateFrom(""); setDateTo(""); fetchData(); }}
                 className="text-[10px] font-bold text-red-600 hover:underline"
               >
-                Clear
+                Bersihkan
               </button>
             )}
           </div>
@@ -103,20 +117,20 @@ export function AnalyticsPage() {
         {/* Revenue Section */}
         <section>
           <div className="border-b-2 border-gray-200 pb-2 mb-8">
-            <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Revenue Overview</h2>
+            <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Ringkasan Pendapatan</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
             <div className="p-5 sm:p-8 border-b sm:border-b-0 sm:border-r border-gray-200">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">Total Outstanding</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">Total Tunggakan</p>
               <p className="text-2xl sm:text-4xl font-medium tracking-tighter text-[#1a1c1e]">{formatCurrency(revenue.total_due)}</p>
             </div>
             <div className="p-5 sm:p-8 border-b sm:border-b-0 sm:border-r border-gray-200">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">Collected</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">Terkumpul</p>
               <p className="text-2xl sm:text-4xl font-medium tracking-tighter text-[#1a1c1e]">{formatCurrency(revenue.collected)}</p>
             </div>
             <div className="p-5 sm:p-8">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">Outstanding</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">Tunggakan</p>
               <p className="text-2xl sm:text-4xl font-medium tracking-tighter text-red-600">{formatCurrency(revenue.outstanding)}</p>
             </div>
           </div>
@@ -124,7 +138,7 @@ export function AnalyticsPage() {
           {/* Collection progress */}
           <div className="mt-6 rounded-2xl border border-gray-100 p-6 bg-white">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Collection Progress</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Progres Penagihan</span>
               <span className="text-sm font-semibold text-[#1a1c1e]">{revenue.collection_rate}%</span>
             </div>
             <div className="w-full h-2 bg-slate-100">
@@ -136,7 +150,7 @@ export function AnalyticsPage() {
         {/* Status Breakdown */}
         <section>
           <div className="border-b-2 border-gray-200 pb-2 mb-8">
-            <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Target Status Breakdown</h2>
+            <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Rincian Status Target</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
@@ -147,7 +161,7 @@ export function AnalyticsPage() {
               return (
                 <div key={d.name} className={`p-5 sm:p-8 ${i < 2 ? "border-b sm:border-b-0 sm:border-r border-gray-200" : ""}`}>
                   <div className={`border-l-4 ${colors[i]} pl-4`}>
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{d.name}</p>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{DIST_LABELS[d.name] ?? d.name}</p>
                     <div className="flex items-baseline gap-2 mt-2">
                       <span className="text-4xl sm:text-5xl font-medium tracking-tighter text-[#1a1c1e]">{d.value}</span>
                       <span className={`text-sm font-semibold ${textColors[i]}`}>{pct}%</span>
@@ -162,7 +176,7 @@ export function AnalyticsPage() {
         {/* Officer Performance */}
         <section>
           <div className="border-b-2 border-gray-200 pb-2 mb-8">
-            <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Officer Performance</h2>
+            <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Kinerja Petugas</h2>
           </div>
 
           {officer_performance.length === 0 ? (
@@ -182,7 +196,7 @@ export function AnalyticsPage() {
                       <div className="w-28 sm:w-40 shrink-0">
                         <p className="text-xs font-bold text-[#1a1c1e]">{o.name}</p>
                         <p className="text-[9px] text-slate-400 mt-0.5">
-                          {o.reports} report{o.reports !== 1 ? "s" : ""} filed
+                          {o.reports} laporan dikirim
                         </p>
                       </div>
                       <div className="flex-1 hidden sm:block">
@@ -202,8 +216,8 @@ export function AnalyticsPage() {
                   );
                 })}
               <div className="border-t border-slate-200 px-6 py-3 flex items-center gap-4 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-2 bg-[#E81E28] inline-block" /> Completed</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-2 bg-slate-200 inline-block" /> Assigned</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-2 bg-[#E81E28] inline-block" /> Selesai</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-2 bg-slate-200 inline-block" /> Ditugaskan</span>
               </div>
             </div>
           )}
@@ -214,14 +228,14 @@ export function AnalyticsPage() {
           {/* Activity Summary */}
           <div>
             <div className="border-b-2 border-gray-200 pb-2 mb-8">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Activity Summary</h2>
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Ringkasan Aktivitas</h2>
             </div>
             <div className="border border-gray-200 bg-white divide-y divide-slate-100">
-              <ActivityRow label="Targets Registered" value={data.total_targets} />
-              <ActivityRow label="Field Reports Submitted" value={data.total_reports} />
-              <ActivityRow label="Officer Comments" value={data.total_comments} />
-              <ActivityRow label="Active Officers" value={officer_performance.length} />
-              <ActivityRow label="Avg. Targets per Officer" value={
+              <ActivityRow label="Target Terdaftar" value={data.total_targets} />
+              <ActivityRow label="Laporan Lapangan Dikirim" value={data.total_reports} />
+              <ActivityRow label="Komentar Petugas" value={data.total_comments} />
+              <ActivityRow label="Petugas Aktif" value={officer_performance.length} />
+              <ActivityRow label="Rata-rata Target per Petugas" value={
                 officer_performance.length > 0
                   ? Math.round(data.total_targets / officer_performance.length)
                   : 0
@@ -232,12 +246,12 @@ export function AnalyticsPage() {
           {/* Field Issues */}
           <div>
             <div className="border-b-2 border-gray-200 pb-2 mb-8">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Reported Field Issues</h2>
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Kendala Lapangan Dilaporkan</h2>
             </div>
             <div className="border border-gray-200 bg-white">
               {top_issues.length === 0 ? (
                 <p className="px-6 py-10 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                  No issues reported yet.
+                  Belum ada kendala dilaporkan.
                 </p>
               ) : (
                 top_issues.map((issue, i) => {
@@ -245,7 +259,7 @@ export function AnalyticsPage() {
                   const barW = Math.round((issue.count / maxCount) * 100);
                   return (
                     <div key={issue.tag} className={`flex items-center justify-between px-6 py-4 ${i > 0 ? "border-t border-slate-100" : ""}`}>
-                      <span className="text-xs font-bold text-[#1a1c1e]">{issue.tag}</span>
+                      <span className="text-xs font-bold text-[#1a1c1e]">{TAG_LABELS[issue.tag] ?? issue.tag}</span>
                       <div className="flex items-center gap-3">
                         <div className="w-24 h-1.5 bg-slate-100">
                           <div className="h-full bg-red-500" style={{ width: `${barW}%` }} />

@@ -11,7 +11,7 @@ export function formatCurrency(value: number) {
 }
 
 export function formatStatus(status: TargetStatus) {
-  if (status === "in_progress") return "In Progress";
-  if (status === "completed") return "Completed";
-  return "Pending";
+  if (status === "in_progress") return "Sedang Berjalan";
+  if (status === "completed") return "Selesai";
+  return "Menunggu";
 }

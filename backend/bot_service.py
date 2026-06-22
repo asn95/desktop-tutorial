@@ -1,6 +1,6 @@
 """
-C3MR Manager Bot - Telegram Bot for managers to receive notifications
-and query collection statistics.
+C3MR Manager Bot - Bot Telegram untuk notifikasi dan statistik collection
+bagi manajer.
 
 Commands:
   /start   - Welcome message
@@ -47,6 +47,17 @@ def is_manager(telegram_id: str, db) -> bool:
         return True
     return False
 
+
+def format_payment_status(status) -> str:
+    value = status.value if hasattr(status, "value") else status
+    return {
+        "Promise to Pay": "Janji Bayar",
+        "Paid": "Lunas",
+        "Refused": "Menolak",
+        "Not Home": "Tidak di Rumah",
+        "Partial Payment": "Bayar Sebagian",
+    }.get(value, value)
+
 async def require_manager(update: Update) -> bool:
     """Gate check — returns True if authorized, sends denial if not."""
     tid = str(update.effective_user.id)
@@ -54,9 +65,9 @@ async def require_manager(update: Update) -> bool:
         if is_manager(tid, db):
             return True
     await update.message.reply_text(
-        "⛔ *Access Denied*\n\n"
-        "This command is restricted to authorized managers only\\.\n"
-        "Your Telegram ID is not registered as a manager in the C3MR system\\.",
+        "⛔ *Akses Ditolak*\n\n"
+        "Perintah ini hanya untuk manajer yang berwenang\\.\n"
+        "Telegram ID Anda belum terdaftar sebagai manajer di sistem C3MR\\.",
         parse_mode="MarkdownV2"
     )
     return False
@@ -71,27 +82,27 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if mgr:
         web_url = os.environ.get("WEB_ADMIN_URL", "https://c3mr-app-production.up.railway.app")
         keyboard = [[
-            InlineKeyboardButton("Open Web Dashboard", url=web_url)
+            InlineKeyboardButton("Buka Dasbor Web", url=web_url)
         ]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            f"Welcome, *{user.first_name}*\\!\n\n"
-            "🔐 *C3MR Manager Console*\n\n"
-            "Available commands:\n"
-            "  /summary \\- Collection statistics\n"
-            "  /report  \\- Recent field reports\n"
-            "  /ask     \\- AI assistant \\(natural language\\)\n\n"
-            "Or just type a question directly\\!",
+            f"Selamat datang, *{user.first_name}*\\!\n\n"
+            "🔐 *Konsol Manajer C3MR*\n\n"
+            "Perintah yang tersedia:\n"
+            "  /summary \\- Statistik collection\n"
+            "  /report  \\- Laporan lapangan terbaru\n"
+            "  /ask     \\- Asisten AI bahasa alami\n\n"
+            "Atau langsung ketik pertanyaan\\!",
             parse_mode="MarkdownV2",
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
-            f"Hello, {user.first_name}\\.\n\n"
-            "⛔ You are not registered as a manager\\.\n"
-            f"Your Telegram ID: `{tid}`\n\n"
-            "Please contact your administrator to get access\\.",
+            f"Halo, {user.first_name}\\.\n\n"
+            "⛔ Anda belum terdaftar sebagai manajer\\.\n"
+            f"Telegram ID Anda: `{tid}`\n\n"
+            "Silakan hubungi administrator untuk mendapatkan akses\\.",
             parse_mode="MarkdownV2"
         )
 
@@ -111,21 +122,21 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             officers = db.query(func.count(DbUser.id)).filter(DbUser.role == "officer").scalar() or 0
 
         msg = (
-            f"📊 *C3MR Daily Summary*\n\n"
-            f"*Targets*\n"
+            f"📊 *Ringkasan Harian C3MR*\n\n"
+            f"*Target*\n"
             f"  Total: {total}\n"
-            f"  Pending: {pending}\n"
-            f"  In Progress: {in_progress}\n"
-            f"  Completed: {completed}\n\n"
-            f"*Revenue*\n"
-            f"  Total Due: Rp {total_due:,.0f}\n"
-            f"  Collected: Rp {collected:,.0f}\n\n"
-            f"*Officers Active*: {officers}"
+            f"  Menunggu: {pending}\n"
+            f"  Sedang Berjalan: {in_progress}\n"
+            f"  Selesai: {completed}\n\n"
+            f"*Pendapatan*\n"
+            f"  Total Tagihan: Rp {total_due:,.0f}\n"
+            f"  Tertagih: Rp {collected:,.0f}\n\n"
+            f"*Petugas Aktif*: {officers}"
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception as e:
         print(f"Error in summary_command: {e}")
-        await update.message.reply_text("Failed to retrieve summary. Please try again later.")
+        await update.message.reply_text("Gagal mengambil ringkasan. Silakan coba lagi nanti.")
 
 async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await require_manager(update):
@@ -142,22 +153,22 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         if not recent:
-            await update.message.reply_text("No reports submitted yet.")
+            await update.message.reply_text("Belum ada laporan yang dikirim.")
             return
 
-        lines = ["📋 *Recent Field Reports*\n"]
+        lines = ["📋 *Laporan Lapangan Terbaru*\n"]
         for report, target, officer in recent:
             lines.append(
                 f"• *{target.customer_name}*\n"
-                f"  Officer: {officer.name}\n"
-                f"  Status: {report.payment_status.value if hasattr(report.payment_status, 'value') else report.payment_status}\n"
-                f"  Notes: {report.notes or '-'}\n"
+                f"  Petugas: {officer.name}\n"
+                f"  Status: {format_payment_status(report.payment_status)}\n"
+                f"  Catatan: {report.notes or '-'}\n"
             )
 
         await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
     except Exception as e:
         print(f"Error in report_command: {e}")
-        await update.message.reply_text("Failed to retrieve reports. Please try again later.")
+        await update.message.reply_text("Gagal mengambil laporan. Silakan coba lagi nanti.")
 
 async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /ask <question> — AI-powered workflow agent."""
@@ -168,13 +179,13 @@ async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     question = " ".join(context.args) if context.args else ""
     if not question:
         await update.message.reply_text(
-            "Usage: /ask <your question>\n\n"
-            "Examples:\n"
-            "  /ask What's our collection rate?\n"
-            "  /ask Which targets are overdue?\n"
-            "  /ask Auto-assign pending Jakarta targets\n"
-            "  /ask Who's the top performing officer?\n"
-            "  /ask Generate daily report"
+            "Cara pakai: /ask <pertanyaan Anda>\n\n"
+            "Contoh:\n"
+            "  /ask Berapa collection rate kita?\n"
+            "  /ask Target mana yang sudah jatuh tempo?\n"
+            "  /ask Tugaskan otomatis target pending Jakarta\n"
+            "  /ask Siapa petugas dengan kinerja terbaik?\n"
+            "  /ask Buat laporan harian"
         )
         return
 
@@ -194,8 +205,8 @@ async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         print(f"Agent error: {e}", flush=True)
         await update.message.reply_text(
-            f"Agent error: {str(e)[:200]}\n\n"
-            "Make sure GEMINI_API_KEY is set in your environment."
+            f"Kesalahan agen: {str(e)[:200]}\n\n"
+            "Pastikan GEMINI_API_KEY sudah diatur di environment."
         )
 
 
@@ -222,12 +233,12 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             await update.message.reply_text(response)
     except Exception as e:
         print(f"Agent error: {e}", flush=True)
-        await update.message.reply_text(f"Agent error: {str(e)[:200]}")
+        await update.message.reply_text(f"Kesalahan agen: {str(e)[:200]}")
 
 
 def run_bot():
     if not TOKEN:
-        print("TELEGRAM_BOT_TOKEN not set. Bot not started.", flush=True)
+        print("TELEGRAM_BOT_TOKEN belum diatur. Bot tidak dijalankan.", flush=True)
         return
 
     import time as _time
@@ -241,7 +252,7 @@ def run_bot():
         pass
 
     # Wait long enough for the old container's long-poll to time out (default 30s)
-    print("Waiting 35s for previous container to release polling lock...", flush=True)
+    print("Menunggu 35 detik agar container sebelumnya melepas polling lock...", flush=True)
     _time.sleep(35)
 
     app = Application.builder().token(TOKEN).build()
@@ -251,7 +262,7 @@ def run_bot():
     app.add_handler(CommandHandler("ask", ask_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
 
-    print("C3MR Manager Bot is running (with AI Agent)...", flush=True)
+    print("Bot Manajer C3MR berjalan dengan Agen AI...", flush=True)
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":

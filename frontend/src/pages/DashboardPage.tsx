@@ -82,7 +82,7 @@ export function DashboardPage() {
   if (isLoading) {
     return (
       <AppShell activeTab="DASHBOARD">
-        <div className="py-24 text-center text-sm font-medium text-gray-400">Loading dashboard…</div>
+        <div className="py-24 text-center text-sm font-medium text-gray-400">Memuat dasbor…</div>
       </AppShell>
     );
   }
@@ -91,7 +91,7 @@ export function DashboardPage() {
     return (
       <AppShell activeTab="DASHBOARD">
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm font-medium text-[#E81E28]">
-          {error || "Failed to load data."}
+          {error || "Gagal memuat data."}
         </div>
       </AppShell>
     );
@@ -111,16 +111,16 @@ export function DashboardPage() {
     <AppShell activeTab="DASHBOARD">
       <div className="space-y-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Operational Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500">Real-time overview of collection targets and field activity.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dasbor Operasional</h1>
+          <p className="mt-1 text-sm text-gray-500">Ringkasan real-time target penagihan dan aktivitas lapangan.</p>
         </div>
 
         {/* Summary Cards */}
         <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <SummaryCard label="Total Targets" value={stats.totalTargets} accent="default" />
-          <SummaryCard label="Completed" value={stats.completed} accent="success" />
-          <SummaryCard label="In Progress" value={stats.inProgress} accent="warning" />
-          <SummaryCard label="Pending" value={stats.pending} accent="danger" />
+          <SummaryCard label="Total Target" value={stats.totalTargets} accent="default" />
+          <SummaryCard label="Selesai" value={stats.completed} accent="success" />
+          <SummaryCard label="Sedang Berjalan" value={stats.inProgress} accent="warning" />
+          <SummaryCard label="Menunggu" value={stats.pending} accent="danger" />
         </section>
 
         {/* Operational Panels: Pending / Active / Comments */}
@@ -128,12 +128,12 @@ export function DashboardPage() {
           {/* Unassigned Targets (Action Required) */}
           <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <h3 className="text-sm font-semibold text-gray-900">Needs Assignment</h3>
+              <h3 className="text-sm font-semibold text-gray-900">Perlu Penugasan</h3>
               <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-[#E81E28]">{pendingTargets.length}</span>
             </div>
             <div className="max-h-[320px] divide-y divide-gray-100 overflow-y-auto">
               {pendingTargets.length === 0 ? (
-                <p className="px-5 py-8 text-center text-xs text-gray-400">All targets assigned</p>
+                <p className="px-5 py-8 text-center text-xs text-gray-400">Semua target sudah ditugaskan</p>
               ) : (
                 pendingTargets.slice(0, 8).map(t => (
                   <div key={t.id} className="px-5 py-3">
@@ -149,12 +149,12 @@ export function DashboardPage() {
           {/* Recently Assigned (In Progress) */}
           <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <h3 className="text-sm font-semibold text-gray-900">Active Assignments</h3>
+              <h3 className="text-sm font-semibold text-gray-900">Penugasan Aktif</h3>
               <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600">{stats.inProgress}</span>
             </div>
             <div className="max-h-[320px] divide-y divide-gray-100 overflow-y-auto">
               {recentAssigned.length === 0 ? (
-                <p className="px-5 py-8 text-center text-xs text-gray-400">No active assignments</p>
+                <p className="px-5 py-8 text-center text-xs text-gray-400">Tidak ada penugasan aktif</p>
               ) : (
                 recentAssigned.map(t => (
                   <div key={t.id} className="px-5 py-3">
@@ -163,7 +163,7 @@ export function DashboardPage() {
                       <p className="text-xs font-semibold text-amber-600">{formatCurrency(t.amountDue)}</p>
                     </div>
                     <p className="mt-0.5 text-xs text-gray-500">
-                      Officer: <span className="font-medium text-gray-700">{getOfficerName(t.assignedOfficer)}</span>
+                      Petugas: <span className="font-medium text-gray-700">{getOfficerName(t.assignedOfficer)}</span>
                     </p>
                   </div>
                 ))
@@ -174,12 +174,12 @@ export function DashboardPage() {
           {/* Recent Officer Comments */}
           <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <h3 className="text-sm font-semibold text-gray-900">Officer Feedback</h3>
+              <h3 className="text-sm font-semibold text-gray-900">Masukan Petugas</h3>
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">{recentComments.length}</span>
             </div>
             <div className="max-h-[320px] divide-y divide-gray-100 overflow-y-auto">
               {recentComments.length === 0 ? (
-                <p className="px-5 py-8 text-center text-xs text-gray-400">No comments yet</p>
+                <p className="px-5 py-8 text-center text-xs text-gray-400">Belum ada komentar</p>
               ) : (
                 recentComments.map(c => (
                   <div key={c.id} className="px-5 py-3">
@@ -208,8 +208,8 @@ export function DashboardPage() {
         {/* Officer Quick View */}
         <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-            <h3 className="text-sm font-semibold text-gray-900">Active Officers</h3>
-            <span className="text-xs text-gray-400">{officers.length} registered</span>
+            <h3 className="text-sm font-semibold text-gray-900">Petugas Aktif</h3>
+            <span className="text-xs text-gray-400">{officers.length} terdaftar</span>
           </div>
           <div className="grid grid-cols-3 gap-px bg-gray-100 lg:grid-cols-6">
             {officers.map(o => {
@@ -221,7 +221,7 @@ export function DashboardPage() {
                     {o.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                   </div>
                   <p className="truncate text-xs font-medium text-gray-900">{o.name}</p>
-                  <p className="mt-1 text-[11px] text-gray-400">{assigned} assigned · {completed} done</p>
+                  <p className="mt-1 text-[11px] text-gray-400">{assigned} ditugaskan · {completed} selesai</p>
                 </div>
               );
             })}

@@ -71,7 +71,7 @@ export function LoginPage() {
     const lockCheck = isLockedOut();
     if (lockCheck.locked) {
       setLockoutSec(lockCheck.remainingSec);
-      setError(`Too many failed attempts. Try again in ${lockCheck.remainingSec}s.`);
+      setError(`Terlalu banyak percobaan gagal. Coba lagi dalam ${lockCheck.remainingSec} detik.`);
       return;
     }
 
@@ -89,13 +89,13 @@ export function LoginPage() {
       recordFailure();
       const failures = getFailures();
       const remaining = MAX_ATTEMPTS - failures.count;
-      const message = err instanceof Error ? err.message : "Unable to login. Please try again.";
+      const message = err instanceof Error ? err.message : "Tidak dapat masuk. Silakan coba lagi.";
       if (remaining > 0) {
-        setError(`${message} (${remaining} attempt${remaining === 1 ? "" : "s"} remaining)`);
+        setError(`${message} (${remaining} percobaan tersisa)`);
       } else {
         const lockCheck = isLockedOut();
         setLockoutSec(lockCheck.remainingSec);
-        setError(`Account temporarily locked. Try again in ${lockCheck.remainingSec}s.`);
+        setError(`Akun terkunci sementara. Coba lagi dalam ${lockCheck.remainingSec} detik.`);
       }
     } finally {
       setIsSubmitting(false);
@@ -140,9 +140,9 @@ export function LoginPage() {
             {/* Product */}
             <div className="relative">
               <h1 className="text-3xl font-bold tracking-tight">C3MR</h1>
-              <p className="mt-1.5 text-sm font-semibold text-white/90">Integrated Management System</p>
+              <p className="mt-1.5 text-sm font-semibold text-white/90">Sistem Manajemen Terpadu</p>
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/75">
-                Operational portal for collections, customer accounts, and reporting.
+                Portal operasional untuk penagihan, akun pelanggan, dan pelaporan.
               </p>
             </div>
 
@@ -153,15 +153,15 @@ export function LoginPage() {
           {/* ───────────── RIGHT — sign-in form ───────────── */}
           <div className="bg-white p-8 sm:p-10 lg:p-12">
             <div className="mb-8">
-              <h2 className="text-2xl font-bold tracking-tight text-gray-900">Sign in to your account</h2>
-              <p className="mt-1.5 text-sm text-gray-500">Enter your credentials to access C3MR.</p>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900">Masuk ke akun Anda</h2>
+              <p className="mt-1.5 text-sm text-gray-500">Masukkan kredensial untuk mengakses C3MR.</p>
             </div>
 
             <form className="space-y-5" onSubmit={onSubmit}>
               {/* Username */}
               <div>
                 <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Username
+                  Nama Pengguna
                 </label>
                 <input
                   id="username"
@@ -179,7 +179,7 @@ export function LoginPage() {
               {/* Password */}
               <div>
                 <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Password
+                  Kata Sandi
                 </label>
                 <div className="relative">
                   <input
@@ -198,7 +198,7 @@ export function LoginPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
                   >
                     {showPassword ? (
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -225,14 +225,14 @@ export function LoginPage() {
                     checked={rememberDevice}
                     onChange={(e) => setRememberDevice(e.target.checked)}
                   />
-                  Remember device
+                  Ingat perangkat ini
                 </label>
                 <button
                   type="button"
                   className="text-sm font-medium text-[#E81E28] transition-colors hover:text-[#c8161f]"
                   onClick={() => setShowRecovery(true)}
                 >
-                  Recovery options
+                  Opsi pemulihan
                 </button>
               </div>
 
@@ -258,13 +258,13 @@ export function LoginPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Signing in…
+                    Memproses…
                   </>
                 ) : locked ? (
-                  "Temporarily locked"
+                  "Terkunci sementara"
                 ) : (
                   <>
-                    Sign in
+                    Masuk
                     <svg className="transition-transform duration-200 group-hover:translate-x-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14" /><path d="M13 6l6 6-6 6" />
                     </svg>
@@ -275,8 +275,8 @@ export function LoginPage() {
 
             {/* Security notice */}
             <p className="mt-8 border-t border-gray-100 pt-6 text-xs leading-relaxed text-gray-400">
-              Restricted system. Access is limited to authorized Telkom Indonesia personnel; all activity is
-              logged and monitored.
+              Sistem terbatas. Akses hanya untuk personel Telkom Indonesia yang berwenang; seluruh aktivitas
+              dicatat dan dipantau.
             </p>
           </div>
         </div>
@@ -293,11 +293,11 @@ export function LoginPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Account recovery</h3>
+              <h3 className="text-lg font-bold text-gray-900">Pemulihan akun</h3>
               <button
                 onClick={() => setShowRecovery(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Close"
+                aria-label="Tutup"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -307,27 +307,27 @@ export function LoginPage() {
 
             <div className="space-y-3 text-sm">
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-1 font-semibold text-gray-900">Option 1 — Admin reset</p>
+                <p className="mb-1 font-semibold text-gray-900">Opsi 1 — Reset oleh admin</p>
                 <p className="text-xs leading-relaxed text-gray-500">
-                  Contact your System Administrator to reset your password via the User Management panel. The
-                  admin can assign a new temporary password.
+                  Hubungi Administrator Sistem untuk mereset kata sandi Anda lewat panel Manajemen Pengguna.
+                  Admin dapat memberikan kata sandi sementara yang baru.
                 </p>
               </div>
 
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-1 font-semibold text-gray-900">Option 2 — Re-seed account</p>
+                <p className="mb-1 font-semibold text-gray-900">Opsi 2 — Inisialisasi ulang akun</p>
                 <p className="text-xs leading-relaxed text-gray-500">
-                  If the admin account itself is locked, a system operator with the{" "}
+                  Jika akun admin sendiri terkunci, operator sistem yang memiliki{" "}
                   <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-[11px] text-gray-700">SEED_TOKEN</code>{" "}
-                  can re-initialize the admin account via the API seed endpoint.
+                  dapat menginisialisasi ulang akun admin lewat endpoint seed API.
                 </p>
               </div>
 
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <p className="mb-1 font-semibold text-amber-800">Security notice</p>
+                <p className="mb-1 font-semibold text-amber-800">Catatan keamanan</p>
                 <p className="text-xs leading-relaxed text-amber-700">
-                  For security reasons, self-service password reset is not available. All credential changes
-                  require administrator verification to prevent unauthorized access.
+                  Demi keamanan, reset kata sandi mandiri tidak tersedia. Semua perubahan kredensial
+                  memerlukan verifikasi administrator untuk mencegah akses tidak sah.
                 </p>
               </div>
             </div>
@@ -336,7 +336,7 @@ export function LoginPage() {
               onClick={() => setShowRecovery(false)}
               className="mt-6 w-full rounded-lg bg-[#E81E28] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#c8161f] active:bg-[#b3141c]"
             >
-              Understood
+              Mengerti
             </button>
           </div>
         </div>

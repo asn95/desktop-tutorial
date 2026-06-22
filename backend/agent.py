@@ -37,7 +37,7 @@ RULES:
 - Keep responses concise but informative.
 - If the user asks something outside your capabilities, say so clearly.
 - For destructive actions (bulk assign, reassign), describe what you'll do first, then execute.
-- Reply in the same language the user writes in (Indonesian or English).
+- ALWAYS reply in Bahasa Indonesia (Indonesian), regardless of the language of the question.
 
 RESPONSE FORMAT:
 - PLAIN TEXT ONLY — never use markdown. No **bold**, no _italic_, no `backticks`, no # headers. They render as literal symbols in Telegram.
@@ -85,7 +85,7 @@ async def run_agent(user_message: str) -> str:
 
         # No tool calls — return the final text
         if not function_calls:
-            return (response.text or "").strip() or "Done."
+            return (response.text or "").strip() or "Selesai."
 
         # Append the model's turn, execute each tool, send results back
         contents.append(candidate.content)
@@ -105,4 +105,4 @@ async def run_agent(user_message: str) -> str:
             )
         contents.append(types.Content(role="user", parts=result_parts))
 
-    return "I reached the maximum number of steps. Please try a simpler question."
+    return "Saya mencapai batas maksimum langkah. Silakan coba pertanyaan yang lebih sederhana."

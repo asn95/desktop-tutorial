@@ -55,7 +55,7 @@ export function OfficerAppPage() {
       tg.BackButton.offClick();
     };
   }, [view]);
-  const [paymentStatus, setPaymentStatus] = useState("Promise to Pay");
+  const [paymentStatus, setPaymentStatus] = useState("Janji Bayar");
   const [notes, setNotes] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,7 +67,7 @@ export function OfficerAppPage() {
       setTasks(res.data);
       setView("list");
     } catch (err) {
-      alert("Officer profile not found. Please register your Telegram ID in the Admin Portal.");
+      alert("Profil petugas tidak ditemukan. Daftarkan Telegram ID Anda di Portal Admin.");
     }
   }
 
@@ -87,7 +87,7 @@ export function OfficerAppPage() {
       await apiClient.post("/officer/report", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      alert("Report submitted successfully!");
+      alert("Laporan berhasil dikirim!");
       // Back to list
       const res = await apiClient.get<Target[]>(`/officer/tasks/${telegramId}`);
       setTasks(res.data);
@@ -96,7 +96,7 @@ export function OfficerAppPage() {
       setNotes("");
       setPhoto(null);
     } catch (err) {
-      alert("Submission failed.");
+      alert("Gagal mengirim laporan.");
     } finally {
       setIsSubmitting(false);
     }
@@ -109,9 +109,9 @@ export function OfficerAppPage() {
           <div className="mb-8 flex flex-col items-center text-center">
             <img src={telkomLogo} alt="Telkom Indonesia" className="mb-4 h-12 w-12 object-contain" />
             <div className="text-2xl font-extrabold tracking-tight text-gray-900">
-              <span className="text-[#E81E28]">C</span>3MR Field
+              <span className="text-[#E81E28]">C</span>3MR Lapangan
             </div>
-            <p className="mt-1 text-sm text-gray-500">Officer portal — sign in to continue</p>
+            <p className="mt-1 text-sm text-gray-500">Portal petugas — masuk untuk melanjutkan</p>
           </div>
           <div className="space-y-5">
             <div className="space-y-1.5">
@@ -119,7 +119,7 @@ export function OfficerAppPage() {
               <input
                 value={telegramId}
                 onChange={(e) => setTelegramId(e.target.value)}
-                placeholder="e.g. 123456789"
+                placeholder="mis. 123456789"
                 className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20"
               />
             </div>
@@ -127,9 +127,9 @@ export function OfficerAppPage() {
               onClick={handleLogin}
               className="w-full rounded-xl bg-[#E81E28] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(232,30,40,0.5)] transition-colors hover:bg-[#c8161f] active:scale-[0.98]"
             >
-              Sign in
+              Masuk
             </button>
-            <p className="text-center text-xs text-gray-400">Use the Telegram ID registered by your manager.</p>
+            <p className="text-center text-xs text-gray-400">Gunakan Telegram ID yang didaftarkan oleh manajer Anda.</p>
           </div>
         </div>
       </div>
@@ -144,14 +144,14 @@ export function OfficerAppPage() {
             <img src={telkomLogo} alt="Telkom" className="h-7 w-7 object-contain" />
             <span className="text-lg font-extrabold tracking-tight"><span className="text-[#E81E28]">C</span>3MR</span>
           </div>
-          <span className="rounded-full bg-[#E81E28]/10 px-3 py-1 text-xs font-semibold text-[#E81E28]">Officer</span>
+          <span className="rounded-full bg-[#E81E28]/10 px-3 py-1 text-xs font-semibold text-[#E81E28]">Petugas</span>
         </header>
 
         <div className="space-y-5 p-5">
-          <h2 className="text-xl font-bold tracking-tight text-gray-900">Assigned Tasks</h2>
+          <h2 className="text-xl font-bold tracking-tight text-gray-900">Tugas Saya</h2>
           <div className="space-y-3">
             {tasks.length === 0 ? (
-              <p className="py-12 text-center text-sm text-gray-400">No assignments found.</p>
+              <p className="py-12 text-center text-sm text-gray-400">Belum ada tugas.</p>
             ) : (
               tasks.map(task => (
                 <div
@@ -186,7 +186,7 @@ export function OfficerAppPage() {
           <button onClick={() => setView("list")} className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <div className="text-sm font-semibold text-gray-500">Task detail</div>
+          <div className="text-sm font-semibold text-gray-500">Detail Tugas</div>
         </header>
 
         <div className="space-y-8 px-5">
@@ -202,37 +202,37 @@ export function OfficerAppPage() {
 
           <form onSubmit={handleSubmitReport} className="space-y-6">
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Collection status</label>
+              <label className="block text-sm font-medium text-gray-700">Status penagihan</label>
               <select
                 value={paymentStatus}
                 onChange={(e) => setPaymentStatus(e.target.value)}
                 className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20"
               >
-                <option>Promise to Pay</option>
-                <option>Paid</option>
-                <option>Refused</option>
-                <option>Not Home</option>
-                <option>Partial Payment</option>
+                <option>Janji Bayar</option>
+                <option>Lunas</option>
+                <option>Menolak</option>
+                <option>Tidak di Rumah</option>
+                <option>Bayar Sebagian</option>
               </select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Visit notes</label>
+              <label className="block text-sm font-medium text-gray-700">Catatan kunjungan</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
                 className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20"
-                placeholder="Describe the visit outcome…"
+                placeholder="Jelaskan hasil kunjungan…"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Photo evidence</label>
+              <label className="block text-sm font-medium text-gray-700">Bukti foto</label>
               <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 transition-colors hover:bg-gray-100">
                 <div className="text-center">
                   <svg className="mx-auto mb-2 h-7 w-7 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  <p className="text-xs font-medium text-gray-500">{photo ? photo.name : "Tap to capture photo"}</p>
+                  <p className="text-xs font-medium text-gray-500">{photo ? photo.name : "Ketuk untuk ambil foto"}</p>
                 </div>
                 <input type="file" className="hidden" accept="image/*" capture="environment" onChange={(e) => setPhoto(e.target.files?.[0] || null)} />
               </label>
@@ -242,7 +242,7 @@ export function OfficerAppPage() {
               disabled={isSubmitting || !photo}
               className="w-full rounded-2xl bg-[#E81E28] py-4 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(232,30,40,0.5)] transition-all hover:bg-[#c8161f] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
             >
-              {isSubmitting ? "Uploading…" : "Submit report"}
+              {isSubmitting ? "Mengunggah…" : "Kirim laporan"}
             </button>
           </form>
         </div>

@@ -104,13 +104,13 @@ export function TargetsPage() {
       <div className="space-y-10">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black dark:text-white">
-            Target Management Inventory
+            Inventaris Manajemen Target
           </h1>
           <button
             onClick={handleExport}
             className="border border-gray-200 dark:border-slate-600 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide hover:bg-gray-50 transition w-fit"
           >
-            Export CSV
+            Ekspor CSV
           </button>
         </div>
 
@@ -121,7 +121,7 @@ export function TargetsPage() {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Filter by name/ID..."
+                  placeholder="Cari nama/ID..."
                   className="w-full sm:w-64 border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
                 />
                 <select
@@ -129,26 +129,26 @@ export function TargetsPage() {
                   onChange={(e) => setStatusFilter(e.target.value as FilterValue)}
                   className="w-full sm:w-auto border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
                 >
-                  <option value="all">All Records</option>
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
+                  <option value="all">Semua</option>
+                  <option value="pending">Menunggu</option>
+                  <option value="in_progress">Sedang Berjalan</option>
+                  <option value="completed">Selesai</option>
                 </select>
               </div>
             </div>
 
             {/* Bulk Assign Bar */}
             {selected.size > 0 && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 border border-blue-500 bg-blue-50 dark:bg-blue-900/20 px-4 py-3">
-                <span className="text-xs font-bold text-blue-700 dark:text-blue-300">
-                  {selected.size} selected
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border border-[#E81E28]/40 bg-red-50 dark:bg-red-900/20 px-4 py-3">
+                <span className="text-xs font-bold text-[#E81E28] dark:text-red-300">
+                  {selected.size} dipilih
                 </span>
                 <select
                   value={bulkOfficer}
                   onChange={e => setBulkOfficer(e.target.value)}
                   className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-2 py-1 text-[10px] font-bold"
                 >
-                  <option value="">Select Officer</option>
+                  <option value="">Pilih Petugas</option>
                   {officers.map(o => (
                     <option key={o.id} value={o.id}>{o.name}</option>
                   ))}
@@ -158,19 +158,19 @@ export function TargetsPage() {
                   disabled={!bulkOfficer || bulkAssigning}
                   className="bg-[#E81E28] text-white px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide disabled:opacity-30"
                 >
-                  {bulkAssigning ? "Assigning..." : "Assign All"}
+                  {bulkAssigning ? "Menugaskan..." : "Tugaskan Semua"}
                 </button>
                 <button
                   onClick={() => setSelected(new Set())}
                   className="text-[10px] font-bold text-slate-500 hover:underline"
                 >
-                  Clear
+                  Bersihkan
                 </button>
               </div>
             )}
 
             {isLoading ? (
-              <p className="py-10 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">Loading Records...</p>
+              <p className="py-10 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">Memuat data...</p>
             ) : (
               <TargetsTable
                 targets={filteredTargets}

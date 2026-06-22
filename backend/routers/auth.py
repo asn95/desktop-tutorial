@@ -26,7 +26,7 @@ def _check_rate_limit(client_ip: str):
     if len(_login_attempts[client_ip]) >= LOGIN_MAX_ATTEMPTS:
         raise HTTPException(
             status_code=429,
-            detail=f"Too many login attempts. Try again in {LOGIN_WINDOW_SECONDS} seconds.",
+            detail=f"Terlalu banyak percobaan login. Coba lagi dalam {LOGIN_WINDOW_SECONDS} detik.",
         )
 
 
@@ -55,10 +55,10 @@ async def login(payload: LoginPayload, request: Request, db: Session = Depends(g
     user = db.query(DbUser).filter(DbUser.email == payload.username).first()
     if not user or not user.password_hash:
         _record_attempt(client_ip)
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Nama pengguna atau kata sandi tidak valid")
     if not verify_password(payload.password, user.password_hash):
         _record_attempt(client_ip)
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Nama pengguna atau kata sandi tidak valid")
 
     role = _role_str(user.role)
     token = create_access_token(user.id, role)
@@ -77,9 +77,9 @@ class VerifyPasswordPayload(BaseModel):
 async def verify_manager_password(payload: VerifyPasswordPayload, db: Session = Depends(get_db), auth: dict = Depends(require_manager)):
     user = db.query(DbUser).filter(DbUser.id == auth["sub"]).first()
     if not user or not user.password_hash:
-        raise HTTPException(status_code=401, detail="Invalid password")
+        raise HTTPException(status_code=401, detail="Kata sandi tidak valid")
     if not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid password")
+        raise HTTPException(status_code=401, detail="Kata sandi tidak valid")
     return {"verified": True}
 
 class ChangePasswordPayload(BaseModel):
@@ -90,15 +90,15 @@ class ChangePasswordPayload(BaseModel):
 async def change_password(payload: ChangePasswordPayload, db: Session = Depends(get_db), auth: dict = Depends(require_manager)):
     user = db.query(DbUser).filter(DbUser.id == auth["sub"]).first()
     if not user or not user.password_hash:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="Pengguna tidak ditemukan")
     if not verify_password(payload.current_password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Current password is incorrect")
+        raise HTTPException(status_code=401, detail="Kata sandi saat ini salah")
     if len(payload.new_password) < 6:
-        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+        raise HTTPException(status_code=400, detail="Kata sandi baru minimal 6 karakter")
     user.password_hash = hash_password(payload.new_password)
-    db.add(DbAuditLog(user_id=auth["sub"], action="change_password", detail="Password changed"))
+    db.add(DbAuditLog(user_id=auth["sub"], action="change_password", detail="Kata sandi diubah"))
     db.commit()
-    return {"message": "Password changed successfully"}
+    return {"message": "Kata sandi berhasil diubah"}
 
 class SeedPayload(BaseModel):
     token: str
@@ -110,11 +110,11 @@ async def seed_admin(payload: SeedPayload, db: Session = Depends(get_db)):
     import os
     seed_token = os.environ.get("SEED_TOKEN")
     if not seed_token or payload.token != seed_token:
-        raise HTTPException(status_code=403, detail="Invalid or missing seed token.")
+        raise HTTPException(status_code=403, detail="Seed token tidak valid atau belum diatur.")
 
     any_manager = db.query(DbUser).filter(DbUser.role == UserRole.manager).first()
     if any_manager:
-        raise HTTPException(status_code=403, detail="Admin already exists. Seed disabled.")
+        raise HTTPException(status_code=403, detail="Admin sudah ada. Seed dinonaktifkan.")
 
     admin = DbUser(
         name="C3MR Administrator",
@@ -124,4 +124,4 @@ async def seed_admin(payload: SeedPayload, db: Session = Depends(get_db)):
     )
     db.add(admin)
     db.commit()
-    return {"message": "Admin created with username: admin"}
+    return {"message": "Admin dibuat dengan nama pengguna: admin"}

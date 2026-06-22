@@ -393,28 +393,28 @@
 <!-- Loading -->
 <div id="loading-view" class="ld-wrap">
     <div class="ld-sp"></div>
-    <p class="ld-tx">Initializing System...</p>
+    <p class="ld-tx">Menyiapkan Sistem...</p>
 </div>
 
 <!-- Login Fallback -->
 <div id="login-view" class="hidden lg-wrap">
     <div class="lg-brand">C3MR Field</div>
-    <p class="lg-sub">Access Verification</p>
-    <input type="text" id="manual-tid" placeholder="Enter Telegram ID" class="lg-inp">
-    <button onclick="manualLogin()" class="lg-btn">Verify Identity</button>
+    <p class="lg-sub">Verifikasi Akses</p>
+    <input type="text" id="manual-tid" placeholder="Masukkan Telegram ID" class="lg-inp">
+    <button onclick="manualLogin()" class="lg-btn">Verifikasi Identitas</button>
 </div>
 
 <!-- Task List -->
 <div id="list-view" class="hidden">
     <div class="hdr">
         <div class="hdr-row1">C3MR Field</div>
-        <div class="hdr-status">Network Status: Secured | Last Sync: <span id="sync-time">--:--</span></div>
+        <div class="hdr-status">Status Jaringan: Aman | Sinkronisasi Terakhir: <span id="sync-time">--:--</span></div>
     </div>
     <div class="info-bar">
         <span>ID: <span id="officer-id">---</span></span>
-        <span><span id="active-cases">0</span> Active Cases</span>
+        <span><span id="active-cases">0</span> Kasus Aktif</span>
     </div>
-    <div class="sec-label">Assignment Queue</div>
+    <div class="sec-label">Antrean Tugas</div>
     <div id="task-container"></div>
 </div>
 
@@ -423,39 +423,39 @@
     <div class="hdr">
         <div class="hdr-row1">
             <span class="back" id="back-btn">&#9664;</span>
-            <span>Report Submission</span>
+            <span>Pengiriman Laporan</span>
         </div>
     </div>
     <div class="rpt-body">
-        <div class="subj-label">Subject Data</div>
+        <div class="subj-label">Data Nasabah</div>
         <div class="subj-card">
             <div class="subj-name" id="target-name"></div>
             <div class="subj-addr" id="target-address"></div>
             <div class="bal-tag" id="target-amount"></div>
         </div>
 
-        <div class="obs-label">Field Observation</div>
+        <div class="obs-label">Observasi Lapangan</div>
 
         <form id="report-form">
             <div class="fgrp">
-                <label class="flbl">Classification *</label>
+                <label class="flbl">Klasifikasi *</label>
                 <select id="payment-status" class="fsel">
-                    <option value="Promise to Pay">Promise to Pay (PTP)</option>
-                    <option value="Paid">Paid</option>
-                    <option value="Refused">Refused</option>
-                    <option value="Not Home">Not Home</option>
-                    <option value="Partial Payment">Partial Payment</option>
+                    <option value="Promise to Pay">Janji Bayar (PTP)</option>
+                    <option value="Paid">Lunas</option>
+                    <option value="Refused">Menolak</option>
+                    <option value="Not Home">Tidak di Rumah</option>
+                    <option value="Partial Payment">Bayar Sebagian</option>
                 </select>
             </div>
             <div class="fgrp">
-                <label class="flbl">Officer Narrative</label>
-                <textarea id="notes" class="ftxt" placeholder="Customer committed to settlement by Friday. Verification completed via on-site visit."></textarea>
+                <label class="flbl">Catatan Petugas</label>
+                <textarea id="notes" class="ftxt" placeholder="Nasabah berkomitmen membayar pada hari Jumat. Verifikasi selesai melalui kunjungan lapangan."></textarea>
             </div>
             <div class="fgrp">
-                <label class="flbl">Evidentiary Documentation *</label>
+                <label class="flbl">Dokumentasi Bukti *</label>
                 <label class="upbox" id="photo-area">
                     <div id="photo-preview">
-                        <p class="upbox-ph">Tap to capture photo proof</p>
+                        <p class="upbox-ph">Ketuk untuk mengambil bukti foto</p>
                     </div>
                     <input type="file" id="photo-input" style="display:none" accept="image/*" capture="environment">
                 </label>
@@ -464,7 +464,7 @@
 
         <hr class="cmt-divider">
         <div class="cmt-section">
-            <div class="cmt-label">Issue Report</div>
+            <div class="cmt-label">Laporan Kendala</div>
             <div class="cmt-tags" id="cmt-tags">
                 <span class="cmt-tag" data-tag="wrong_address">Alamat Salah</span>
                 <span class="cmt-tag" data-tag="wrong_phone">Nomor Salah</span>
@@ -477,7 +477,7 @@
             <div class="cmt-list" id="cmt-list"></div>
         </div>
     </div>
-    <button type="button" id="web-submit-btn" onclick="submitReportWeb()" class="btn-fin">Finalize Submission</button>
+    <button type="button" id="web-submit-btn" onclick="submitReportWeb()" class="btn-fin">Kirim Laporan</button>
 </div>
 
 <script src="js/app.js"></script>

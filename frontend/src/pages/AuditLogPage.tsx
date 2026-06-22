@@ -19,11 +19,11 @@ interface NotifEntry {
 }
 
 const ACTION_LABELS: Record<string, string> = {
-  assign: "Assign",
-  upload: "Upload",
-  edit_user: "Edit User",
-  delete_user: "Delete User",
-  change_password: "Change Password",
+  assign: "Penugasan",
+  upload: "Unggah",
+  edit_user: "Edit Pengguna",
+  delete_user: "Hapus Pengguna",
+  change_password: "Ubah Kata Sandi",
 };
 
 export function AuditLogPage() {
@@ -48,7 +48,7 @@ export function AuditLogPage() {
     <AppShell>
       <div className="space-y-8">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black dark:text-white">
-          Audit Log
+          Log Audit
         </h1>
 
         <div className="flex gap-0 border border-gray-200 dark:border-slate-600">
@@ -62,20 +62,20 @@ export function AuditLogPage() {
                   : "bg-white text-slate-500 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400"
               }`}
             >
-              {t === "audit" ? "Activity Log" : "Notifications"}
+              {t === "audit" ? "Log Aktivitas" : "Notifikasi"}
             </button>
           ))}
         </div>
 
         {loading ? (
           <p className="py-16 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-            Loading...
+            Memuat...
           </p>
         ) : tab === "audit" ? (
           <div className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800">
             {logs.length === 0 ? (
               <p className="px-6 py-16 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                No activity recorded yet.
+                Belum ada aktivitas tercatat.
               </p>
             ) : (
               logs.map((log, i) => (
@@ -108,7 +108,7 @@ export function AuditLogPage() {
           <div className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800">
             {notifs.length === 0 ? (
               <p className="px-6 py-16 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                No notifications sent yet.
+                Belum ada notifikasi terkirim.
               </p>
             ) : (
               notifs.map((n, i) => (
@@ -125,11 +125,11 @@ export function AuditLogPage() {
                         : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
                     }`}
                   >
-                    {n.success ? "Sent" : "Failed"}
+                    {n.success ? "Terkirim" : "Gagal"}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                      To: {n.recipientName}
+                      Ke: {n.recipientName}
                     </p>
                     <p className="text-xs text-[#1a1c1e] dark:text-white mt-1 line-clamp-2 whitespace-pre-line">
                       {n.message}

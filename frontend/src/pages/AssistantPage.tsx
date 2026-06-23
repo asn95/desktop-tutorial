@@ -14,8 +14,23 @@ const SUGGESTIONS = [
   "Buatkan laporan harian",
 ];
 
+// Riwayat chat disimpan di localStorage agar tidak hilang saat pindah halaman.
+// Dibersihkan otomatis saat logout (lihat AuthContext) dan dibatasi agar tidak menumpuk.
+export const ASSISTANT_CHAT_KEY = "c3mr:assistant-chat";
+const MAX_STORED_MESSAGES = 100;
+
+function readStoredMessages(): Msg[] {
+  try {
+    const raw = localStorage.getItem(ASSISTANT_CHAT_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function AssistantPage() {
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>(() => readStoredMessages());
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -23,6 +38,24 @@ export function AssistantPage() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  // Persist riwayat ke localStorage setiap kali berubah (dibatasi MAX_STORED_MESSAGES).
+  useEffect(() => {
+    try {
+      if (messages.length === 0) {
+        localStorage.removeItem(ASSISTANT_CHAT_KEY);
+      } else {
+        localStorage.setItem(ASSISTANT_CHAT_KEY, JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)));
+      }
+    } catch {
+      /* localStorage penuh / tidak tersedia — abaikan, riwayat tetap di memori */
+    }
+  }, [messages]);
+
+  const clearChat = () => {
+    setMessages([]);
+    setInput("");
+  };
 
   async function send(q: string) {
     const question = q.trim();
@@ -49,11 +82,22 @@ export function AssistantPage() {
   return (
     <AppShell>
       <div className="mx-auto flex max-w-3xl flex-col">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Asisten AI</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Tanya soal penagihan, target, petugas, atau laporan pakai bahasa sehari-hari.
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Asisten AI</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Tanya soal penagihan, target, petugas, atau laporan pakai bahasa sehari-hari.
+            </p>
+          </div>
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={clearChat}
+              className="shrink-0 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-500 transition-colors hover:border-[#EA0A2C]/40 hover:bg-red-50 hover:text-[#EA0A2C]"
+            >
+              Bersihkan riwayat
+            </button>
+          )}
         </div>
 
         <div className="flex h-[68vh] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
@@ -61,7 +105,7 @@ export function AssistantPage() {
           <div className="flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
             {messages.length === 0 && !loading ? (
               <div className="flex h-full flex-col items-center justify-center text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E81E28]/10 text-[#E81E28]">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EA0A2C]/10 text-[#EA0A2C]">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
                     <path d="M12 3l1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7z" />
                     <path d="M18.5 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z" />
@@ -74,7 +118,7 @@ export function AssistantPage() {
                     <button
                       key={s}
                       onClick={() => send(s)}
-                      className="rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-[#E81E28]/40 hover:bg-red-50 hover:text-[#E81E28]"
+                      className="rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-[#EA0A2C]/40 hover:bg-red-50 hover:text-[#EA0A2C]"
                     >
                       {s}
                     </button>
@@ -86,7 +130,7 @@ export function AssistantPage() {
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
                     className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                      m.role === "user" ? "bg-[#E81E28] text-white" : "bg-gray-100 text-gray-800"
+                      m.role === "user" ? "bg-[#EA0A2C] text-white" : "bg-gray-100 text-gray-800"
                     }`}
                   >
                     {m.text}
@@ -114,12 +158,12 @@ export function AssistantPage() {
                 onChange={e => setInput(e.target.value)}
                 placeholder="Tanya apa saja soal operasional Anda…"
                 disabled={loading}
-                className="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20 disabled:bg-gray-50"
+                className="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20 disabled:bg-gray-50"
               />
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="rounded-xl bg-[#E81E28] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#c8161f] disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="rounded-xl bg-[#EA0A2C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 Kirim
               </button>

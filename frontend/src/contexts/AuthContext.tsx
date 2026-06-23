@@ -43,6 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
+    // Jangan tinggalkan riwayat chat Asisten AI di perangkat setelah logout.
+    localStorage.removeItem("c3mr:assistant-chat");
   }, []);
 
   const resetIdleTimer = useCallback(() => {

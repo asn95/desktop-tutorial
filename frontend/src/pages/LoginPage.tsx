@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import telkomLogo from "../assets/telkom-logo.png";
+import indihomeLogo from "../assets/indihome-logo.png";
 
 const FAILED_KEY = "c3mr:login-failures";
 const MAX_ATTEMPTS = 5;
@@ -116,25 +116,21 @@ export function LoginPage() {
         }
       >
         <div className="grid lg:grid-cols-2">
-          {/* ───────────── LEFT — Telkom brand panel (flat red) ───────────── */}
-          <div className="relative flex flex-col justify-between gap-8 overflow-hidden bg-[#E81E28] p-8 text-white sm:p-10 lg:p-12">
+          {/* ───────────── LEFT — IndiHome by Telkomsel brand panel ───────────── */}
+          <div className="relative flex flex-col justify-between gap-8 overflow-hidden bg-[#EA0A2C] p-8 text-white sm:p-10 lg:p-12">
             <img
-              src={telkomLogo}
+              src={indihomeLogo}
               alt=""
               aria-hidden="true"
-              className="pointer-events-none absolute -bottom-12 -right-12 h-64 w-64 object-contain opacity-[0.10]"
+              className="pointer-events-none absolute -bottom-10 -right-10 h-56 w-auto object-contain opacity-[0.10]"
               style={{ filter: "brightness(0) invert(1)" }}
             />
 
-            {/* Logo lockup */}
-            <div className="relative flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-2 shadow-sm">
-                <img src={telkomLogo} alt="Telkom Indonesia" className="h-full w-full object-contain" />
+            {/* Logo lockup (logo is red, so it sits on a white card) */}
+            <div className="relative">
+              <span className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3.5 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
+                <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-9 w-auto object-contain" />
               </span>
-              <div className="leading-tight">
-                <div className="text-lg font-bold tracking-tight">Telkom</div>
-                <div className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/80">Indonesia</div>
-              </div>
             </div>
 
             {/* Product */}
@@ -147,7 +143,7 @@ export function LoginPage() {
             </div>
 
             {/* Copyright */}
-            <p className="relative text-xs text-white/70">&copy; 2026 PT Telkom Indonesia (Persero) Tbk</p>
+            <p className="relative text-xs text-white/70">&copy; 2026 IndiHome by Telkomsel &middot; PT Telekomunikasi Selular</p>
           </div>
 
           {/* ───────────── RIGHT — sign-in form ───────────── */}
@@ -168,7 +164,7 @@ export function LoginPage() {
                   type="text"
                   required
                   autoComplete="username"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-[#E81E28] focus:outline-none focus:ring-2 focus:ring-[#E81E28]/20 disabled:bg-gray-50 disabled:text-gray-400"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-[#EA0A2C] focus:outline-none focus:ring-2 focus:ring-[#EA0A2C]/20 disabled:bg-gray-50 disabled:text-gray-400"
                   placeholder="admin"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
@@ -187,7 +183,7 @@ export function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     required
                     autoComplete="current-password"
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 pr-11 text-sm text-gray-900 placeholder-gray-400 transition focus:border-[#E81E28] focus:outline-none focus:ring-2 focus:ring-[#E81E28]/20 disabled:bg-gray-50 disabled:text-gray-400"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 pr-11 text-sm text-gray-900 placeholder-gray-400 transition focus:border-[#EA0A2C] focus:outline-none focus:ring-2 focus:ring-[#EA0A2C]/20 disabled:bg-gray-50 disabled:text-gray-400"
                     placeholder="••••••••••••"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
@@ -221,7 +217,7 @@ export function LoginPage() {
                 <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-gray-600">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-[#E81E28] accent-[#E81E28]"
+                    className="h-4 w-4 rounded border-gray-300 text-[#EA0A2C] accent-[#EA0A2C]"
                     checked={rememberDevice}
                     onChange={(e) => setRememberDevice(e.target.checked)}
                   />
@@ -229,7 +225,7 @@ export function LoginPage() {
                 </label>
                 <button
                   type="button"
-                  className="text-sm font-medium text-[#E81E28] transition-colors hover:text-[#c8161f]"
+                  className="text-sm font-medium text-[#EA0A2C] transition-colors hover:text-[#C80825]"
                   onClick={() => setShowRecovery(true)}
                 >
                   Opsi pemulihan
@@ -249,7 +245,7 @@ export function LoginPage() {
               {/* Submit */}
               <button
                 type="submit"
-                className="group flex w-full items-center justify-center gap-2 rounded-lg bg-[#E81E28] py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#c8161f] focus:outline-none focus:ring-2 focus:ring-[#E81E28]/40 focus:ring-offset-2 active:bg-[#b3141c] disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="group flex w-full items-center justify-center gap-2 rounded-lg bg-[#EA0A2C] py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#C80825] focus:outline-none focus:ring-2 focus:ring-[#EA0A2C]/40 focus:ring-offset-2 active:bg-[#A60620] disabled:cursor-not-allowed disabled:bg-gray-300"
                 disabled={isSubmitting || locked}
               >
                 {isSubmitting ? (
@@ -275,7 +271,7 @@ export function LoginPage() {
 
             {/* Security notice */}
             <p className="mt-8 border-t border-gray-100 pt-6 text-xs leading-relaxed text-gray-400">
-              Sistem terbatas. Akses hanya untuk personel Telkom Indonesia yang berwenang; seluruh aktivitas
+              Sistem terbatas. Akses hanya untuk personel IndiHome by Telkomsel yang berwenang; seluruh aktivitas
               dicatat dan dipantau.
             </p>
           </div>
@@ -334,7 +330,7 @@ export function LoginPage() {
 
             <button
               onClick={() => setShowRecovery(false)}
-              className="mt-6 w-full rounded-lg bg-[#E81E28] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#c8161f] active:bg-[#b3141c]"
+              className="mt-6 w-full rounded-lg bg-[#EA0A2C] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] active:bg-[#A60620]"
             >
               Mengerti
             </button>

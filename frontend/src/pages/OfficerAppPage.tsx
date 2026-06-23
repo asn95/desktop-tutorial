@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "../lib/apiClient";
 import { formatCurrency } from "../lib/format";
 import type { Target } from "../types/target";
-import telkomLogo from "../assets/telkom-logo.png";
+import indihomeLogo from "../assets/indihome-logo.png";
 
 type ViewState = "login" | "list" | "detail";
 
@@ -107,9 +107,9 @@ export function OfficerAppPage() {
       <div className="flex min-h-[100dvh] items-center justify-center bg-[#f4f5f7] p-6 font-sans">
         <div className="w-full max-w-[400px] rounded-2xl bg-white p-8 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)]">
           <div className="mb-8 flex flex-col items-center text-center">
-            <img src={telkomLogo} alt="Telkom Indonesia" className="mb-4 h-12 w-12 object-contain" />
+            <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="mb-4 h-9 w-auto object-contain" />
             <div className="text-2xl font-extrabold tracking-tight text-gray-900">
-              <span className="text-[#E81E28]">C</span>3MR Lapangan
+              <span className="text-[#EA0A2C]">C</span>3MR Lapangan
             </div>
             <p className="mt-1 text-sm text-gray-500">Portal petugas — masuk untuk melanjutkan</p>
           </div>
@@ -120,12 +120,12 @@ export function OfficerAppPage() {
                 value={telegramId}
                 onChange={(e) => setTelegramId(e.target.value)}
                 placeholder="mis. 123456789"
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
               />
             </div>
             <button
               onClick={handleLogin}
-              className="w-full rounded-xl bg-[#E81E28] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(232,30,40,0.5)] transition-colors hover:bg-[#c8161f] active:scale-[0.98]"
+              className="w-full rounded-xl bg-[#EA0A2C] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,10,44,0.5)] transition-colors hover:bg-[#C80825] active:scale-[0.98]"
             >
               Masuk
             </button>
@@ -141,10 +141,10 @@ export function OfficerAppPage() {
       <div className="min-h-[100dvh] bg-[#f4f5f7] font-sans pb-10">
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white/90 px-5 py-4 backdrop-blur">
           <div className="flex items-center gap-2">
-            <img src={telkomLogo} alt="Telkom" className="h-7 w-7 object-contain" />
-            <span className="text-lg font-extrabold tracking-tight"><span className="text-[#E81E28]">C</span>3MR</span>
+            <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-6 w-auto object-contain" />
+            <span className="text-lg font-extrabold tracking-tight"><span className="text-[#EA0A2C]">C</span>3MR</span>
           </div>
-          <span className="rounded-full bg-[#E81E28]/10 px-3 py-1 text-xs font-semibold text-[#E81E28]">Petugas</span>
+          <span className="rounded-full bg-[#EA0A2C]/10 px-3 py-1 text-xs font-semibold text-[#EA0A2C]">Petugas</span>
         </header>
 
         <div className="space-y-5 p-5">
@@ -169,7 +169,7 @@ export function OfficerAppPage() {
                   </div>
                   <h3 className="font-semibold text-gray-900">{task.customerName}</h3>
                   <p className="mt-0.5 line-clamp-1 text-xs text-gray-400">{task.address}</p>
-                  <div className="mt-3 text-lg font-bold text-[#E81E28]">{formatCurrency(task.amountDue)}</div>
+                  <div className="mt-3 text-lg font-bold text-[#EA0A2C]">{formatCurrency(task.amountDue)}</div>
                 </div>
               ))
             )}
@@ -193,7 +193,7 @@ export function OfficerAppPage() {
           <section>
             <h2 className="text-2xl font-bold leading-tight tracking-tight text-gray-900">{selectedTask.customerName}</h2>
             <p className="mt-1 text-sm leading-relaxed text-gray-500">{selectedTask.address}</p>
-            <div className="mt-5 inline-block rounded-xl bg-red-50 px-4 py-2 text-xl font-bold text-[#E81E28]">
+            <div className="mt-5 inline-block rounded-xl bg-red-50 px-4 py-2 text-xl font-bold text-[#EA0A2C]">
               {formatCurrency(selectedTask.amountDue)}
             </div>
           </section>
@@ -206,7 +206,7 @@ export function OfficerAppPage() {
               <select
                 value={paymentStatus}
                 onChange={(e) => setPaymentStatus(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20"
+                className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
               >
                 <option>Janji Bayar</option>
                 <option>Lunas</option>
@@ -222,7 +222,7 @@ export function OfficerAppPage() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
                 placeholder="Jelaskan hasil kunjungan…"
               />
             </div>
@@ -240,7 +240,7 @@ export function OfficerAppPage() {
 
             <button
               disabled={isSubmitting || !photo}
-              className="w-full rounded-2xl bg-[#E81E28] py-4 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(232,30,40,0.5)] transition-all hover:bg-[#c8161f] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
+              className="w-full rounded-2xl bg-[#EA0A2C] py-4 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(234,10,44,0.5)] transition-all hover:bg-[#C80825] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
             >
               {isSubmitting ? "Mengunggah…" : "Kirim laporan"}
             </button>

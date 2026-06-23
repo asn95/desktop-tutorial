@@ -4,7 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../contexts/ThemeContext";
 import { apiClient } from "../../lib/apiClient";
 import { Link, useLocation } from "react-router-dom";
-import telkomLogo from "../../assets/telkom-logo.png";
+import indihomeLogo from "../../assets/indihome-logo.png";
 
 type IconProps = { className?: string };
 const I = {
@@ -120,10 +120,12 @@ export function AppShell({
   const sidebar = (
     <div className="flex h-full flex-col">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-6 py-6">
-        <img src={telkomLogo} alt="Telkom Indonesia" className="h-9 w-9 object-contain" />
+      <div className="flex flex-col gap-2.5 px-6 py-6">
+        <span className="inline-flex w-max items-center justify-center self-start rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-black/5">
+          <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-5 w-auto object-contain" />
+        </span>
         <div className="leading-tight">
-          <div className="text-lg font-extrabold tracking-tight"><span className="text-[#E81E28]">C</span>3MR</div>
+          <div className="text-lg font-extrabold tracking-tight"><span className="text-[#EA0A2C]">C</span>3MR</div>
           <div className={`text-[10px] font-medium ${dark ? "text-slate-500" : "text-gray-400"}`}>Portal Manajemen</div>
         </div>
       </div>
@@ -139,7 +141,7 @@ export function AppShell({
               to={tab.path}
               className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
-                  ? "bg-[#E81E28]/10 text-[#E81E28]"
+                  ? "bg-[#EA0A2C]/10 text-[#EA0A2C]"
                   : dark
                   ? "text-slate-400 hover:bg-slate-800/70 hover:text-slate-100"
                   : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
@@ -164,7 +166,7 @@ export function AppShell({
         <button onClick={() => setShowPwModal(true)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
           Ubah Kata Sandi
         </button>
-        <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#E81E28] transition-colors hover:bg-red-50">
+        <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#EA0A2C] transition-colors hover:bg-red-50">
           Keluar
         </button>
       </div>
@@ -255,7 +257,7 @@ export function AppShell({
                   Manajer
                 </span>
               </div>
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#E81E28] text-[13px] font-bold text-white ring-2 ring-[#E81E28]/15 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EA0A2C] text-[13px] font-bold text-white ring-2 ring-[#EA0A2C]/15 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
                 {initials}
               </div>
             </div>
@@ -265,7 +267,7 @@ export function AppShell({
         <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
           {children}
           <footer className={`mt-16 pt-6 text-xs ${dark ? "text-slate-600" : "text-gray-400"}`}>
-            C3MR — PT Telkom Indonesia (Persero) Tbk · Rahasia
+            C3MR — IndiHome by Telkomsel · Rahasia
           </footer>
         </main>
       </div>
@@ -283,7 +285,7 @@ export function AppShell({
             <div className="mt-5 space-y-1.5">
               <label className="block text-sm font-medium text-gray-700">Pesan yang ditampilkan ke pengguna</label>
               <input value={maintCustomMsg} onChange={e => setMaintCustomMsg(e.target.value)} placeholder="Sistem sedang dalam pemeliharaan…"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20" />
+                className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20" />
             </div>
             <div className="mt-6 flex gap-3">
               <button onClick={handleToggleMaintenance} disabled={maintToggling}
@@ -308,18 +310,18 @@ export function AppShell({
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-gray-700">Kata sandi saat ini</label>
                 <input type="password" autoFocus value={curPw} onChange={e => setCurPw(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20" />
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20" />
               </div>
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-gray-700">Kata sandi baru</label>
                 <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#E81E28] focus:ring-2 focus:ring-[#E81E28]/20" />
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20" />
               </div>
             </div>
-            {pwMsg && <p className={`mt-3 text-sm font-medium ${pwMsg.ok ? "text-emerald-600" : "text-[#E81E28]"}`}>{pwMsg.text}</p>}
+            {pwMsg && <p className={`mt-3 text-sm font-medium ${pwMsg.ok ? "text-emerald-600" : "text-[#EA0A2C]"}`}>{pwMsg.text}</p>}
             <div className="mt-6 flex gap-3">
               <button type="submit" disabled={!curPw || !newPw || pwLoading}
-                className="flex-1 rounded-lg bg-[#E81E28] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#c8161f] disabled:opacity-40">
+                className="flex-1 rounded-lg bg-[#EA0A2C] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] disabled:opacity-40">
                 {pwLoading ? "Menyimpan…" : "Simpan"}
               </button>
               <button type="button" onClick={() => { setShowPwModal(false); setPwMsg(null); setCurPw(""); setNewPw(""); }}

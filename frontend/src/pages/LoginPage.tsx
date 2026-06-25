@@ -118,14 +118,6 @@ export function LoginPage() {
         <div className="grid lg:grid-cols-2">
           {/* ───────────── LEFT — IndiHome by Telkomsel brand panel ───────────── */}
           <div className="relative flex flex-col justify-between gap-8 overflow-hidden bg-[#EA0A2C] p-8 text-white sm:p-10 lg:p-12">
-            <img
-              src={indihomeLogo}
-              alt=""
-              aria-hidden="true"
-              className="pointer-events-none absolute -bottom-10 -right-10 h-56 w-auto object-contain opacity-[0.10]"
-              style={{ filter: "brightness(0) invert(1)" }}
-            />
-
             {/* Logo lockup (logo is red, so it sits on a white card) */}
             <div className="relative">
               <span className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3.5 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">

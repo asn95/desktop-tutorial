@@ -121,7 +121,7 @@ async def set_maintenance(payload: MaintenancePayload, _auth: dict = Depends(req
     return {"enabled": maintenance_state.enabled, "message": maintenance_state.message}
 
 
-# AI Assistant — web access to the Gemini workflow agent (manager-only).
+# AI Assistant — web access to the Claude (Anthropic) workflow agent (manager-only).
 # Reuses the same run_agent() that powers the Telegram /ask command.
 from fastapi import HTTPException
 

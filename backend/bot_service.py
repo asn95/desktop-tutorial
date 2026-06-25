@@ -206,7 +206,7 @@ async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Agent error: {e}", flush=True)
         await update.message.reply_text(
             f"Kesalahan agen: {str(e)[:200]}\n\n"
-            "Pastikan GEMINI_API_KEY sudah diatur di environment."
+            "Pastikan ANTHROPIC_API_KEY sudah diatur di environment."
         )
 
 

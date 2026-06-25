@@ -1,5 +1,5 @@
 """
-C3MR Workflow Agent — Groq-powered autonomous agent for managing
+C3MR Workflow Agent — Claude (Anthropic) powered autonomous agent for managing
 field collection operations via natural language.
 
 Usage:
@@ -9,25 +9,27 @@ Usage:
 import os
 import re
 import json
-from groq import AsyncGroq, RateLimitError, APIStatusError
+import anthropic
+from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 from .agent_tools import TOOL_DEFINITIONS, TOOL_FUNCTIONS
 
 load_dotenv()
 
-_client: AsyncGroq | None = None
+_client: AsyncAnthropic | None = None
 
 
-def _get_client() -> AsyncGroq:
-    """Lazily build the Groq client so a missing key doesn't break app import."""
+def _get_client() -> AsyncAnthropic:
+    """Lazily build the Anthropic client so a missing key doesn't break app import."""
     global _client
     if _client is None:
-        _client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
+        _client = AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     return _client
 
-# Free Groq tier. gpt-oss-120b gives the most reliable tool-calling here
-# (Llama 3.3 occasionally emits malformed tool calls). Override with AGENT_MODEL.
-MODEL = os.environ.get("AGENT_MODEL", "openai/gpt-oss-120b")
+
+# Claude Haiku 4.5 — fast and cost-effective; ample for DB-query tool calling.
+# Override with AGENT_MODEL (e.g. claude-sonnet-4-6 / claude-opus-4-8).
+MODEL = os.environ.get("AGENT_MODEL", "claude-haiku-4-5")
 
 SYSTEM_PROMPT = """You are the C3MR Operations Agent — an AI assistant for managing debt collection field operations.
 
@@ -58,27 +60,9 @@ RESPONSE FORMAT:
 
 MAX_TOOL_ROUNDS = 10
 MAX_TOKENS = 2048
-# Cap each tool result so a big list doesn't blow the provider's per-request
-# payload limit (Groq free tier returns 413 on oversized requests).
+# Cap each tool result so a big list doesn't bloat the context (cost) on long
+# queries; the agent can narrow the filter or use a summary tool instead.
 MAX_TOOL_RESULT_CHARS = 6000
-
-
-def _to_openai_tools(tool_definitions: list[dict]) -> list[dict]:
-    """Convert Anthropic-style tool definitions to OpenAI/Groq function tools."""
-    tools = []
-    for t in tool_definitions:
-        tools.append({
-            "type": "function",
-            "function": {
-                "name": t["name"],
-                "description": t["description"],
-                "parameters": t.get("input_schema") or {"type": "object", "properties": {}},
-            },
-        })
-    return tools
-
-
-GROQ_TOOLS = _to_openai_tools(TOOL_DEFINITIONS)
 
 
 def _clean(text: str) -> str:
@@ -88,63 +72,58 @@ def _clean(text: str) -> str:
     return text.strip()
 
 
+def _run_tool(name: str, tool_input: dict) -> str:
+    """Execute one tool and return a JSON string (capped) for the tool_result."""
+    fn = TOOL_FUNCTIONS.get(name)
+    try:
+        if fn is None:
+            return json.dumps({"error": f"Unknown tool: {name}"})
+        content = json.dumps(fn(**(tool_input or {})), default=str, ensure_ascii=False)
+        if len(content) > MAX_TOOL_RESULT_CHARS:
+            content = content[:MAX_TOOL_RESULT_CHARS] + " …[hasil dipotong; persempit filter atau gunakan tool ringkasan]"
+        return content
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
 async def run_agent(user_message: str) -> str:
     """Run the agent with a user message and return the final text response."""
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_message},
-    ]
+    messages: list[dict] = [{"role": "user", "content": user_message}]
 
     for _ in range(MAX_TOOL_ROUNDS):
         try:
-            response = await _get_client().chat.completions.create(
+            response = await _get_client().messages.create(
                 model=MODEL,
-                messages=messages,
-                tools=GROQ_TOOLS,
-                tool_choice="auto",
                 max_tokens=MAX_TOKENS,
+                system=SYSTEM_PROMPT,
+                tools=TOOL_DEFINITIONS,
+                messages=messages,
             )
-        except RateLimitError:
+        except anthropic.RateLimitError:
             return "Asisten AI sedang sibuk (batas pemakaian sementara). Silakan coba lagi beberapa saat lagi."
-        except APIStatusError as e:
+        except anthropic.APIStatusError as e:
             return f"Maaf, terjadi kendala pada layanan AI (kode {e.status_code}). Silakan coba lagi."
+        except anthropic.APIConnectionError:
+            return "Tidak dapat menghubungi layanan AI. Periksa koneksi lalu coba lagi."
 
-        msg = response.choices[0].message
+        # Final answer — no more tool calls
+        if response.stop_reason != "tool_use":
+            text = "".join(b.text for b in response.content if b.type == "text")
+            return _clean(text) or "Selesai."
 
-        # No tool calls — return the final text answer
-        if not msg.tool_calls:
-            return _clean(msg.content) or "Selesai."
+        # Record the assistant turn (text + tool_use blocks) verbatim
+        messages.append({"role": "assistant", "content": response.content})
 
-        # Record the assistant turn (with tool_calls), then run each tool
-        messages.append({
-            "role": "assistant",
-            "content": msg.content or "",
-            "tool_calls": [
-                {
-                    "id": tc.id,
-                    "type": "function",
-                    "function": {"name": tc.function.name, "arguments": tc.function.arguments},
-                }
-                for tc in msg.tool_calls
-            ],
-        })
-        for tc in msg.tool_calls:
-            fn = TOOL_FUNCTIONS.get(tc.function.name)
-            try:
-                args = json.loads(tc.function.arguments or "{}")
-                if fn is None:
-                    content = json.dumps({"error": f"Unknown tool: {tc.function.name}"})
-                else:
-                    content = json.dumps(fn(**args), default=str, ensure_ascii=False)
-                    if len(content) > MAX_TOOL_RESULT_CHARS:
-                        content = content[:MAX_TOOL_RESULT_CHARS] + ' …[hasil dipotong; persempit filter atau gunakan tool ringkasan]'
-            except Exception as e:
-                content = json.dumps({"error": str(e)})
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tc.id,
-                "name": tc.function.name,
-                "content": content,
-            })
+        # Execute each requested tool and return all results in one user turn
+        tool_results = [
+            {
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": _run_tool(block.name, block.input),
+            }
+            for block in response.content
+            if block.type == "tool_use"
+        ]
+        messages.append({"role": "user", "content": tool_results})
 
     return "Saya mencapai batas maksimum langkah. Silakan coba pertanyaan yang lebih sederhana."

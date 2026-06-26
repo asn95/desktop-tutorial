@@ -267,7 +267,7 @@ export function AppShell({
         <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
           {children}
           <footer className={`mt-16 pt-6 text-xs ${dark ? "text-slate-600" : "text-gray-400"}`}>
-            C3MR — IndiHome by Telkomsel · Rahasia
+            C3MR — IndiHome by Telkomsel
           </footer>
         </main>
       </div>

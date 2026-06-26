@@ -87,6 +87,7 @@ def list_officers() -> list[dict]:
 
 def query_targets(
     status: str | None = None,
+    customer_name: str | None = None,
     officer_name: str | None = None,
     address_contains: str | None = None,
     min_amount: float | None = None,
@@ -99,6 +100,8 @@ def query_targets(
         )
         if status:
             q = q.filter(DbTarget.status == TargetStatus(status))
+        if customer_name:
+            q = q.filter(DbTarget.customer_name.ilike(f"%{customer_name}%"))
         if officer_name:
             q = q.filter(DbUser.name.ilike(f"%{officer_name}%"))
         if address_contains:
@@ -410,7 +413,7 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "query_targets",
-        "description": "Search and filter collection targets. Can filter by status (pending/in_progress/completed), officer name, address, and minimum amount.",
+        "description": "Search and filter collection targets. Can filter by customer name, status (pending/in_progress/completed), officer name, address, and minimum amount. Use customer_name to look up a specific target before assigning it.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -418,6 +421,10 @@ TOOL_DEFINITIONS = [
                     "type": "string",
                     "enum": ["pending", "in_progress", "completed"],
                     "description": "Filter by target status",
+                },
+                "customer_name": {
+                    "type": "string",
+                    "description": "Filter by customer name (partial, case-insensitive match)",
                 },
                 "officer_name": {
                     "type": "string",

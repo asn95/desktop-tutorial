@@ -112,7 +112,7 @@ export function AssistantPage() {
                   </svg>
                 </span>
                 <p className="mt-4 text-sm font-semibold text-gray-900">Ada yang bisa saya bantu?</p>
-                <p className="mt-1 text-xs text-gray-400">Ditenagai Gemini · membaca data C3MR langsung</p>
+                <p className="mt-1 text-xs text-gray-400">Ditenagai Claude (Anthropic) · membaca data C3MR langsung</p>
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {SUGGESTIONS.map(s => (
                     <button

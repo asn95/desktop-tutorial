@@ -107,7 +107,7 @@ export function LoginPage() {
   return (
     <div
       className="flex min-h-[100dvh] items-center justify-center bg-[#f3f4f6] px-4 py-10"
-      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" }}
+      style={{ fontFamily: "'IBM Plex Sans', system-ui, -apple-system, sans-serif" }}
     >
       <div
         className={

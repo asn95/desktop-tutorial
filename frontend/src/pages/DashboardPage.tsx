@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
 import { SummaryCard } from "../components/dashboard/SummaryCard";
-import { getDashboardSnapshot } from "../services/dashboardService";
+import { PeriodSelector } from "../components/dashboard/PeriodSelector";
+import { getDashboardSnapshot, getPeriods } from "../services/dashboardService";
 import { apiClient } from "../lib/apiClient";
 import { formatCurrency } from "../lib/format";
-import type { DashboardSnapshot } from "../types/dashboard";
+import type { DashboardSnapshot, PeriodInfo } from "../types/dashboard";
 
 import type { User } from "../types/user";
 import { getUsers } from "../services/userService";
@@ -30,28 +31,48 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [recentComments, setRecentComments] = useState<(Comment & { customerName: string })[]>([]);
+  const [periods, setPeriods] = useState<PeriodInfo[]>([]);
+  const [period, setPeriod] = useState<string | null>(null);
 
+  // Resolve available periods first; the dashboard defaults to the newest batch.
   useEffect(() => {
     let isMounted = true;
-
-    Promise.all([
-      getDashboardSnapshot(),
-      getUsers(),
-    ])
-      .then(async ([snap, users]) => {
+    getPeriods()
+      .then((res) => {
         if (!isMounted) return;
-        setSnapshot(snap);
-        setAllUsers(users);
-
-        // Fetch recent comments in one call (no N+1)
-        try {
-          const cmtRes = await apiClient.get("/dashboard/recent-comments?limit=5");
-          const cmtData = cmtRes.data;
-          setRecentComments(Array.isArray(cmtData) ? cmtData : []);
-        } catch {
-          setRecentComments([]);
-        }
+        setPeriods(res.periods);
+        setPeriod(res.active ?? "all");
       })
+      .catch(() => {
+        if (isMounted) setPeriod("all");
+      });
+
+    apiClient.get("/dashboard/recent-comments?limit=5")
+      .then((cmtRes) => {
+        if (!isMounted) return;
+        setRecentComments(Array.isArray(cmtRes.data) ? cmtRes.data : []);
+      })
+      .catch(() => {
+        if (isMounted) setRecentComments([]);
+      });
+
+    return () => { isMounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!period) return;
+    let isMounted = true;
+
+    const load = () =>
+      Promise.all([getDashboardSnapshot(period), getUsers()])
+        .then(([snap, users]) => {
+          if (!isMounted) return;
+          setSnapshot(snap);
+          setAllUsers(users);
+          setError(null);
+        });
+
+    load()
       .catch((err) => {
         if (!isMounted) return;
         setError(err.message || "Failed to load dashboard data.");
@@ -60,18 +81,10 @@ export function DashboardPage() {
         if (!isMounted) return;
         setIsLoading(false);
       });
-    const interval = setInterval(() => {
-      Promise.all([getDashboardSnapshot(), getUsers()])
-        .then(async ([snap, users]) => {
-          if (!isMounted) return;
-          setSnapshot(snap);
-          setAllUsers(users);
-        })
-        .catch(() => {});
-    }, 10000);
+    const interval = setInterval(() => { load().catch(() => {}); }, 10000);
 
     return () => { isMounted = false; clearInterval(interval); };
-  }, []);
+  }, [period]);
 
   function getOfficerName(officerId: string | null): string {
     if (!officerId) return "—";
@@ -110,9 +123,12 @@ export function DashboardPage() {
   return (
     <AppShell activeTab="DASHBOARD">
       <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dasbor Operasional</h1>
-          <p className="mt-1 text-sm text-gray-500">Ringkasan real-time target penagihan dan aktivitas lapangan.</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dasbor Operasional</h1>
+            <p className="mt-1 text-sm text-gray-500">Ringkasan real-time target penagihan dan aktivitas lapangan.</p>
+          </div>
+          {period && <PeriodSelector periods={periods} value={period} onChange={setPeriod} />}
         </div>
 
         {/* Summary Cards */}

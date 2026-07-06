@@ -11,3 +11,13 @@ export interface DashboardSnapshot {
   stats: DashboardStats;
   targets: Target[];
 }
+
+export interface PeriodInfo {
+  period: string;
+  total: number;
+}
+
+export interface PeriodsResponse {
+  periods: PeriodInfo[];
+  active: string | null;
+}

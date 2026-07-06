@@ -9,4 +9,5 @@ export interface Target {
   assignedOfficer: string | null;
   officerName?: string | null;
   status: TargetStatus;
+  period?: string | null;
 }

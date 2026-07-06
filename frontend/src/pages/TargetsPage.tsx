@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
 import { TargetsTable } from "../components/dashboard/TargetsTable";
 import { CsvUploadPanel } from "../components/dashboard/CsvUploadPanel";
-import { getDashboardSnapshot } from "../services/dashboardService";
+import { PeriodSelector } from "../components/dashboard/PeriodSelector";
+import { getDashboardSnapshot, getPeriods } from "../services/dashboardService";
 import { getUsers } from "../services/userService";
 import { apiClient } from "../lib/apiClient";
-import type { DashboardSnapshot } from "../types/dashboard";
+import type { DashboardSnapshot, PeriodInfo } from "../types/dashboard";
 import type { TargetStatus } from "../types/target";
 import type { User } from "../types/user";
 
@@ -20,19 +21,31 @@ export function TargetsPage() {
   const [officers, setOfficers] = useState<User[]>([]);
   const [bulkOfficer, setBulkOfficer] = useState("");
   const [bulkAssigning, setBulkAssigning] = useState(false);
+  const [periods, setPeriods] = useState<PeriodInfo[]>([]);
+  const [period, setPeriod] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getDashboardSnapshot(), getUsers()])
+    getPeriods()
+      .then((res) => {
+        setPeriods(res.periods);
+        setPeriod(res.active ?? "all");
+      })
+      .catch(() => setPeriod("all"));
+  }, []);
+
+  useEffect(() => {
+    if (!period) return;
+    Promise.all([getDashboardSnapshot(period), getUsers()])
       .then(([snap, users]) => {
         setSnapshot(snap);
         setOfficers(users.filter(u => u.role === "officer"));
       })
       .finally(() => setIsLoading(false));
     const interval = setInterval(() => {
-      getDashboardSnapshot().then(setSnapshot).catch(() => {});
+      getDashboardSnapshot(period).then(setSnapshot).catch(() => {});
     }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [period]);
 
   const filteredTargets = useMemo(() => {
     if (!snapshot) return [];
@@ -48,8 +61,20 @@ export function TargetsPage() {
   const pendingTargets = useMemo(() => filteredTargets.filter(t => t.status === "pending"), [filteredTargets]);
 
   const refreshData = () => {
-    getDashboardSnapshot().then(setSnapshot);
+    getDashboardSnapshot(period).then(setSnapshot);
     setSelected(new Set());
+  };
+
+  // After a CSV upload, re-resolve periods and jump to the batch that was just uploaded.
+  const handleUploadSuccess = (uploadedPeriod?: string) => {
+    getPeriods()
+      .then((res) => {
+        setPeriods(res.periods);
+        const next = uploadedPeriod ?? res.active ?? "all";
+        if (next !== period) setPeriod(next);
+        else refreshData();
+      })
+      .catch(() => refreshData());
   };
 
   function toggleSelect(id: string) {
@@ -87,7 +112,8 @@ export function TargetsPage() {
 
   async function handleExport() {
     try {
-      const res = await apiClient.get("/targets/export/csv", { responseType: "blob" });
+      const exportQuery = period && period !== "all" ? `?period=${encodeURIComponent(period)}` : "";
+      const res = await apiClient.get(`/targets/export/csv${exportQuery}`, { responseType: "blob" });
       const url = URL.createObjectURL(res.data);
       const a = document.createElement("a");
       a.href = url;
@@ -102,16 +128,19 @@ export function TargetsPage() {
   return (
     <AppShell>
       <div className="space-y-10">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black dark:text-white">
             Inventaris Manajemen Target
           </h1>
-          <button
-            onClick={handleExport}
-            className="border border-gray-200 dark:border-slate-600 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide hover:bg-gray-50 transition w-fit"
-          >
-            Ekspor CSV
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {period && <PeriodSelector periods={periods} value={period} onChange={setPeriod} />}
+            <button
+              onClick={handleExport}
+              className="border border-gray-200 dark:border-slate-600 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide hover:bg-gray-50 transition w-fit"
+            >
+              Ekspor CSV
+            </button>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
@@ -184,7 +213,7 @@ export function TargetsPage() {
           </div>
 
           <div className="space-y-6">
-            <CsvUploadPanel onUploadSuccess={refreshData} />
+            <CsvUploadPanel onUploadSuccess={handleUploadSuccess} />
           </div>
         </div>
       </div>

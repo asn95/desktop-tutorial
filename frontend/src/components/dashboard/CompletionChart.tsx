@@ -11,7 +11,7 @@ export function CompletionChart({ stats }: { stats: DashboardStats }) {
   ];
 
   return (
-    <div className="rounded-xl border border-c3mr-border bg-c3mr-surface p-4">
+    <div className="rounded-md border border-c3mr-border bg-c3mr-surface p-4">
       <p className="mb-4 text-sm font-medium text-c3mr-text">Tingkat Penyelesaian</p>
       <div className="h-56 w-full">
         <ResponsiveContainer>

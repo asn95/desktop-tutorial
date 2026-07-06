@@ -168,7 +168,7 @@ export function TargetsPage() {
 
             {/* Bulk Assign Bar */}
             {selected.size > 0 && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border border-[#E81E28]/40 bg-red-50 dark:bg-red-900/20 px-4 py-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-md border border-[#E81E28]/40 bg-red-50 dark:bg-red-900/20 px-4 py-3">
                 <span className="text-xs font-bold text-[#E81E28] dark:text-red-300">
                   {selected.size} dipilih
                 </span>

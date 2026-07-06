@@ -103,7 +103,7 @@ export function DashboardPage() {
   if (error || !snapshot) {
     return (
       <AppShell activeTab="DASHBOARD">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm font-medium text-[#E81E28]">
+        <div className="rounded-md border border-red-200 bg-red-50 p-6 text-center text-sm font-medium text-[#E81E28]">
           {error || "Gagal memuat data."}
         </div>
       </AppShell>
@@ -142,7 +142,7 @@ export function DashboardPage() {
         {/* Operational Panels: Pending / Active / Comments */}
         <section className="grid gap-5 lg:grid-cols-3">
           {/* Unassigned Targets (Action Required) */}
-          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+          <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <h3 className="text-sm font-semibold text-gray-900">Perlu Penugasan</h3>
               <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-[#E81E28]">{pendingTargets.length}</span>
@@ -163,7 +163,7 @@ export function DashboardPage() {
           </div>
 
           {/* Recently Assigned (In Progress) */}
-          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+          <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <h3 className="text-sm font-semibold text-gray-900">Penugasan Aktif</h3>
               <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600">{stats.inProgress}</span>
@@ -188,7 +188,7 @@ export function DashboardPage() {
           </div>
 
           {/* Recent Officer Comments */}
-          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+          <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <h3 className="text-sm font-semibold text-gray-900">Masukan Petugas</h3>
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">{recentComments.length}</span>
@@ -222,7 +222,7 @@ export function DashboardPage() {
         </section>
 
         {/* Officer Quick View */}
-        <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+        <section className="overflow-hidden rounded-md border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
             <h3 className="text-sm font-semibold text-gray-900">Petugas Aktif</h3>
             <span className="text-xs text-gray-400">{officers.length} terdaftar</span>

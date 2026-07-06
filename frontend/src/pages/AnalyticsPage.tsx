@@ -120,7 +120,7 @@ export function AnalyticsPage() {
             <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Ringkasan Pendapatan</h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 overflow-hidden rounded-md border border-gray-200 bg-white">
             <div className="p-5 sm:p-8 border-b sm:border-b-0 sm:border-r border-gray-200">
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">Total Tunggakan</p>
               <p className="text-2xl sm:text-4xl font-medium tracking-tighter text-[#1a1c1e]">{formatCurrency(revenue.total_due)}</p>
@@ -136,7 +136,7 @@ export function AnalyticsPage() {
           </div>
 
           {/* Collection progress */}
-          <div className="mt-6 rounded-2xl border border-gray-100 p-6 bg-white">
+          <div className="mt-6 rounded-md border border-gray-100 p-6 bg-white">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Progres Penagihan</span>
               <span className="text-sm font-semibold text-[#1a1c1e]">{revenue.collection_rate}%</span>
@@ -153,7 +153,7 @@ export function AnalyticsPage() {
             <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Rincian Status Target</h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 overflow-hidden rounded-md border border-gray-200 bg-white">
             {distribution.map((d, i) => {
               const pct = data.total_targets > 0 ? Math.round((d.value / data.total_targets) * 100) : 0;
               const colors = ["border-red-500", "border-amber-500", "border-green-500"];
@@ -180,11 +180,11 @@ export function AnalyticsPage() {
           </div>
 
           {officer_performance.length === 0 ? (
-            <p className="py-10 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400 rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+            <p className="py-10 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400 rounded-md border border-gray-200 bg-white">
               No officer assignments yet.
             </p>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+            <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
               {[...officer_performance]
                 .sort((a, b) => b.assigned - a.assigned)
                 .map((o, i) => {

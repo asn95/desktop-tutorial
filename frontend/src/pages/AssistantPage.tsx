@@ -100,12 +100,12 @@ export function AssistantPage() {
           )}
         </div>
 
-        <div className="flex h-[68vh] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_2px_20px_-8px_rgba(16,24,40,0.12)]">
+        <div className="flex h-[68vh] flex-col overflow-hidden rounded-md border border-gray-200 bg-white">
           {/* Messages */}
           <div className="flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
             {messages.length === 0 && !loading ? (
               <div className="flex h-full flex-col items-center justify-center text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EA0A2C]/10 text-[#EA0A2C]">
+                <span className="flex h-12 w-12 items-center justify-center rounded-md bg-[#EA0A2C]/10 text-[#EA0A2C]">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
                     <path d="M12 3l1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7z" />
                     <path d="M18.5 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z" />
@@ -129,7 +129,7 @@ export function AssistantPage() {
               messages.map((m, i) => (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    className={`max-w-[85%] whitespace-pre-wrap rounded-md px-4 py-2.5 text-sm leading-relaxed ${
                       m.role === "user" ? "bg-[#EA0A2C] text-white" : "bg-gray-100 text-gray-800"
                     }`}
                   >
@@ -140,7 +140,7 @@ export function AssistantPage() {
             )}
             {loading && (
               <div className="flex justify-start">
-                <div className="flex items-center gap-1.5 rounded-2xl bg-gray-100 px-4 py-3.5">
+                <div className="flex items-center gap-1.5 rounded-md bg-gray-100 px-4 py-3.5">
                   <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]" />
                   <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]" />
                   <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" />
@@ -158,12 +158,12 @@ export function AssistantPage() {
                 onChange={e => setInput(e.target.value)}
                 placeholder="Tanya apa saja soal operasional Anda…"
                 disabled={loading}
-                className="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20 disabled:bg-gray-50"
+                className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20 disabled:bg-gray-50"
               />
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="rounded-xl bg-[#EA0A2C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="rounded-md bg-[#EA0A2C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 Kirim
               </button>

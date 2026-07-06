@@ -105,7 +105,7 @@ export function OfficerAppPage() {
   if (view === "login") {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-[#f4f5f7] p-6 font-sans">
-        <div className="w-full max-w-[400px] rounded-2xl bg-white p-8 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)]">
+        <div className="w-full max-w-[400px] rounded-md bg-white p-8 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)]">
           <div className="mb-8 flex flex-col items-center text-center">
             <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="mb-4 h-9 w-auto object-contain" />
             <div className="text-2xl font-extrabold tracking-tight text-gray-900">
@@ -120,12 +120,12 @@ export function OfficerAppPage() {
                 value={telegramId}
                 onChange={(e) => setTelegramId(e.target.value)}
                 placeholder="mis. 123456789"
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
+                className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
               />
             </div>
             <button
               onClick={handleLogin}
-              className="w-full rounded-xl bg-[#EA0A2C] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,10,44,0.5)] transition-colors hover:bg-[#C80825] active:scale-[0.98]"
+              className="w-full rounded-md bg-[#EA0A2C] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,10,44,0.5)] transition-colors hover:bg-[#C80825] active:scale-[0.98]"
             >
               Masuk
             </button>
@@ -157,7 +157,7 @@ export function OfficerAppPage() {
                 <div
                   key={task.id}
                   onClick={() => { setSelectedTarget(task); setView("detail"); }}
-                  className="cursor-pointer rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_2px_16px_-6px_rgba(16,24,40,0.12)] transition-all duration-200 active:scale-[0.99]"
+                  className="cursor-pointer rounded-md border border-gray-100 bg-white p-5 shadow-[0_2px_16px_-6px_rgba(16,24,40,0.12)] transition-all duration-200 active:scale-[0.99]"
                 >
                   <div className="mb-3 flex items-start justify-between">
                     <span className="text-xs font-medium uppercase tracking-wide text-gray-400">#{task.id.slice(0, 6)}</span>
@@ -193,7 +193,7 @@ export function OfficerAppPage() {
           <section>
             <h2 className="text-2xl font-bold leading-tight tracking-tight text-gray-900">{selectedTask.customerName}</h2>
             <p className="mt-1 text-sm leading-relaxed text-gray-500">{selectedTask.address}</p>
-            <div className="mt-5 inline-block rounded-xl bg-red-50 px-4 py-2 text-xl font-bold text-[#EA0A2C]">
+            <div className="mt-5 inline-block rounded-md bg-red-50 px-4 py-2 text-xl font-bold text-[#EA0A2C]">
               {formatCurrency(selectedTask.amountDue)}
             </div>
           </section>
@@ -206,7 +206,7 @@ export function OfficerAppPage() {
               <select
                 value={paymentStatus}
                 onChange={(e) => setPaymentStatus(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
+                className="w-full appearance-none rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
               >
                 <option>Janji Bayar</option>
                 <option>Lunas</option>
@@ -222,14 +222,14 @@ export function OfficerAppPage() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
+                className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
                 placeholder="Jelaskan hasil kunjungan…"
               />
             </div>
 
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-700">Bukti foto</label>
-              <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 transition-colors hover:bg-gray-100">
+              <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-200 bg-gray-50 transition-colors hover:bg-gray-100">
                 <div className="text-center">
                   <svg className="mx-auto mb-2 h-7 w-7 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   <p className="text-xs font-medium text-gray-500">{photo ? photo.name : "Ketuk untuk ambil foto"}</p>
@@ -240,7 +240,7 @@ export function OfficerAppPage() {
 
             <button
               disabled={isSubmitting || !photo}
-              className="w-full rounded-2xl bg-[#EA0A2C] py-4 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(234,10,44,0.5)] transition-all hover:bg-[#C80825] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
+              className="w-full rounded-md bg-[#EA0A2C] py-4 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(234,10,44,0.5)] transition-all hover:bg-[#C80825] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
             >
               {isSubmitting ? "Mengunggah…" : "Kirim laporan"}
             </button>

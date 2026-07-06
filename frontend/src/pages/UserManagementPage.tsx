@@ -318,7 +318,7 @@ export function UserManagementPage() {
           <form
             onSubmit={handlePasswordConfirm}
             onClick={e => e.stopPropagation()}
-            className="bg-white rounded-2xl border border-gray-100 w-full max-w-xs mx-4 p-6 space-y-5"
+            className="bg-white rounded-md border border-gray-100 w-full max-w-xs mx-4 p-6 space-y-5"
           >
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-wide">Konfirmasi Kata Sandi</h2>
@@ -364,7 +364,7 @@ export function UserManagementPage() {
           <form
             onSubmit={handleUpdate}
             onClick={e => e.stopPropagation()}
-            className="bg-white rounded-2xl border border-gray-100 w-full max-w-sm mx-4 p-6 space-y-5"
+            className="bg-white rounded-md border border-gray-100 w-full max-w-sm mx-4 p-6 space-y-5"
           >
             <h2 className="text-xs font-semibold uppercase tracking-wide">Ubah {editingUser.name}</h2>
             <div className="space-y-1.5">

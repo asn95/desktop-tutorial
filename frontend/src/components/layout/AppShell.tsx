@@ -139,7 +139,7 @@ export function AppShell({
             <Link
               key={tab.path}
               to={tab.path}
-              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              className={`group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? "bg-[#EA0A2C]/10 text-[#EA0A2C]"
                   : dark
@@ -156,17 +156,17 @@ export function AppShell({
 
       {/* Actions */}
       <div className={`mt-auto space-y-1 border-t px-3 py-4 ${dark ? "border-slate-800" : "border-gray-100"}`}>
-        <button onClick={toggle} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
+        <button onClick={toggle} className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
           {dark ? "Mode Terang" : "Mode Gelap"}
         </button>
-        <button onClick={() => { setMaintCustomMsg(maintMsg); setShowMaintModal(true); }} className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${maintenance ? "text-amber-600 hover:bg-amber-50" : dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
+        <button onClick={() => { setMaintCustomMsg(maintMsg); setShowMaintModal(true); }} className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${maintenance ? "text-amber-600 hover:bg-amber-50" : dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
           Pemeliharaan
           {maintenance && <span className="h-2 w-2 rounded-full bg-amber-500" />}
         </button>
-        <button onClick={() => setShowPwModal(true)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
+        <button onClick={() => setShowPwModal(true)} className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
           Ubah Kata Sandi
         </button>
-        <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#EA0A2C] transition-colors hover:bg-red-50">
+        <button onClick={logout} className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold text-[#EA0A2C] transition-colors hover:bg-red-50">
           Keluar
         </button>
       </div>
@@ -221,7 +221,7 @@ export function AppShell({
               <button
                 onClick={() => setMenuOpen(true)}
                 aria-label="Buka menu"
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-95 lg:hidden ${
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-md transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-95 lg:hidden ${
                   dark ? "text-slate-300 hover:bg-slate-800/70" : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
@@ -243,10 +243,10 @@ export function AppShell({
 
             {/* Right: user chip */}
             <div
-              className={`group flex shrink-0 items-center gap-2.5 rounded-full py-1 pl-3.5 pr-1.5 ring-1 transition-all duration-300 ${
+              className={`group flex shrink-0 items-center gap-2.5 rounded-md border py-1 pl-3 pr-1.5 transition-all duration-300 ${
                 dark
-                  ? "bg-slate-800/40 ring-white/10"
-                  : "bg-white ring-black/5 shadow-[0_1px_2px_rgba(16,24,40,0.05)]"
+                  ? "border-slate-600 bg-slate-800/40"
+                  : "border-gray-200 bg-white"
               }`}
             >
               <div className="hidden flex-col items-end leading-tight sm:flex">
@@ -275,7 +275,7 @@ export function AppShell({
       {/* Maintenance Mode Modal */}
       {showMaintModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 px-4" onClick={() => setShowMaintModal(false)}>
-          <div onClick={e => e.stopPropagation()} className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
+          <div onClick={e => e.stopPropagation()} className={`w-full max-w-md rounded-md p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
             <h2 className="text-lg font-bold text-gray-900">Mode Pemeliharaan</h2>
             <p className="mt-1.5 text-sm text-gray-500">
               {maintenance
@@ -304,7 +304,7 @@ export function AppShell({
       {/* Change Password Modal */}
       {showPwModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 px-4" onClick={() => setShowPwModal(false)}>
-          <form onSubmit={handleChangePw} onClick={e => e.stopPropagation()} className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
+          <form onSubmit={handleChangePw} onClick={e => e.stopPropagation()} className={`w-full max-w-sm rounded-md p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
             <h2 className="text-lg font-bold text-gray-900">Ubah Kata Sandi</h2>
             <div className="mt-5 space-y-4">
               <div className="space-y-1.5">

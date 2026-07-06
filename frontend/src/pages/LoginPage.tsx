@@ -111,7 +111,7 @@ export function LoginPage() {
     >
       <div
         className={
-          "w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)] ring-1 ring-black/5 transition-all duration-500 ease-out " +
+          "w-full max-w-5xl overflow-hidden rounded-md bg-white shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)] ring-1 ring-black/5 transition-all duration-500 ease-out " +
           (mounted ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0")
         }
       >
@@ -120,7 +120,7 @@ export function LoginPage() {
           <div className="relative flex flex-col justify-between gap-8 overflow-hidden bg-[#EA0A2C] p-8 text-white sm:p-10 lg:p-12">
             {/* Logo lockup (logo is red, so it sits on a white card) */}
             <div className="relative">
-              <span className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3.5 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
+              <span className="inline-flex items-center justify-center rounded-md bg-white px-5 py-3.5 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
                 <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-9 w-auto object-contain" />
               </span>
             </div>
@@ -277,7 +277,7 @@ export function LoginPage() {
           onClick={() => setShowRecovery(false)}
         >
           <div
-            className="w-full max-w-md rounded-xl bg-white p-7 shadow-2xl ring-1 ring-black/5"
+            className="w-full max-w-md rounded-md bg-white p-7 shadow-2xl ring-1 ring-black/5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">

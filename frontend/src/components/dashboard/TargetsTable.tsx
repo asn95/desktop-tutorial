@@ -98,7 +98,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
 
   return (
     <>
-      <div className="w-full rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="w-full rounded-md border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-[640px] w-full text-left text-[11px] font-bold uppercase tracking-wider">
             <thead className="bg-gray-50 text-[#1a1c1e]">
@@ -193,7 +193,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
       {/* Detail Modal */}
       {detailTarget && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={() => setDetailTarget(null)}>
-          <div className="bg-white rounded-2xl border border-gray-100 w-full sm:max-w-lg sm:mx-4 p-0 max-h-[92vh] sm:max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-md border border-gray-100 w-full sm:max-w-lg sm:mx-4 p-0 max-h-[92vh] sm:max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
               <h2 className="text-xs font-semibold uppercase tracking-wide">Detail Target</h2>
               <button onClick={() => setDetailTarget(null)} className="text-lg font-bold hover:text-red-600">&times;</button>

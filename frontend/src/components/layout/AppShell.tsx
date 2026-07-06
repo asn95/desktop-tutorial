@@ -122,7 +122,7 @@ export function AppShell({
       {/* Brand */}
       <div className="flex flex-col gap-2.5 px-6 py-6">
         <span className="inline-flex w-max items-center justify-center self-start rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-black/5">
-          <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-5 w-auto object-contain" />
+          <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-8 w-auto object-contain" />
         </span>
         <div className="leading-tight">
           <div className="text-lg font-extrabold tracking-tight"><span className="text-[#EA0A2C]">C</span>3MR</div>

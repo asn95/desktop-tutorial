@@ -107,7 +107,7 @@ export function OfficerAppPage() {
       <div className="flex min-h-[100dvh] items-center justify-center bg-[#f4f5f7] p-6 font-sans">
         <div className="w-full max-w-[400px] rounded-md bg-white p-8 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)]">
           <div className="mb-8 flex flex-col items-center text-center">
-            <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="mb-4 h-9 w-auto object-contain" />
+            <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="mb-4 h-12 w-auto object-contain" />
             <div className="text-2xl font-extrabold tracking-tight text-gray-900">
               <span className="text-[#EA0A2C]">C</span>3MR Lapangan
             </div>
@@ -141,7 +141,7 @@ export function OfficerAppPage() {
       <div className="min-h-[100dvh] bg-[#f4f5f7] font-sans pb-10">
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white/90 px-5 py-4 backdrop-blur">
           <div className="flex items-center gap-2">
-            <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-6 w-auto object-contain" />
+            <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-9 w-auto object-contain" />
             <span className="text-lg font-extrabold tracking-tight"><span className="text-[#EA0A2C]">C</span>3MR</span>
           </div>
           <span className="rounded-full bg-[#EA0A2C]/10 px-3 py-1 text-xs font-semibold text-[#EA0A2C]">Petugas</span>

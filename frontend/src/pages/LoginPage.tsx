@@ -106,42 +106,39 @@ export function LoginPage() {
 
   return (
     <div
-      className="flex min-h-[100dvh] items-center justify-center bg-[#f3f4f6] px-4 py-10"
+      className={
+        "grid min-h-[100dvh] bg-white transition-opacity duration-500 ease-out lg:grid-cols-2 " +
+        (mounted ? "opacity-100" : "opacity-0")
+      }
       style={{ fontFamily: "'IBM Plex Sans', system-ui, -apple-system, sans-serif" }}
     >
-      <div
-        className={
-          "w-full max-w-5xl overflow-hidden rounded-md bg-white shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)] ring-1 ring-black/5 transition-all duration-500 ease-out " +
-          (mounted ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0")
-        }
-      >
-        <div className="grid lg:grid-cols-2">
-          {/* ───────────── LEFT — IndiHome by Telkomsel brand panel ───────────── */}
-          <div className="relative flex flex-col justify-between gap-8 overflow-hidden bg-gradient-to-br from-[#F0564A] via-[#E30425] to-[#7E1216] p-8 text-white sm:p-10 lg:p-12">
-            {/* Logo blends into the brand panel: white monochrome via CSS filter */}
-            <div className="relative">
-              <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-14 w-auto object-contain brightness-0 invert" />
-            </div>
+      {/* ───────────── LEFT — IndiHome by Telkomsel brand panel (full height) ───────────── */}
+      <div className="relative flex min-h-[260px] flex-col justify-between gap-8 overflow-hidden bg-gradient-to-br from-[#F0564A] via-[#E30425] to-[#7E1216] p-8 text-white sm:p-10 lg:p-14">
+        {/* Logo blends into the brand panel: white monochrome via CSS filter */}
+        <div className="relative">
+          <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-14 w-auto object-contain brightness-0 invert" />
+        </div>
 
-            {/* Product */}
-            <div className="relative">
-              <h1 className="text-3xl font-bold tracking-tight">C3MR</h1>
-              <p className="mt-1.5 text-sm font-semibold text-white/90">Sistem Manajemen Terpadu</p>
-              <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/75">
-                Portal operasional untuk penagihan, akun pelanggan, dan pelaporan.
-              </p>
-            </div>
+        {/* Product */}
+        <div className="relative">
+          <h1 className="text-4xl font-bold tracking-tight">C3MR</h1>
+          <p className="mt-1.5 text-sm font-semibold text-white/90">Sistem Manajemen Terpadu</p>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/75">
+            Portal operasional untuk penagihan, akun pelanggan, dan pelaporan.
+          </p>
+        </div>
 
-            {/* Copyright */}
-            <p className="relative text-xs text-white/70">&copy; 2026 IndiHome by Telkomsel &middot; PT Telekomunikasi Selular</p>
+        {/* Copyright */}
+        <p className="relative hidden text-xs text-white/70 lg:block">&copy; 2026 IndiHome by Telkomsel &middot; PT Telekomunikasi Selular</p>
+      </div>
+
+      {/* ───────────── RIGHT — sign-in form (centered) ───────────── */}
+      <div className="flex items-center justify-center bg-white px-6 py-10 sm:px-10">
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Masuk ke akun Anda</h2>
+            <p className="mt-1.5 text-sm text-gray-500">Masukkan kredensial untuk mengakses C3MR.</p>
           </div>
-
-          {/* ───────────── RIGHT — sign-in form ───────────── */}
-          <div className="bg-white p-8 sm:p-10 lg:p-12">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold tracking-tight text-gray-900">Masuk ke akun Anda</h2>
-              <p className="mt-1.5 text-sm text-gray-500">Masukkan kredensial untuk mengakses C3MR.</p>
-            </div>
 
             <form className="space-y-5" onSubmit={onSubmit}>
               {/* Username */}
@@ -264,7 +261,6 @@ export function LoginPage() {
               Sistem terbatas. Akses hanya untuk personel IndiHome by Telkomsel yang berwenang; seluruh aktivitas
               dicatat dan dipantau.
             </p>
-          </div>
         </div>
       </div>
 

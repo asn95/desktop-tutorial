@@ -22,6 +22,40 @@ def get_db():
         db.close()
 
 
+def extract_area(address: str) -> str:
+    """Best-effort city/area from 'Jl. X No. 12 Banda Aceh' or 'Jl. Y No. 5, Jakarta Selatan'."""
+    if not address:
+        return "Lainnya"
+    if "," in address:
+        tail = address.rsplit(",", 1)[1].strip()
+        if tail:
+            return tail
+    tokens = address.replace(",", " ").split()
+    last_numeric = -1
+    for i, tok in enumerate(tokens):
+        if any(ch.isdigit() for ch in tok):
+            last_numeric = i
+    if last_numeric != -1 and last_numeric < len(tokens) - 1:
+        return " ".join(tokens[last_numeric + 1:])
+    return tokens[-1] if tokens else "Lainnya"
+
+
+def _days_since(dt) -> int:
+    """Whole days since a stored datetime; tolerates naive (UTC) and aware values."""
+    if not dt:
+        return 0
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        now = now.replace(tzinfo=None)
+    return max((now - dt).days, 0)
+
+
+def _active_period(db) -> str | None:
+    """Newest upload period in the DB ("YYYY-MM"), i.e. the batch currently being worked."""
+    periods = [p for (p,) in db.query(DbTarget.period).distinct().all() if p]
+    return max(periods) if periods else None
+
+
 def get_dashboard_stats(period: str | None = None) -> dict:
     """Get current dashboard statistics, optionally scoped to one monthly period ("YYYY-MM")."""
     pf = [DbTarget.period == period] if period and period != "all" else []
@@ -406,6 +440,136 @@ def generate_daily_report() -> str:
     return "\n".join(lines)
 
 
+def get_priority_targets(officer: str | None = None, period: str | None = None, limit: int = 10) -> dict:
+    """Rank targets by visit priority: amount due, days outstanding, broken
+    promise-to-pay, repeat not-home, and area clustering (route efficiency).
+    Defaults to the newest (active) upload period."""
+    limit = min(max(int(limit or 10), 1), 20)
+    with get_db() as db:
+        if not period:
+            period = _active_period(db)
+
+        q = db.query(DbTarget, DbUser).outerjoin(
+            DbUser, DbTarget.assigned_officer == DbUser.id
+        ).filter(DbTarget.status != TargetStatus.completed)
+        if period and period != "all":
+            q = q.filter(DbTarget.period == period)
+        if officer:
+            q = q.filter(
+                (DbUser.name.ilike(f"%{officer}%")) | (DbTarget.assigned_officer == officer)
+            )
+        rows = q.all()
+        if not rows:
+            return {"period": period or "all", "targets": [], "message": "Tidak ada target aktif yang cocok"}
+
+        # One pass over recent reports for promise-to-pay / not-home history
+        target_ids = [t.id for t, _ in rows]
+        reports = db.query(DbReport).filter(DbReport.target_id.in_(target_ids)).all()
+        promises: dict[str, int] = {}   # target_id -> days since oldest unfulfilled promise
+        not_home: dict[str, int] = {}
+        for r in reports:
+            status = r.payment_status.value if hasattr(r.payment_status, "value") else r.payment_status
+            if status == PaymentStatus.promise_to_pay.value:
+                age = _days_since(r.submitted_at)
+                promises[r.target_id] = max(promises.get(r.target_id, 0), age)
+            elif status == PaymentStatus.not_home.value:
+                not_home[r.target_id] = not_home.get(r.target_id, 0) + 1
+
+        area_counts: dict[str, int] = {}
+        for t, _ in rows:
+            area = extract_area(t.address)
+            area_counts[area] = area_counts.get(area, 0) + 1
+
+        max_amount = max(t.amount_due or 0 for t, _ in rows) or 1
+        scored = []
+        for t, u in rows:
+            area = extract_area(t.address)
+            age_days = _days_since(t.created_at)
+            reasons = []
+
+            amount_pts = (t.amount_due or 0) / max_amount * 40
+            if amount_pts >= 20:
+                reasons.append(f"Tunggakan besar (Rp {int(t.amount_due):,})".replace(",", "."))
+
+            age_pts = min(age_days, 30) / 30 * 20
+            if age_days >= 7:
+                reasons.append(f"Sudah {age_days} hari belum tertagih")
+
+            promise_pts = 0
+            promise_age = promises.get(t.id)
+            if promise_age is not None and promise_age >= 3:
+                promise_pts = 30
+                reasons.append(f"Janji bayar sudah lewat ({promise_age} hari lalu)")
+
+            not_home_pts = 5 if not_home.get(t.id) else 0
+            if not_home.get(t.id):
+                reasons.append(f"{not_home[t.id]}x tidak di rumah, perlu waktu kunjungan berbeda")
+
+            cluster_pts = 5 if area_counts.get(area, 0) >= 3 else 0
+            if cluster_pts:
+                reasons.append(f"{area_counts[area]} target di area {area} (sekali jalan)")
+
+            scored.append({
+                "id": t.id[:8],
+                "customer_name": t.customer_name,
+                "area": area,
+                "address": t.address,
+                "phone": t.phone,
+                "amount_due": t.amount_due,
+                "status": t.status.value if hasattr(t.status, "value") else t.status,
+                "officer": u.name if u else "Belum ditugaskan",
+                "days_outstanding": age_days,
+                "score": round(amount_pts + age_pts + promise_pts + not_home_pts + cluster_pts, 1),
+                "reasons": reasons,
+            })
+
+        scored.sort(key=lambda r: (-r["score"], r["area"]))
+        return {"period": period or "all", "scoring": "tunggakan 40% + umur 20% + janji-bayar-lewat 30 poin + tidak-di-rumah 5 + klaster area 5", "targets": scored[:limit]}
+
+
+def summarize_field_feedback(days: int = 30, limit: int = 50) -> dict:
+    """Recent officer field comments with tags/areas plus aggregate counts, so the
+    agent can summarize field issues (wrong address, customer moved, etc)."""
+    days = min(max(int(days or 30), 1), 180)
+    limit = min(max(int(limit or 50), 1), 100)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    with get_db() as db:
+        rows = (
+            db.query(DbComment, DbTarget, DbUser)
+            .join(DbTarget, DbComment.target_id == DbTarget.id)
+            .join(DbUser, DbComment.officer_id == DbUser.id)
+            .filter(DbComment.created_at >= cutoff)
+            .order_by(DbComment.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+        tag_counts: dict[str, int] = {}
+        by_area: dict[str, dict[str, int]] = {}
+        comments = []
+        for c, t, u in rows:
+            tag = c.tag or "tanpa_tag"
+            area = extract_area(t.address)
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+            by_area.setdefault(area, {})[tag] = by_area.get(area, {}).get(tag, 0) + 1
+            comments.append({
+                "date": c.created_at.strftime("%Y-%m-%d") if c.created_at else "-",
+                "officer": u.name,
+                "customer": t.customer_name,
+                "area": area,
+                "tag": tag,
+                "message": (c.message or "")[:160],
+            })
+
+        return {
+            "window_days": days,
+            "total_comments": len(comments),
+            "tag_counts": tag_counts,
+            "issues_by_area": by_area,
+            "comments": comments,
+        }
+
+
 # Tool definitions for Claude API
 TOOL_DEFINITIONS = [
     {
@@ -558,6 +722,46 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "get_priority_targets",
+        "description": "Rank the highest-priority targets to visit today. Scores each active (non-completed) target by amount due, days outstanding, broken promise-to-pay, repeat not-home visits, and same-area clustering for route efficiency. Use when the manager asks which targets to visit first / today's priorities. Defaults to the newest (active) upload period.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "officer": {
+                    "type": "string",
+                    "description": "Optional: limit to targets assigned to this officer (name partial match or id)",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "Monthly period YYYY-MM. Omit for the active (newest) batch; 'all' for every period.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "How many top targets to return (default 10, max 20)",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "summarize_field_feedback",
+        "description": "Fetch recent officer field comments (wrong address, customer moved, wrong phone, etc) with per-tag and per-area counts. Use when the manager asks to summarize field feedback, complaints, or data-quality issues reported by officers.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer",
+                    "description": "Look-back window in days (default 30, max 180)",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max comments to fetch (default 50, max 100)",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "get_officer_performance",
         "description": "Get detailed performance metrics for all officers: completion rate, reports submitted, revenue collected.",
         "input_schema": {
@@ -592,6 +796,8 @@ TOOL_FUNCTIONS = {
     "assign_targets_to_officer": lambda **kw: assign_targets_to_officer(**kw),
     "auto_assign_pending_targets": lambda **kw: auto_assign_pending_targets(**kw),
     "assign_all_pending_to_officer": lambda **kw: assign_all_pending_to_officer(**kw),
+    "get_priority_targets": lambda **kw: get_priority_targets(**kw),
+    "summarize_field_feedback": lambda **kw: summarize_field_feedback(**kw),
     "get_officer_performance": lambda **kw: get_officer_performance(**kw),
     "generate_daily_report": lambda **kw: generate_daily_report(),
 }

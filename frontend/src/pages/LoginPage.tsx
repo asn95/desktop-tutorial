@@ -118,11 +118,9 @@ export function LoginPage() {
         <div className="grid lg:grid-cols-2">
           {/* ───────────── LEFT — IndiHome by Telkomsel brand panel ───────────── */}
           <div className="relative flex flex-col justify-between gap-8 overflow-hidden bg-gradient-to-br from-[#F0564A] via-[#E30425] to-[#7E1216] p-8 text-white sm:p-10 lg:p-12">
-            {/* Logo lockup (logo is red, so it sits on a white card) */}
+            {/* Logo blends into the brand panel: white monochrome via CSS filter */}
             <div className="relative">
-              <span className="inline-flex items-center justify-center rounded-md bg-white px-5 py-3.5 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)]">
-                <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-14 w-auto object-contain" />
-              </span>
+              <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-14 w-auto object-contain brightness-0 invert" />
             </div>
 
             {/* Product */}

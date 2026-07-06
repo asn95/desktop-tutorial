@@ -270,6 +270,18 @@ export function AppShell({
         </main>
       </div>
 
+      {/* Floating AI Assistant shortcut */}
+      {location.pathname !== "/assistant" && (
+        <Link
+          to="/assistant"
+          title="Asisten AI"
+          aria-label="Buka Asisten AI"
+          className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-[#E81E28] text-white shadow-[0_4px_12px_-2px_rgba(232,30,40,0.4)] transition-all duration-200 hover:bg-[#c8161f] hover:shadow-[0_6px_16px_-2px_rgba(232,30,40,0.5)] active:scale-95 sm:bottom-6 sm:right-6"
+        >
+          <I.assistant className="h-5 w-5" />
+        </Link>
+      )}
+
       {/* Maintenance Mode Modal */}
       {showMaintModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 px-4" onClick={() => setShowMaintModal(false)}>

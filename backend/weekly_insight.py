@@ -1,0 +1,176 @@
+"""
+C3MR Weekly Insight — proactive Monday-morning AI report for managers.
+
+Collects this-week vs last-week collection numbers, area and officer signals,
+and field feedback, then has Claude write a short Indonesian narrative that is
+sent to every manager on Telegram. Also exposed as the /mingguan bot command.
+"""
+from datetime import datetime, timedelta, timezone
+
+import anthropic
+
+from .agent import _get_client, MODEL, _clean
+from .agent_tools import (
+    get_db, extract_area, _active_period,
+    get_priority_targets, summarize_field_feedback,
+)
+from .models import DbTarget, DbReport, DbUser, TargetStatus, PaymentStatus, UserRole
+from .notifications import send_telegram_notification
+
+WIB = timezone(timedelta(hours=7))
+
+NARRATIVE_SYSTEM_PROMPT = """You write the weekly operations briefing for C3MR, a debt-collection field operation (IndiHome by Telkomsel).
+
+You receive raw JSON metrics. Write a short briefing for the manager.
+
+RULES:
+- Bahasa Indonesia only.
+- PLAIN TEXT ONLY — no markdown symbols (*, _, #, `). Use the bullet character • and line breaks.
+- Structure: 1) ringkasan performa minggu ini vs minggu lalu (sebutkan angka), 2) area terbaik & area yang tertinggal, 3) petugas yang perlu perhatian, 4) masalah lapangan (jika ada), 5) tiga rekomendasi aksi konkret.
+- Ground every claim in the JSON numbers — never invent data. If a section has no data, say so briefly.
+- Max 3000 characters. Concise, direct, professional but warm.
+"""
+
+
+def _week_report_counts(db, start, end) -> dict:
+    """Payment-status counts + paid amount for reports submitted in [start, end)."""
+    rows = (
+        db.query(DbReport, DbTarget)
+        .join(DbTarget, DbReport.target_id == DbTarget.id)
+        .filter(DbReport.submitted_at >= start, DbReport.submitted_at < end)
+        .all()
+    )
+    counts: dict[str, int] = {}
+    paid_amount = 0.0
+    for r, t in rows:
+        status = r.payment_status.value if hasattr(r.payment_status, "value") else r.payment_status
+        counts[status] = counts.get(status, 0) + 1
+        if status == PaymentStatus.paid.value:
+            paid_amount += t.amount_due or 0
+    return {"reports": len(rows), "by_status": counts, "paid_amount": paid_amount}
+
+
+def collect_weekly_data() -> dict:
+    """Gather all metrics the narrative is written from."""
+    now = datetime.now(timezone.utc).replace(tzinfo=None)  # DB stores naive UTC
+    week_start = now - timedelta(days=7)
+    prev_week_start = now - timedelta(days=14)
+
+    with get_db() as db:
+        period = _active_period(db)
+
+        this_week = _week_report_counts(db, week_start, now)
+        last_week = _week_report_counts(db, prev_week_start, week_start)
+
+        # Active-period target counts
+        pf = [DbTarget.period == period] if period else []
+        total = db.query(DbTarget).filter(*pf).count()
+        completed = db.query(DbTarget).filter(DbTarget.status == TargetStatus.completed, *pf).count()
+        pending = db.query(DbTarget).filter(DbTarget.status == TargetStatus.pending, *pf).count()
+        in_progress = db.query(DbTarget).filter(DbTarget.status == TargetStatus.in_progress, *pf).count()
+
+        # Outstanding value per area (active period, not completed)
+        area_outstanding: dict[str, dict] = {}
+        for t in db.query(DbTarget).filter(DbTarget.status != TargetStatus.completed, *pf).all():
+            area = extract_area(t.address)
+            slot = area_outstanding.setdefault(area, {"targets": 0, "amount": 0.0})
+            slot["targets"] += 1
+            slot["amount"] += t.amount_due or 0
+        top_areas = sorted(area_outstanding.items(), key=lambda kv: -kv[1]["amount"])[:5]
+
+        # Officer activity this week: reports submitted vs active workload
+        officers = db.query(DbUser).filter(DbUser.role == UserRole.officer).all()
+        officer_rows = []
+        for o in officers:
+            active = db.query(DbTarget).filter(
+                DbTarget.assigned_officer == o.id,
+                DbTarget.status.in_([TargetStatus.pending, TargetStatus.in_progress]),
+            ).count()
+            reports_this_week = db.query(DbReport).filter(
+                DbReport.officer_id == o.id, DbReport.submitted_at >= week_start
+            ).count()
+            officer_rows.append({
+                "name": o.name,
+                "active_targets": active,
+                "reports_this_week": reports_this_week,
+            })
+
+    feedback = summarize_field_feedback(days=7, limit=30)
+    feedback.pop("comments", None)  # aggregates are enough for the narrative
+    priorities = get_priority_targets(limit=5)
+
+    return {
+        "generated_at_wib": datetime.now(WIB).strftime("%A %d %B %Y %H:%M"),
+        "active_period": period,
+        "active_period_targets": {
+            "total": total, "completed": completed,
+            "in_progress": in_progress, "pending": pending,
+        },
+        "this_week": this_week,
+        "last_week": last_week,
+        "top_outstanding_areas": [
+            {"area": a, "targets": v["targets"], "outstanding_amount": v["amount"]}
+            for a, v in top_areas
+        ],
+        "officers": officer_rows,
+        "field_feedback_7d": feedback,
+        "top_priority_targets": [
+            {"customer": t["customer_name"], "area": t["area"], "amount_due": t["amount_due"], "reasons": t["reasons"]}
+            for t in priorities.get("targets", [])
+        ],
+    }
+
+
+async def build_weekly_report_text() -> str:
+    """Collect data and have Claude write the Indonesian narrative."""
+    import json
+    data = collect_weekly_data()
+    try:
+        response = await _get_client().messages.create(
+            model=MODEL,
+            max_tokens=1500,
+            system=NARRATIVE_SYSTEM_PROMPT,
+            messages=[{
+                "role": "user",
+                "content": "Tulis briefing mingguan dari data berikut:\n" + json.dumps(data, default=str, ensure_ascii=False),
+            }],
+        )
+        narrative = _clean("".join(b.text for b in response.content if b.type == "text"))
+    except Exception as e:
+        # Report must still reach managers even when the AI call fails
+        narrative = (
+            f"(Narasi AI tidak tersedia: {type(e).__name__}.)\n\n"
+            f"Angka utama periode {data.get('active_period') or '-'}:\n"
+            f"• Target: {data['active_period_targets']}\n"
+            f"• Laporan minggu ini: {data['this_week']}\n"
+            f"• Laporan minggu lalu: {data['last_week']}"
+        )
+
+    range_end = datetime.now(WIB)
+    range_start = range_end - timedelta(days=7)
+    header = (
+        "📊 LAPORAN MINGGUAN C3MR\n"
+        f"{range_start.strftime('%d %b')} – {range_end.strftime('%d %b %Y')}"
+        + (f" · Periode aktif {data['active_period']}" if data.get("active_period") else "")
+        + "\n\n"
+    )
+    return header + narrative
+
+
+async def send_weekly_report() -> dict:
+    """Build the report and push it to every manager who has a Telegram ID."""
+    text = await build_weekly_report_text()
+
+    with get_db() as db:
+        managers = (
+            db.query(DbUser)
+            .filter(DbUser.role == UserRole.manager, DbUser.telegram_id.isnot(None))
+            .all()
+        )
+
+    sent, failed = [], []
+    for m in managers:
+        ok = send_telegram_notification(m.telegram_id, text, parse_mode=None)
+        (sent if ok else failed).append(m.name)
+
+    return {"sent_to": sent, "failed": failed, "chars": len(text)}

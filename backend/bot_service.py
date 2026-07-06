@@ -3,13 +3,15 @@ C3MR Manager Bot - Bot Telegram untuk notifikasi dan statistik collection
 bagi manajer.
 
 Perintah:
-  /start   - Pesan sambutan
-  /summary - Statistik collection harian
-  /report  - Laporan lapangan terbaru
-  /ask     - Kueri bahasa alami & otomasi alur kerja bertenaga AI
+  /start    - Pesan sambutan
+  /summary  - Statistik collection harian
+  /report   - Laporan lapangan terbaru
+  /ask      - Kueri bahasa alami & otomasi alur kerja bertenaga AI
+  /mingguan - Laporan insight mingguan AI (juga terkirim otomatis tiap Senin 08.00 WIB)
 """
 import os
 import asyncio
+from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, WebAppInfo, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
@@ -92,7 +94,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Perintah yang tersedia:\n"
             "  /summary \\- Statistik collection\n"
             "  /report  \\- Laporan lapangan terbaru\n"
-            "  /ask     \\- Asisten AI bahasa alami\n\n"
+            "  /ask     \\- Asisten AI bahasa alami\n"
+            "  /mingguan \\- Laporan insight mingguan AI\n\n"
             "Atau langsung ketik pertanyaan\\!",
             parse_mode="MarkdownV2",
             reply_markup=reply_markup
@@ -210,6 +213,48 @@ async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+async def weekly_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /mingguan — on-demand weekly AI insight report (same content as the
+    scheduled Monday-morning broadcast)."""
+    if not await require_manager(update):
+        return
+
+    await update.message.chat.send_action("typing")
+    await update.message.reply_text("Sedang menyusun laporan mingguan, mohon tunggu sebentar…")
+
+    try:
+        from .weekly_insight import build_weekly_report_text
+        report = await build_weekly_report_text()
+        for i in range(0, len(report), 4000):
+            await update.message.reply_text(report[i:i + 4000])
+    except Exception as e:
+        print(f"Weekly report error: {e}", flush=True)
+        await update.message.reply_text(f"Gagal menyusun laporan mingguan: {str(e)[:200]}")
+
+
+async def _weekly_scheduler():
+    """Broadcast the weekly report to all managers every Monday 08.00–08.59 WIB."""
+    from .weekly_insight import send_weekly_report, WIB
+
+    last_sent_date: str | None = None
+    print("Penjadwal laporan mingguan aktif (Senin 08.00 WIB).", flush=True)
+    while True:
+        try:
+            now = datetime.now(WIB)
+            today = now.strftime("%Y-%m-%d")
+            if now.weekday() == 0 and now.hour == 8 and last_sent_date != today:
+                result = await send_weekly_report()
+                print(f"Laporan mingguan terkirim: {result}", flush=True)
+                last_sent_date = today
+        except Exception as e:
+            print(f"Penjadwal mingguan error: {e}", flush=True)
+        await asyncio.sleep(600)  # cek tiap 10 menit
+
+
+async def _post_init(app: Application):
+    asyncio.create_task(_weekly_scheduler())
+
+
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle plain text messages as agent queries (if from a manager)."""
     tid = str(update.effective_user.id)
@@ -255,11 +300,13 @@ def run_bot():
     print("Menunggu 35 detik agar container sebelumnya melepas polling lock...", flush=True)
     _time.sleep(35)
 
-    app = Application.builder().token(TOKEN).build()
+    app = Application.builder().token(TOKEN).post_init(_post_init).build()
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("summary", summary_command))
     app.add_handler(CommandHandler("report", report_command))
     app.add_handler(CommandHandler("ask", ask_command))
+    app.add_handler(CommandHandler("mingguan", weekly_command))
+    app.add_handler(CommandHandler("weekly", weekly_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
 
     print("Bot Manajer C3MR berjalan dengan Agen AI...", flush=True)

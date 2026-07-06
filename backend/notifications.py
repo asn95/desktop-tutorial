@@ -7,7 +7,7 @@ load_dotenv()
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
-def send_telegram_notification(telegram_id: str, message: str, include_field_app: bool = False) -> bool:
+def send_telegram_notification(telegram_id: str, message: str, include_field_app: bool = False, parse_mode: str | None = "Markdown") -> bool:
     if not TOKEN:
         print("Telegram Bot Token not configured. Notification skipped.")
         return False
@@ -16,8 +16,11 @@ def send_telegram_notification(telegram_id: str, message: str, include_field_app
     payload = {
         "chat_id": telegram_id,
         "text": message,
-        "parse_mode": "Markdown"
     }
+    # AI-generated text may contain stray * or _ that break Telegram's Markdown
+    # parser (message rejected) — callers pass parse_mode=None to send plain text.
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
 
     if include_field_app:
         mini_app_url = os.environ.get(

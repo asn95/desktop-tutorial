@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import indihomeLogo from "../assets/indihome-logo.png";
+import indihomeLogo from "../assets/indihome-logo.svg";
 
 const FAILED_KEY = "c3mr:login-failures";
 const MAX_ATTEMPTS = 5;

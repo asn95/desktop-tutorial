@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "../lib/apiClient";
 import { formatCurrency } from "../lib/format";
 import type { Target } from "../types/target";
-import indihomeLogo from "../assets/indihome-logo.png";
+import indihomeLogo from "../assets/indihome-logo.svg";
 
 type ViewState = "login" | "list" | "detail";
 

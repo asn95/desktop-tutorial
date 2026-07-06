@@ -4,7 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../contexts/ThemeContext";
 import { apiClient } from "../../lib/apiClient";
 import { Link, useLocation } from "react-router-dom";
-import indihomeLogo from "../../assets/indihome-logo.png";
+import indihomeLogo from "../../assets/indihome-logo.svg";
 
 type IconProps = { className?: string };
 const I = {

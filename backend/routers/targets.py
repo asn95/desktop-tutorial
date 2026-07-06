@@ -1,7 +1,9 @@
 import csv
 import io
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..database import get_db
@@ -10,9 +12,13 @@ from ..security import require_auth
 
 router = APIRouter()
 
+def current_period() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m")
+
 @router.get("/", response_model=List[Target])
 async def get_targets(
     status: Optional[str] = None,
+    period: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -21,10 +27,33 @@ async def get_targets(
     query = db.query(DbTarget)
     if status:
         query = query.filter(DbTarget.status == status)
+    if period and period != "all":
+        query = query.filter(DbTarget.period == period)
     return query.order_by(DbTarget.created_at.desc()).offset(skip).limit(limit).all()
 
+@router.get("/periods")
+async def list_periods(db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+    """Distinct upload periods (newest first) with target counts, for the period selector."""
+    rows = (
+        db.query(DbTarget.period, func.count(DbTarget.id))
+        .group_by(DbTarget.period)
+        .all()
+    )
+    periods = sorted(
+        [{"period": p or "lainnya", "total": c} for p, c in rows],
+        key=lambda r: r["period"],
+        reverse=True,
+    )
+    return {"periods": periods, "active": periods[0]["period"] if periods else None}
+
 @router.post("/upload")
-async def upload_targets(targets: List[TargetCreate], db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def upload_targets(
+    targets: List[TargetCreate],
+    period: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+):
+    batch_period = period or current_period()
     try:
         db_targets = [
             DbTarget(
@@ -32,13 +61,14 @@ async def upload_targets(targets: List[TargetCreate], db: Session = Depends(get_
                 address=t.address,
                 phone=t.phone,
                 amount_due=t.amountDue,
+                period=batch_period,
             )
             for t in targets
         ]
         db.add_all(db_targets)
-        db.add(DbAuditLog(user_id=_auth["sub"], action="upload", detail=f"Mengunggah {len(targets)} target"))
+        db.add(DbAuditLog(user_id=_auth["sub"], action="upload", detail=f"Mengunggah {len(targets)} target (periode {batch_period})"))
         db.commit()
-        return {"message": f"Berhasil mengunggah {len(targets)} target"}
+        return {"message": f"Berhasil mengunggah {len(targets)} target ke periode {batch_period}", "period": batch_period}
     except Exception as e:
         db.rollback()
         import traceback; traceback.print_exc()
@@ -100,13 +130,16 @@ async def bulk_assign(payload: BulkAssignPayload, db: Session = Depends(get_db),
     return {"message": f"{len(targets)} target berhasil ditugaskan ke {db_officer.name}"}
 
 @router.get("/export/csv")
-async def export_targets_csv(db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
-    targets = db.query(DbTarget).order_by(DbTarget.created_at.desc()).all()
+async def export_targets_csv(period: Optional[str] = None, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+    query = db.query(DbTarget)
+    if period and period != "all":
+        query = query.filter(DbTarget.period == period)
+    targets = query.order_by(DbTarget.created_at.desc()).all()
     users = {u.id: u.name for u in db.query(DbUser).all()}
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["ID", "Nama Nasabah", "Alamat", "Telepon", "Jumlah Tagihan", "Petugas", "Status", "Dibuat Pada"])
+    writer.writerow(["ID", "Nama Nasabah", "Alamat", "Telepon", "Jumlah Tagihan", "Petugas", "Status", "Periode", "Dibuat Pada"])
     for t in targets:
         writer.writerow([
             t.id[:8],
@@ -116,6 +149,7 @@ async def export_targets_csv(db: Session = Depends(get_db), _auth: dict = Depend
             t.amount_due,
             users.get(t.assigned_officer, "-"),
             t.status.value if hasattr(t.status, "value") else t.status,
+            t.period or "-",
             t.created_at.strftime("%Y-%m-%d %H:%M") if t.created_at else "",
         ])
     output.seek(0)

@@ -4,7 +4,7 @@ from ..database import get_db
 from ..models import DbTarget, DbComment, DbUser, DashboardStats, TargetStatus, Target
 from ..security import require_auth
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 router = APIRouter()
 
@@ -13,13 +13,19 @@ class DashboardSnapshot(BaseModel):
     targets: List[Target]
 
 @router.get("/", response_model=DashboardSnapshot)
-async def get_dashboard_snapshot(db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
-    # 1. Fetch Stats
-    total_targets = db.query(DbTarget).count()
-    completed = db.query(DbTarget).filter(DbTarget.status == TargetStatus.completed).count()
-    in_progress = db.query(DbTarget).filter(DbTarget.status == TargetStatus.in_progress).count()
-    pending = db.query(DbTarget).filter(DbTarget.status == TargetStatus.pending).count()
-    
+async def get_dashboard_snapshot(period: Optional[str] = None, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+    def base_query():
+        q = db.query(DbTarget)
+        if period and period != "all":
+            q = q.filter(DbTarget.period == period)
+        return q
+
+    # 1. Fetch Stats (scoped to the selected period, if any)
+    total_targets = base_query().count()
+    completed = base_query().filter(DbTarget.status == TargetStatus.completed).count()
+    in_progress = base_query().filter(DbTarget.status == TargetStatus.in_progress).count()
+    pending = base_query().filter(DbTarget.status == TargetStatus.pending).count()
+
     stats = {
         "totalTargets": total_targets,
         "completed": completed,
@@ -29,8 +35,8 @@ async def get_dashboard_snapshot(db: Session = Depends(get_db), _auth: dict = De
 
     # 2. Fetch Targets for the dashboard table
     # Using the Pydantic Target model which handles the snake_case mapping
-    targets = db.query(DbTarget).order_by(DbTarget.created_at.desc()).limit(50).all()
-    
+    targets = base_query().order_by(DbTarget.created_at.desc()).limit(50).all()
+
     return {
         "stats": stats,
         "targets": targets

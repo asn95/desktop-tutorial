@@ -19,6 +19,39 @@ from .models import DbUser, DbTarget, DbReport, DbComment, DbAuditLog, DbNotific
 # Create all tables on startup
 Base.metadata.create_all(bind=engine)
 
+# Lightweight in-place migration: create_all does not alter existing tables,
+# so add the 'period' column ourselves and backfill legacy rows from created_at.
+def _migrate_target_period():
+    from sqlalchemy import inspect, text
+    from .database import SessionLocal
+    from datetime import datetime, timezone
+
+    cols = {c["name"] for c in inspect(engine).get_columns("targets")}
+    if "period" not in cols:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE targets ADD COLUMN period VARCHAR"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_targets_period ON targets (period)"))
+        except Exception:
+            logger.exception("Gagal menambahkan kolom period (mungkin sudah ada)")
+
+    db = SessionLocal()
+    try:
+        legacy = db.query(DbTarget).filter(DbTarget.period.is_(None)).all()
+        for t in legacy:
+            base = t.created_at or datetime.now(timezone.utc)
+            t.period = base.strftime("%Y-%m")
+        if legacy:
+            db.commit()
+            logger.info(f"Migrasi period: {len(legacy)} target lama diberi label periode")
+    except Exception:
+        db.rollback()
+        logger.exception("Gagal backfill period untuk target lama")
+    finally:
+        db.close()
+
+_migrate_target_period()
+
 app = FastAPI(title="C3MR API")
 
 @app.exception_handler(Exception)

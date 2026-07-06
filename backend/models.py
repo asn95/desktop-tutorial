@@ -50,6 +50,7 @@ class DbTarget(Base):
     amount_due = Column(Float, nullable=False)
     assigned_officer = Column(String, ForeignKey("users.id"), nullable=True)
     status = _enum_col(TargetStatus, "target_status", default=TargetStatus.pending)
+    period = Column(String, nullable=True, index=True)  # monthly upload batch, format "YYYY-MM"
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class DbReport(Base):
@@ -111,6 +112,7 @@ class TargetBase(BaseModel):
     amountDue: float = Field(..., alias="amount_due", validation_alias="amount_due", serialization_alias="amountDue")
     assignedOfficer: Optional[str] = Field(None, alias="assigned_officer", validation_alias="assigned_officer", serialization_alias="assignedOfficer")
     status: TargetStatus = TargetStatus.pending
+    period: Optional[str] = None
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 

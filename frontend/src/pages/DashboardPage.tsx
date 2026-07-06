@@ -95,7 +95,7 @@ export function DashboardPage() {
   if (isLoading) {
     return (
       <AppShell activeTab="DASHBOARD">
-        <div className="py-24 text-center text-sm font-medium text-gray-400">Memuat dasbor…</div>
+        <div className="py-24 text-center text-sm font-medium text-gray-400">Memuat dashboard…</div>
       </AppShell>
     );
   }
@@ -125,7 +125,7 @@ export function DashboardPage() {
       <div className="space-y-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dasbor Operasional</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard Operasional</h1>
             <p className="mt-1 text-sm text-gray-500">Ringkasan real-time target penagihan dan aktivitas lapangan.</p>
           </div>
           {period && <PeriodSelector periods={periods} value={period} onChange={setPeriod} />}

@@ -42,7 +42,7 @@ const I = {
 };
 
 const tabs = [
-  { name: "Dasbor", path: "/dashboard", icon: I.dashboard },
+  { name: "Dashboard", path: "/dashboard", icon: I.dashboard },
   { name: "Analitik", path: "/analytics", icon: I.analytics },
   { name: "Manajemen Pengguna", path: "/users", icon: I.users },
   { name: "Target", path: "/targets", icon: I.targets },

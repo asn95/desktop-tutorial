@@ -22,28 +22,35 @@ def get_db():
         db.close()
 
 
-def get_dashboard_stats() -> dict:
-    """Get current dashboard statistics."""
+def get_dashboard_stats(period: str | None = None) -> dict:
+    """Get current dashboard statistics, optionally scoped to one monthly period ("YYYY-MM")."""
+    pf = [DbTarget.period == period] if period and period != "all" else []
     with get_db() as db:
-        total = db.query(func.count(DbTarget.id)).scalar() or 0
+        total = db.query(func.count(DbTarget.id)).filter(*pf).scalar() or 0
         pending = db.query(func.count(DbTarget.id)).filter(
-            DbTarget.status == TargetStatus.pending
+            DbTarget.status == TargetStatus.pending, *pf
         ).scalar() or 0
         in_progress = db.query(func.count(DbTarget.id)).filter(
-            DbTarget.status == TargetStatus.in_progress
+            DbTarget.status == TargetStatus.in_progress, *pf
         ).scalar() or 0
         completed = db.query(func.count(DbTarget.id)).filter(
-            DbTarget.status == TargetStatus.completed
+            DbTarget.status == TargetStatus.completed, *pf
         ).scalar() or 0
-        total_due = db.query(func.sum(DbTarget.amount_due)).scalar() or 0
+        total_due = db.query(func.sum(DbTarget.amount_due)).filter(*pf).scalar() or 0
         collected = db.query(func.sum(DbTarget.amount_due)).filter(
-            DbTarget.status == TargetStatus.completed
+            DbTarget.status == TargetStatus.completed, *pf
         ).scalar() or 0
         officers = db.query(func.count(DbUser.id)).filter(
             DbUser.role == UserRole.officer
         ).scalar() or 0
+        available_periods = sorted(
+            [p for (p,) in db.query(DbTarget.period).distinct().all() if p],
+            reverse=True,
+        )
 
     return {
+        "period": period or "all",
+        "available_periods": available_periods,
         "total_targets": total,
         "pending": pending,
         "in_progress": in_progress,
@@ -91,6 +98,7 @@ def query_targets(
     officer_name: str | None = None,
     address_contains: str | None = None,
     min_amount: float | None = None,
+    period: str | None = None,
     limit: int = 20,
 ) -> list[dict]:
     """Query targets with flexible filters."""
@@ -108,6 +116,8 @@ def query_targets(
             q = q.filter(DbTarget.address.ilike(f"%{address_contains}%"))
         if min_amount:
             q = q.filter(DbTarget.amount_due >= min_amount)
+        if period and period != "all":
+            q = q.filter(DbTarget.period == period)
 
         rows = q.order_by(DbTarget.created_at.desc()).limit(limit).all()
         return [
@@ -119,6 +129,7 @@ def query_targets(
                 "amount_due": t.amount_due,
                 "status": t.status.value if hasattr(t.status, "value") else t.status,
                 "officer": u.name if u else "Unassigned",
+                "period": t.period,
             }
             for t, u in rows
         ]
@@ -215,7 +226,7 @@ def assign_targets_to_officer(target_ids: list[str], officer_id: str) -> dict:
         }
 
 
-def auto_assign_pending_targets(address_filter: str | None = None) -> dict:
+def auto_assign_pending_targets(address_filter: str | None = None, period: str | None = None) -> dict:
     """Evenly distribute unassigned (pending) targets among all officers."""
     with get_db() as db:
         officers = db.query(DbUser).filter(DbUser.role == UserRole.officer).all()
@@ -228,6 +239,8 @@ def auto_assign_pending_targets(address_filter: str | None = None) -> dict:
         )
         if address_filter:
             q = q.filter(DbTarget.address.ilike(f"%{address_filter}%"))
+        if period and period != "all":
+            q = q.filter(DbTarget.period == period)
 
         pending = q.all()
         if not pending:
@@ -272,7 +285,7 @@ def auto_assign_pending_targets(address_filter: str | None = None) -> dict:
         }
 
 
-def assign_all_pending_to_officer(officer: str, address_filter: str | None = None) -> dict:
+def assign_all_pending_to_officer(officer: str, address_filter: str | None = None, period: str | None = None) -> dict:
     """Assign ALL unassigned pending targets to a SINGLE officer (bulk).
 
     `officer` may be the officer's id or name (case-insensitive partial match).
@@ -296,6 +309,8 @@ def assign_all_pending_to_officer(officer: str, address_filter: str | None = Non
         )
         if address_filter:
             q = q.filter(DbTarget.address.ilike(f"%{address_filter}%"))
+        if period and period != "all":
+            q = q.filter(DbTarget.period == period)
 
         count = 0
         for target in q.all():
@@ -395,10 +410,15 @@ def generate_daily_report() -> str:
 TOOL_DEFINITIONS = [
     {
         "name": "get_dashboard_stats",
-        "description": "Get current C3MR dashboard statistics including target counts, revenue, collection rate, and active officers.",
+        "description": "Get current C3MR dashboard statistics including target counts, revenue, collection rate, and active officers. Targets are grouped into monthly upload periods; the result lists available_periods. Pass period to scope stats to one month, or omit for all-time.",
         "input_schema": {
             "type": "object",
-            "properties": {},
+            "properties": {
+                "period": {
+                    "type": "string",
+                    "description": "Monthly upload period in YYYY-MM format (e.g. '2026-07'). Omit or 'all' for every period.",
+                },
+            },
             "required": [],
         },
     },
@@ -437,6 +457,10 @@ TOOL_DEFINITIONS = [
                 "min_amount": {
                     "type": "number",
                     "description": "Minimum amount_due filter",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "Filter by monthly upload period, YYYY-MM format (e.g. '2026-07'). Omit for all periods.",
                 },
                 "limit": {
                     "type": "integer",
@@ -495,13 +519,17 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "auto_assign_pending_targets",
-        "description": "Automatically distribute all unassigned pending targets evenly among officers based on current workload. Optionally filter by address area.",
+        "description": "Automatically distribute all unassigned pending targets evenly among officers based on current workload. Optionally filter by address area and/or monthly period.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "address_filter": {
                     "type": "string",
                     "description": "Only assign targets whose address contains this text (e.g. 'Jakarta', 'Bekasi')",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "Only assign targets from this monthly upload period, YYYY-MM format (e.g. '2026-07'). Omit for all periods.",
                 },
             },
             "required": [],
@@ -520,6 +548,10 @@ TOOL_DEFINITIONS = [
                 "address_filter": {
                     "type": "string",
                     "description": "Only assign targets whose address contains this text (e.g. 'Jakarta')",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "Only assign targets from this monthly upload period, YYYY-MM format (e.g. '2026-07'). Omit for all periods.",
                 },
             },
             "required": ["officer"],
@@ -552,7 +584,7 @@ TOOL_DEFINITIONS = [
 
 # Map tool names to functions
 TOOL_FUNCTIONS = {
-    "get_dashboard_stats": lambda **kw: get_dashboard_stats(),
+    "get_dashboard_stats": lambda **kw: get_dashboard_stats(**kw),
     "list_officers": lambda **kw: list_officers(),
     "query_targets": lambda **kw: query_targets(**kw),
     "get_overdue_targets": lambda **kw: get_overdue_targets(**kw),

@@ -8,7 +8,7 @@ from backend.security import hash_password
 
 def test_seed_admin(client, monkeypatch):
     monkeypatch.setenv("SEED_TOKEN", "test-seed-token")
-    res = client.post("/api/auth/seed-admin", json={"token": "test-seed-token", "password": "Str0ng!Pass"})
+    res = client.post("/api/auth/seed-admin", json={"token": "test-seed-token", "password": "Str0ng!Passw0rd"})
     assert res.status_code == 200
     assert "admin" in res.json()["message"].lower()
 

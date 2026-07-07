@@ -77,8 +77,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # With allow_credentials=True a wildcard is unsafe; restrict to the methods/headers
+    # the app actually uses (PATCH+DELETE are used by routers; PUT kept for forward-compat).
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -105,13 +107,18 @@ app.add_middleware(RequestLoggingMiddleware)
 
 # Maintenance mode middleware — blocks non-manager API requests when enabled
 class MaintenanceMiddleware(BaseHTTPMiddleware):
-    # Paths that bypass maintenance mode so managers can still login and toggle it off
-    BYPASS_PREFIXES = ("/api/auth/login", "/api/admin/maintenance", "/assets", "/favicon")
+    # API paths that bypass maintenance mode so managers can still login and toggle it off.
+    # Exact-match (with optional trailing slash) so future sibling routes don't inherit the
+    # bypass accidentally via a loose startswith() prefix match.
+    BYPASS_PATHS = ("/api/auth/login", "/api/admin/maintenance")
+
+    def _is_bypass(self, path: str) -> bool:
+        return any(path == p or path == p + "/" for p in self.BYPASS_PATHS)
 
     async def dispatch(self, request: Request, call_next):
         if maintenance_state.enabled and request.url.path.startswith("/api"):
             # Allow bypass paths
-            if not any(request.url.path.startswith(p) for p in self.BYPASS_PREFIXES):
+            if not self._is_bypass(request.url.path):
                 # Allow requests with a valid manager JWT through
                 from .security import decode_access_token
                 auth_header = request.headers.get("authorization", "")

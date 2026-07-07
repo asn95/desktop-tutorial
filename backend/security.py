@@ -11,7 +11,10 @@ JWT_SECRET = os.environ.get("JWT_SECRET")
 if not JWT_SECRET:
     raise RuntimeError("JWT_SECRET environment variable is required. Set it before starting the server.")
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRY_HOURS = 24
+# Shortened from 24h: a stolen/stale token is now valid for at most 4h. Privileged
+# (manager) endpoints additionally re-verify the user + role against the DB on each
+# request (see require_manager) so revoked/demoted accounts lose access immediately.
+JWT_EXPIRY_HOURS = 4
 
 TELEGRAM_AUTH_MAX_AGE = 300  # 5 minutes — reject replayed initData older than this
 
@@ -105,9 +108,22 @@ def get_current_manager(authorization: str = None):
 require_auth = get_current_manager()
 
 def _require_manager_dep(authorization: str = None):
-    """FastAPI dependency: require JWT with manager role."""
-    from fastapi import Header, HTTPException
-    def _dep(authorization: str = Header(None, alias="Authorization")):
+    """FastAPI dependency: require a valid JWT AND re-verify manager status in the DB.
+
+    The JWT's role claim is not trusted on its own: a token minted while the account was
+    a manager stays cryptographically valid until expiry even if the account was later
+    deleted or demoted. So on every privileged request we re-load the user by `sub` and
+    confirm they still exist and still hold the manager role; the DB is the source of truth.
+    """
+    from fastapi import Header, HTTPException, Depends
+    from sqlalchemy.orm import Session
+    from .database import get_db
+    from .models import DbUser
+
+    def _dep(
+        authorization: str = Header(None, alias="Authorization"),
+        db: Session = Depends(get_db),
+    ):
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Missing or invalid token")
         token = authorization.split(" ", 1)[1]
@@ -117,7 +133,14 @@ def _require_manager_dep(authorization: str = None):
             raise HTTPException(status_code=401, detail="Token expired")
         except jwt.InvalidTokenError:
             raise HTTPException(status_code=401, detail="Invalid token")
-        if payload.get("role") != "manager":
+
+        user_id = payload.get("sub")
+        user = db.query(DbUser).filter(DbUser.id == user_id).first() if user_id else None
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        # Compare against the live DB role, not the (possibly stale) JWT claim.
+        role = user.role.value if hasattr(user.role, "value") else user.role
+        if role != "manager":
             raise HTTPException(status_code=403, detail="Manager role required")
         return payload
     return _dep

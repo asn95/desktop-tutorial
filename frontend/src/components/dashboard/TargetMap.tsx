@@ -38,16 +38,33 @@ export function TargetMap({ targets }: TargetMapProps) {
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const map = L.map(containerRef.current, {
-      scrollWheelZoom: false, // jangan bajak scroll halaman
+    const container = containerRef.current;
+    const map = L.map(container, {
+      scrollWheelZoom: false, // scroll dua jari tetap menggulir halaman, bukan peta
+      touchZoom: true,        // pinch di layar sentuh (iPhone/Android)
+      zoomSnap: 0.25,         // langkah zoom halus untuk gesture pinch
     }).setView([-2.5, 118], 4); // Indonesia
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
+
+    // Pinch trackpad (Mac) tiba sebagai wheel event dengan ctrlKey=true —
+    // zoom hanya untuk gesture itu, wheel biasa dibiarkan menggulir halaman.
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault(); // cegah browser men-zoom seluruh halaman
+      map.setZoomAround(
+        map.mouseEventToLatLng(e),
+        map.getZoom() + (e.deltaY < 0 ? 0.5 : -0.5)
+      );
+    };
+    container.addEventListener("wheel", onWheel, { passive: false });
+
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
     return () => {
+      container.removeEventListener("wheel", onWheel);
       map.remove();
       mapRef.current = null;
       layerRef.current = null;

@@ -5,6 +5,7 @@ let initDataString = "";
 let currentTasks = [];
 let selectedTask = null;
 let selectedTag = null;
+let selectedPeriod = null; // batch bulanan "YYYY-MM" yang sedang ditampilkan
 let loginAttempts = 0;
 const MAX_LOGIN_ATTEMPTS = 5;
 
@@ -158,17 +159,67 @@ tg.MainButton.onClick(async () => {
     }
 });
 
-function renderTasks() {
-    taskContainer.innerHTML = '';
-    const active = currentTasks.filter(t => t.status !== 'completed').length;
-    document.getElementById('active-cases').textContent = active;
+// --- Sistem Periode Bulanan (selaras dengan dashboard web) ---
 
-    if (active === 0) {
-        taskContainer.innerHTML = '<p style="text-align:center;color:#9ca3af;padding:40px 16px;font-size:13px;">Tidak ada tugas tertunda.</p>';
+const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+function periodLabel(p) {
+    if (!p) return 'Lainnya';
+    const [y, m] = p.split('-');
+    return (MONTHS_ID[parseInt(m, 10) - 1] || p) + ' ' + y;
+}
+
+function renderPeriodOptions() {
+    const bar = document.querySelector('.period-bar');
+    const sel = document.getElementById('period-select');
+    const counts = {};
+    currentTasks.filter(t => t.status !== 'completed').forEach(t => {
+        const p = t.period || '';
+        counts[p] = (counts[p] || 0) + 1;
+    });
+    const periods = Object.keys(counts).sort().reverse(); // terbaru dulu
+
+    bar.style.display = periods.length ? 'flex' : 'none';
+    // Default = batch terbaru; pilihan pengguna dipertahankan bila masih valid.
+    if (selectedPeriod !== 'all' && !periods.includes(selectedPeriod)) {
+        selectedPeriod = periods[0] ?? null;
+    }
+
+    sel.innerHTML = '';
+    periods.forEach(p => {
+        const o = document.createElement('option');
+        o.value = p;
+        o.textContent = periodLabel(p) + ' (' + counts[p] + ')';
+        sel.appendChild(o);
+    });
+    if (periods.length > 1) {
+        const all = document.createElement('option');
+        all.value = 'all';
+        all.textContent = 'Semua Periode (' + Object.values(counts).reduce((a, b) => a + b, 0) + ')';
+        sel.appendChild(all);
+    }
+    sel.value = selectedPeriod ?? '';
+}
+
+document.getElementById('period-select').addEventListener('change', (e) => {
+    selectedPeriod = e.target.value;
+    renderTasks();
+});
+
+function renderTasks() {
+    renderPeriodOptions();
+    taskContainer.innerHTML = '';
+    const inPeriod = (selectedPeriod && selectedPeriod !== 'all')
+        ? currentTasks.filter(t => (t.period || '') === selectedPeriod)
+        : currentTasks;
+    const activeTasks = inPeriod.filter(t => t.status !== 'completed');
+    document.getElementById('active-cases').textContent = activeTasks.length;
+
+    if (activeTasks.length === 0) {
+        taskContainer.innerHTML = '<p style="text-align:center;color:#9ca3af;padding:40px 16px;font-size:13px;">Tidak ada tugas tertunda pada periode ini.</p>';
         return;
     }
 
-    const activeTasks = currentTasks.filter(t => t.status !== 'completed');
     activeTasks.forEach((task, i) => {
         const caseNum = '2025-' + String(8394 - i * 3012).replace('-','');
 

@@ -10,4 +10,6 @@ export interface Target {
   officerName?: string | null;
   status: TargetStatus;
   period?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }

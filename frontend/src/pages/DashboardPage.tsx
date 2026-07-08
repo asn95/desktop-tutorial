@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
 import { SummaryCard } from "../components/dashboard/SummaryCard";
 import { PeriodSelector } from "../components/dashboard/PeriodSelector";
+import { TargetMap } from "../components/dashboard/TargetMap";
 import { getDashboardSnapshot, getPeriods } from "../services/dashboardService";
 import { apiClient } from "../lib/apiClient";
 import { formatCurrency } from "../lib/format";
@@ -138,6 +139,9 @@ export function DashboardPage() {
           <SummaryCard label="Sedang Berjalan" value={stats.inProgress} accent="warning" />
           <SummaryCard label="Menunggu" value={stats.pending} accent="danger" />
         </section>
+
+        {/* Peta sebaran target (koordinat hasil geocoding Nominatim) */}
+        <TargetMap targets={targets} />
 
         {/* Operational Panels: Pending / Active / Comments */}
         <section className="grid gap-5 lg:grid-cols-3">

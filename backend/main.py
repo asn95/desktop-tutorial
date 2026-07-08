@@ -50,8 +50,6 @@ def _migrate_target_period():
     finally:
         db.close()
 
-_migrate_target_period()
-
 def _migrate_target_geo():
     """Tambah kolom koordinat (hasil geocoding Nominatim) ke tabel targets lama."""
     from sqlalchemy import inspect, text
@@ -65,7 +63,10 @@ def _migrate_target_geo():
             except Exception:
                 logger.exception(f"Gagal menambahkan kolom {col} (mungkin sudah ada)")
 
+# Kolom geo harus ada lebih dulu: backfill period men-SELECT seluruh kolom model
+# (termasuk latitude/longitude), jadi urutan sebaliknya gagal di skema lama.
 _migrate_target_geo()
+_migrate_target_period()
 
 def _geocode_active_period_backfill():
     """Geocode target periode aktif yang belum punya koordinat, di thread terpisah

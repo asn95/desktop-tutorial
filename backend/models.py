@@ -51,6 +51,8 @@ class DbTarget(Base):
     assigned_officer = Column(String, ForeignKey("users.id"), nullable=True)
     status = _enum_col(TargetStatus, "target_status", default=TargetStatus.pending)
     period = Column(String, nullable=True, index=True)  # monthly upload batch, format "YYYY-MM"
+    latitude = Column(Float, nullable=True)   # hasil geocoding Nominatim (lihat external.py)
+    longitude = Column(Float, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class DbReport(Base):

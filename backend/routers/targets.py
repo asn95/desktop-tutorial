@@ -1,7 +1,7 @@
 import csv
 import io
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -49,6 +49,7 @@ async def list_periods(db: Session = Depends(get_db), _auth: dict = Depends(requ
 @router.post("/upload")
 async def upload_targets(
     targets: List[TargetCreate],
+    background_tasks: BackgroundTasks,
     period: Optional[str] = None,
     db: Session = Depends(get_db),
     _auth: dict = Depends(require_auth),
@@ -68,6 +69,10 @@ async def upload_targets(
         db.add_all(db_targets)
         db.add(DbAuditLog(user_id=_auth["sub"], action="upload", detail=f"Mengunggah {len(targets)} target (periode {batch_period})"))
         db.commit()
+        # Geocode alamat di background (Nominatim dibatasi 1 request/detik,
+        # jadi tidak boleh menahan respons unggah).
+        from ..external import geocode_targets
+        background_tasks.add_task(geocode_targets, [t.id for t in db_targets])
         return {"message": f"Berhasil mengunggah {len(targets)} target ke periode {batch_period}", "period": batch_period}
     except Exception as e:
         db.rollback()

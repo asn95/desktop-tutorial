@@ -52,6 +52,50 @@ def _migrate_target_period():
 
 _migrate_target_period()
 
+def _migrate_target_geo():
+    """Tambah kolom koordinat (hasil geocoding Nominatim) ke tabel targets lama."""
+    from sqlalchemy import inspect, text
+
+    cols = {c["name"] for c in inspect(engine).get_columns("targets")}
+    for col in ("latitude", "longitude"):
+        if col not in cols:
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE targets ADD COLUMN {col} FLOAT"))
+            except Exception:
+                logger.exception(f"Gagal menambahkan kolom {col} (mungkin sudah ada)")
+
+_migrate_target_geo()
+
+def _geocode_active_period_backfill():
+    """Geocode target periode aktif yang belum punya koordinat, di thread terpisah
+    agar startup tidak terblokir (Nominatim dibatasi 1 request/detik)."""
+    import threading
+    from .database import SessionLocal
+
+    def run():
+        db = SessionLocal()
+        try:
+            periods = [p for (p,) in db.query(DbTarget.period).distinct().all() if p]
+            if not periods:
+                return
+            ids = [
+                t.id for t in db.query(DbTarget)
+                .filter(DbTarget.period == max(periods), DbTarget.latitude.is_(None))
+                .limit(60)
+            ]
+        finally:
+            db.close()
+        if ids:
+            from .external import geocode_targets
+            geocode_targets(ids)
+
+    threading.Thread(target=run, daemon=True, name="geocode-backfill").start()
+
+import sys
+if "pytest" not in sys.modules:  # jangan akses jaringan saat unit test
+    _geocode_active_period_backfill()
+
 app = FastAPI(title="C3MR API")
 
 @app.exception_handler(Exception)

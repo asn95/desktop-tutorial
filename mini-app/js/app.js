@@ -212,6 +212,20 @@ function showDetail(task) {
     showView('detail');
 }
 
+// "Buka di Maps": webview Telegram menelan klik <a target="_blank"> biasa,
+// jadi link eksternal harus dibuka lewat API resmi Telegram (openLink).
+document.addEventListener('click', (e) => {
+    const a = e.target.closest('#target-maps');
+    if (!a || !a.href) return;
+    e.preventDefault();
+    try {
+        if (initDataString && tg.openLink) tg.openLink(a.href);
+        else window.open(a.href, '_blank');
+    } catch {
+        window.open(a.href, '_blank');
+    }
+});
+
 // --- Comment Functions ---
 
 document.addEventListener('click', (e) => {

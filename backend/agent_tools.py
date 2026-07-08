@@ -40,6 +40,15 @@ def extract_area(address: str) -> str:
     return tokens[-1] if tokens else "Lainnya"
 
 
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Jarak lingkaran-besar antara dua koordinat, dalam kilometer."""
+    import math
+    rlat1, rlon1, rlat2, rlon2 = map(math.radians, (lat1, lon1, lat2, lon2))
+    a = (math.sin((rlat2 - rlat1) / 2) ** 2
+         + math.cos(rlat1) * math.cos(rlat2) * math.sin((rlon2 - rlon1) / 2) ** 2)
+    return 6371.0 * 2 * math.asin(math.sqrt(a))
+
+
 def _days_since(dt) -> int:
     """Whole days since a stored datetime; tolerates naive (UTC) and aware values."""
     if not dt:
@@ -480,6 +489,18 @@ def get_priority_targets(officer: str | None = None, period: str | None = None, 
             area = extract_area(t.address)
             area_counts[area] = area_counts.get(area, 0) + 1
 
+        # Tetangga dalam radius 3 km (koordinat hasil geocoding Nominatim);
+        # target tanpa koordinat memakai fallback nama area.
+        CLUSTER_KM = 3.0
+        located = [(t.id, t.latitude, t.longitude) for t, _ in rows
+                   if t.latitude is not None and t.longitude is not None]
+        neighbors: dict[str, int] = {}
+        for tid, lat, lon in located:
+            neighbors[tid] = sum(
+                1 for oid, olat, olon in located
+                if oid != tid and _haversine_km(lat, lon, olat, olon) <= CLUSTER_KM
+            )
+
         max_amount = max(t.amount_due or 0 for t, _ in rows) or 1
         scored = []
         for t, u in rows:
@@ -505,8 +526,13 @@ def get_priority_targets(officer: str | None = None, period: str | None = None, 
             if not_home.get(t.id):
                 reasons.append(f"{not_home[t.id]}x tidak di rumah, perlu waktu kunjungan berbeda")
 
-            cluster_pts = 5 if area_counts.get(area, 0) >= 3 else 0
-            if cluster_pts:
+            cluster_pts = 0
+            if t.id in neighbors:  # punya koordinat → pakai jarak nyata
+                if neighbors[t.id] >= 2:
+                    cluster_pts = 5
+                    reasons.append(f"{neighbors[t.id]} target lain dalam radius {CLUSTER_KM:g} km (sekali jalan)")
+            elif area_counts.get(area, 0) >= 3:
+                cluster_pts = 5
                 reasons.append(f"{area_counts[area]} target di area {area} (sekali jalan)")
 
             scored.append({
@@ -524,7 +550,7 @@ def get_priority_targets(officer: str | None = None, period: str | None = None, 
             })
 
         scored.sort(key=lambda r: (-r["score"], r["area"]))
-        return {"period": period or "all", "scoring": "tunggakan 40% + umur 20% + janji-bayar-lewat 30 poin + tidak-di-rumah 5 + klaster area 5", "targets": scored[:limit]}
+        return {"period": period or "all", "scoring": "tunggakan 40% + umur 20% + janji-bayar-lewat 30 poin + tidak-di-rumah 5 + klaster lokasi 5 (radius 3 km via koordinat GPS, fallback nama area)", "targets": scored[:limit]}
 
 
 def summarize_field_feedback(days: int = 30, limit: int = 50) -> dict:
@@ -568,6 +594,21 @@ def summarize_field_feedback(days: int = 30, limit: int = 50) -> dict:
             "issues_by_area": by_area,
             "comments": comments,
         }
+
+
+def get_upcoming_holidays(days: int = 30) -> dict:
+    """Indonesian national holidays in the next N days (Nager.Date, free API),
+    so the agent can plan visit schedules around tanggal merah."""
+    from .external import upcoming_holidays
+    days = min(max(int(days or 30), 1), 366)
+    holidays = upcoming_holidays(days)
+    return {
+        "window_days": days,
+        "count": len(holidays),
+        "holidays": holidays,
+        "note": "Hanya libur nasional resmi; cuti bersama tidak termasuk."
+        if holidays else f"Tidak ada libur nasional dalam {days} hari ke depan.",
+    }
 
 
 # Tool definitions for Claude API
@@ -784,6 +825,20 @@ TOOL_DEFINITIONS = [
             "required": [],
         },
     },
+    {
+        "name": "get_upcoming_holidays",
+        "description": "List upcoming Indonesian national holidays (tanggal merah) within the next N days, with day names and how many days away. Use when planning visit schedules, answering 'kapan libur', or checking whether a planned visit day is a holiday. Official national holidays only (no cuti bersama).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer",
+                    "description": "Look-ahead window in days (default 30, max 366)",
+                },
+            },
+            "required": [],
+        },
+    },
 ]
 
 # Map tool names to functions
@@ -800,4 +855,5 @@ TOOL_FUNCTIONS = {
     "summarize_field_feedback": lambda **kw: summarize_field_feedback(**kw),
     "get_officer_performance": lambda **kw: get_officer_performance(**kw),
     "generate_daily_report": lambda **kw: generate_daily_report(),
+    "get_upcoming_holidays": lambda **kw: get_upcoming_holidays(**kw),
 }

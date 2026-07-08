@@ -537,6 +537,7 @@ def get_priority_targets(officer: str | None = None, period: str | None = None, 
 
             scored.append({
                 "id": t.id[:8],
+                "target_id": t.id,
                 "customer_name": t.customer_name,
                 "area": area,
                 "address": t.address,
@@ -545,6 +546,8 @@ def get_priority_targets(officer: str | None = None, period: str | None = None, 
                 "status": t.status.value if hasattr(t.status, "value") else t.status,
                 "officer": u.name if u else "Belum ditugaskan",
                 "days_outstanding": age_days,
+                "latitude": t.latitude,
+                "longitude": t.longitude,
                 "score": round(amount_pts + age_pts + promise_pts + not_home_pts + cluster_pts, 1),
                 "reasons": reasons,
             })
@@ -594,6 +597,117 @@ def summarize_field_feedback(days: int = 30, limit: int = 50) -> dict:
             "issues_by_area": by_area,
             "comments": comments,
         }
+
+
+def _nearest_neighbor_route(coords: list[tuple[float, float]]) -> tuple[list[int], list[dict]]:
+    """Fallback urutan kunjungan bila OSRM tidak tersedia: tetangga terdekat
+    (haversine), estimasi waktu dengan asumsi 40 km/jam jalan lapangan."""
+    order = [0]
+    remaining = set(range(1, len(coords)))
+    while remaining:
+        last = order[-1]
+        nxt = min(remaining, key=lambda j: _haversine_km(*coords[last], *coords[j]))
+        order.append(nxt)
+        remaining.remove(nxt)
+    legs = []
+    for a, b in zip(order, order[1:]):
+        km = _haversine_km(*coords[a], *coords[b])
+        legs.append({"km": round(km, 1), "minutes": round(km / 40 * 60)})
+    return order, legs
+
+
+def plan_visit_route(
+    officer: str,
+    period: str | None = None,
+    limit: int = 10,
+    send_to_officer: bool = False,
+) -> dict:
+    """Susun urutan kunjungan optimal untuk satu petugas: mulai dari target
+    prioritas tertinggi, sisanya diurutkan agar total perjalanan lewat jalan
+    nyata (OSRM) sependek mungkin. Opsional: kirim rutenya ke Telegram petugas."""
+    limit = min(max(int(limit or 10), 2), 12)
+    pri = get_priority_targets(officer=officer, period=period, limit=20)
+    targets = pri.get("targets", [])
+    if not targets:
+        return {"period": pri.get("period"), "stops": [],
+                "message": f"Tidak ada target aktif untuk petugas '{officer}'."}
+
+    routable = [t for t in targets if t.get("latitude") is not None and t.get("longitude") is not None][:limit]
+    skipped = [t["customer_name"] for t in targets[:limit] if t.get("latitude") is None]
+
+    if len(routable) < 2:
+        return {
+            "period": pri.get("period"),
+            "stops": [],
+            "message": "Kurang dari 2 target yang punya koordinat — belum bisa disusun rutenya. "
+                       "Koordinat terisi otomatis setelah unggah CSV.",
+            "targets_without_coordinates": skipped,
+        }
+
+    # Urutan input = urutan prioritas; titik pertama (prioritas tertinggi) jadi start tetap.
+    coords = [(t["latitude"], t["longitude"]) for t in routable]
+    from .external import plan_trip
+    trip = plan_trip(coords)
+    if trip:
+        order, legs = trip["order"], trip["legs"]
+        method = "OSRM (jarak & waktu tempuh jalan nyata)"
+        total_km, total_minutes = trip["total_km"], trip["total_minutes"]
+    else:
+        order, legs = _nearest_neighbor_route(coords)
+        method = "estimasi garis lurus/tetangga terdekat (OSRM sedang tidak tersedia)"
+        total_km = round(sum(l["km"] for l in legs), 1)
+        total_minutes = sum(l["minutes"] for l in legs)
+
+    stops = []
+    for seq, input_idx in enumerate(order):
+        t = routable[input_idx]
+        stops.append({
+            "order": seq + 1,
+            "customer_name": t["customer_name"],
+            "area": t["area"],
+            "address": t["address"],
+            "phone": t["phone"],
+            "amount_due": t["amount_due"],
+            "priority_score": t["score"],
+            "priority_reasons": t["reasons"],
+            "travel_from_previous": legs[seq - 1] if seq > 0 else None,
+        })
+
+    result = {
+        "officer": routable[0]["officer"],
+        "period": pri.get("period"),
+        "method": method,
+        "start_rule": "Perhentian pertama = target dengan skor prioritas tertinggi.",
+        "total_km": total_km,
+        "total_minutes": total_minutes,
+        "stops": stops,
+        "targets_without_coordinates": skipped,
+    }
+
+    if send_to_officer:
+        with get_db() as db:
+            db_officer = (
+                db.query(DbUser)
+                .filter(DbUser.role == UserRole.officer, DbUser.name.ilike(f"%{officer}%"))
+                .first()
+            )
+        if not db_officer or not db_officer.telegram_id:
+            result["sent_to_officer"] = False
+            result["send_note"] = "Petugas tidak ditemukan atau belum menautkan Telegram."
+        else:
+            lines = [f"🗺️ RUTE KUNJUNGAN — {db_officer.name}",
+                     f"Periode {result['period']} · {len(stops)} lokasi · ±{total_km} km / {total_minutes} menit", ""]
+            for s in stops:
+                if s["travel_from_previous"]:
+                    leg = s["travel_from_previous"]
+                    lines.append(f"   ↓ {leg['km']} km · ±{leg['minutes']} mnt")
+                amount = f"Rp {int(s['amount_due']):,}".replace(",", ".")
+                lines.append(f"{s['order']}. {s['customer_name']} — {s['area']} ({amount})")
+            lines += ["", "Urutan: prioritas tertinggi dulu, lalu rute jalan terpendek."]
+            ok = send_telegram_notification(db_officer.telegram_id, "\n".join(lines), parse_mode=None)
+            result["sent_to_officer"] = bool(ok)
+
+    return result
 
 
 def get_upcoming_holidays(days: int = 30) -> dict:
@@ -826,6 +940,32 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "plan_visit_route",
+        "description": "Plan the optimal visit route (urutan kunjungan) for ONE officer's active targets. Starts at the officer's highest-priority target, then orders remaining stops to minimize real road travel (OSRM road distances & drive times; falls back to straight-line estimates if OSRM is down). Use when the manager asks for a visit route/order ('rute kunjungan', 'urutan kunjungan') for an officer. Set send_to_officer=true ONLY when the manager explicitly asks to send/share the route to the officer's Telegram.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "officer": {
+                    "type": "string",
+                    "description": "Officer name (partial match) or id — required, route is per officer",
+                },
+                "period": {
+                    "type": "string",
+                    "description": "Monthly period YYYY-MM. Omit for the active (newest) batch.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max stops in the route (default 10, min 2, max 12)",
+                },
+                "send_to_officer": {
+                    "type": "boolean",
+                    "description": "If true, also push the route as a Telegram message to the officer (default false)",
+                },
+            },
+            "required": ["officer"],
+        },
+    },
+    {
         "name": "get_upcoming_holidays",
         "description": "List upcoming Indonesian national holidays (tanggal merah) within the next N days, with day names and how many days away. Use when planning visit schedules, answering 'kapan libur', or checking whether a planned visit day is a holiday. Official national holidays only (no cuti bersama).",
         "input_schema": {
@@ -856,4 +996,5 @@ TOOL_FUNCTIONS = {
     "get_officer_performance": lambda **kw: get_officer_performance(**kw),
     "generate_daily_report": lambda **kw: generate_daily_report(),
     "get_upcoming_holidays": lambda **kw: get_upcoming_holidays(**kw),
+    "plan_visit_route": lambda **kw: plan_visit_route(**kw),
 }

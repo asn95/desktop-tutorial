@@ -130,6 +130,54 @@ def get_weather(lat: float, lon: float, days: int = 3) -> dict | None:
     return None
 
 
+# ── OSRM (urutan rute kunjungan lewat jalan nyata) ───────────────────
+
+def plan_trip(coords: list[tuple[float, float]]) -> dict | None:
+    """Urutan kunjungan optimal melalui jaringan jalan nyata (OSRM demo server).
+
+    coords = [(lat, lon), ...]; titik PERTAMA dipakai sebagai start tetap.
+    Mengembalikan:
+      {"order":  [indeks input sesuai urutan kunjungan],
+       "legs":   [{"km", "minutes"} antar perhentian berurutan],
+       "total_km", "total_minutes"}
+    atau None bila OSRM gagal (pemanggil harus punya fallback sendiri).
+    """
+    if len(coords) < 2:
+        return None
+    path = ";".join(f"{lon},{lat}" for lat, lon in coords)  # OSRM memakai lon,lat
+    for attempt in (1, 2):
+        try:
+            r = requests.get(
+                f"https://router.project-osrm.org/trip/v1/driving/{path}",
+                params={"source": "first", "roundtrip": "false"},
+                headers={"User-Agent": USER_AGENT},
+                timeout=15,
+            )
+            r.raise_for_status()
+            d = r.json()
+            if d.get("code") != "Ok" or not d.get("trips"):
+                return None
+            # waypoint_index = posisi kunjungan untuk tiap titik input
+            positions = [w["waypoint_index"] for w in d["waypoints"]]
+            order = [0] * len(positions)
+            for input_idx, pos in enumerate(positions):
+                order[pos] = input_idx
+            trip = d["trips"][0]
+            return {
+                "order": order,
+                "legs": [
+                    {"km": round(l["distance"] / 1000, 1), "minutes": round(l["duration"] / 60)}
+                    for l in trip["legs"]
+                ],
+                "total_km": round(trip["distance"] / 1000, 1),
+                "total_minutes": round(trip["duration"] / 60),
+            }
+        except Exception as e:
+            if attempt == 2:
+                logger.warning(f"OSRM trip gagal ({len(coords)} titik): {e}")
+    return None
+
+
 # ── Nager.Date (hari libur nasional Indonesia) ───────────────────────
 
 _holiday_cache: dict[int, list[dict]] = {}

@@ -136,6 +136,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        # Webview Telegram meng-cache aset mini-app secara agresif sehingga update
+        # JS tidak sampai ke petugas; file-nya kecil, paksa revalidasi (304 murah).
+        if request.url.path.startswith("/officer-app"):
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)

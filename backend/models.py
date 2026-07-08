@@ -126,6 +126,8 @@ class TargetBase(BaseModel):
 class Target(TargetBase):
     id: str
     created_at: datetime
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     @field_validator('id', mode='before')

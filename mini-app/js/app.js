@@ -196,6 +196,12 @@ function showDetail(task) {
     selectedTag = null;
     document.getElementById('target-name').textContent = task.customerName;
     document.getElementById('target-address').textContent = task.address;
+    // Koordinat hasil geocoding lebih akurat; alamat teks sebagai cadangan.
+    document.getElementById('target-maps').href =
+        'https://www.google.com/maps/search/?api=1&query=' +
+        (task.latitude != null && task.longitude != null
+            ? task.latitude + ',' + task.longitude
+            : encodeURIComponent(task.address));
     document.getElementById('target-amount').textContent = 'Saldo: Rp ' + task.amountDue.toLocaleString('id-ID');
     document.getElementById('report-form').reset();
     document.getElementById('photo-area').className = 'upbox';

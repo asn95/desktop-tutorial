@@ -26,8 +26,9 @@ You receive raw JSON metrics. Write a short briefing for the manager.
 RULES:
 - Bahasa Indonesia only.
 - PLAIN TEXT ONLY — no markdown symbols (*, _, #, `). Use the bullet character • and line breaks.
-- Structure: 1) ringkasan performa minggu ini vs minggu lalu (sebutkan angka), 2) area terbaik & area yang tertinggal, 3) petugas yang perlu perhatian, 4) masalah lapangan (jika ada), 5) tiga rekomendasi aksi konkret.
+- Structure: 1) ringkasan performa minggu ini vs minggu lalu (sebutkan angka), 2) area terbaik & area yang tertinggal, 3) petugas yang perlu perhatian, 4) masalah lapangan (jika ada), 5) catatan cuaca di area fokus & hari libur nasional minggu ini (hanya jika datanya ada — kaitkan dengan jadwal kunjungan), 6) tiga rekomendasi aksi konkret.
 - Ground every claim in the JSON numbers — never invent data. If a section has no data, say so briefly.
+- Amounts in the JSON are plain Rupiah values. Convert units carefully: 36250000 = Rp 36,25 juta (NOT miliar); 1500000000 = Rp 1,5 miliar. Double-check every juta/miliar label.
 - Max 3000 characters. Concise, direct, professional but warm.
 """
 
@@ -99,6 +100,19 @@ def collect_weekly_data() -> dict:
     feedback.pop("comments", None)  # aggregates are enough for the narrative
     priorities = get_priority_targets(limit=5)
 
+    # Cuaca 3 hari di area tunggakan teratas (Open-Meteo) + libur nasional 7 hari
+    # ke depan (Nager.Date). Keduanya opsional: laporan tetap terbit tanpa mereka.
+    from .external import geocode_address, get_weather, upcoming_holidays
+    weather_rows = []
+    for a, _v in top_areas[:3]:
+        if a == "Lainnya":
+            continue
+        coords = geocode_address(a)
+        w = get_weather(*coords, days=3) if coords else None
+        if w:
+            weather_rows.append({"area": a, **w})
+    holidays = upcoming_holidays(7)
+
     return {
         "generated_at_wib": datetime.now(WIB).strftime("%A %d %B %Y %H:%M"),
         "active_period": period,
@@ -114,6 +128,8 @@ def collect_weekly_data() -> dict:
         ],
         "officers": officer_rows,
         "field_feedback_7d": feedback,
+        "weather_3d_top_areas": weather_rows,
+        "national_holidays_next_7d": holidays,
         "top_priority_targets": [
             {"customer": t["customer_name"], "area": t["area"], "amount_due": t["amount_due"], "reasons": t["reasons"]}
             for t in priorities.get("targets", [])

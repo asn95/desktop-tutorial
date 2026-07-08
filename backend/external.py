@@ -104,28 +104,30 @@ def geocode_targets(target_ids: list[str]) -> int:
 
 def get_weather(lat: float, lon: float, days: int = 3) -> dict | None:
     """Prakiraan harian: tanggal, suhu maksimum (°C), peluang hujan maksimum (%)."""
-    try:
-        r = requests.get(
-            "https://api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": lat,
-                "longitude": lon,
-                "daily": "temperature_2m_max,precipitation_probability_max",
-                "timezone": "Asia/Jakarta",
-                "forecast_days": max(1, min(int(days), 7)),
-            },
-            timeout=TIMEOUT,
-        )
-        r.raise_for_status()
-        d = r.json().get("daily", {})
-        return {
-            "dates": d.get("time", []),
-            "t_max": d.get("temperature_2m_max", []),
-            "rain_prob": d.get("precipitation_probability_max", []),
-        }
-    except Exception as e:
-        logger.warning(f"Open-Meteo gagal ({lat},{lon}): {e}")
-        return None
+    for attempt in (1, 2):  # sekali retry — Open-Meteo kadang lambat sesaat
+        try:
+            r = requests.get(
+                "https://api.open-meteo.com/v1/forecast",
+                params={
+                    "latitude": lat,
+                    "longitude": lon,
+                    "daily": "temperature_2m_max,precipitation_probability_max",
+                    "timezone": "Asia/Jakarta",
+                    "forecast_days": max(1, min(int(days), 7)),
+                },
+                timeout=TIMEOUT,
+            )
+            r.raise_for_status()
+            d = r.json().get("daily", {})
+            return {
+                "dates": d.get("time", []),
+                "t_max": d.get("temperature_2m_max", []),
+                "rain_prob": d.get("precipitation_probability_max", []),
+            }
+        except Exception as e:
+            if attempt == 2:
+                logger.warning(f"Open-Meteo gagal ({lat},{lon}): {e}")
+    return None
 
 
 # ── Nager.Date (hari libur nasional Indonesia) ───────────────────────

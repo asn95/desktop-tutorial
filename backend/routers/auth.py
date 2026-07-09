@@ -1,5 +1,6 @@
 import time
 import hmac
+from datetime import datetime, timezone
 from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
@@ -121,6 +122,7 @@ async def change_password(payload: ChangePasswordPayload, db: Session = Depends(
     if len(payload.new_password) < 6:
         raise HTTPException(status_code=400, detail="Kata sandi baru minimal 6 karakter")
     user.password_hash = hash_password(payload.new_password)
+    user.password_changed_at = datetime.now(timezone.utc)  # batalkan token lama → wajib login ulang
     db.add(DbAuditLog(user_id=auth["sub"], action="change_password", detail="Kata sandi diubah"))
     db.commit()
     return {"message": "Kata sandi berhasil diubah"}

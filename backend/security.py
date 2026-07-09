@@ -88,20 +88,52 @@ def create_access_token(user_id: str, role: str) -> str:
 def decode_access_token(token: str) -> dict:
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
+def _token_issued_before_password_change(payload: dict, user) -> bool:
+    """True jika token terbit SEBELUM kata sandi terakhir diubah → token harus ditolak.
+
+    Dengan begitu setiap penggantian kata sandi otomatis membatalkan semua token lama
+    (termasuk sesi yang sedang berjalan), sehingga pengguna wajib login ulang.
+    """
+    changed_at = getattr(user, "password_changed_at", None)
+    if not changed_at:
+        return False
+    iat = payload.get("iat")
+    if iat is None:
+        return True  # token tanpa iat (skema lama) diperlakukan sebagai kedaluwarsa
+    if changed_at.tzinfo is None:
+        changed_at = changed_at.replace(tzinfo=timezone.utc)
+    return int(iat) < int(changed_at.timestamp())
+
 def get_current_manager(authorization: str = None):
-    """FastAPI dependency: extract and validate JWT from Authorization header."""
-    from fastapi import Header, HTTPException
-    def _dep(authorization: str = Header(None, alias="Authorization")):
+    """FastAPI dependency: extract and validate JWT from Authorization header.
+
+    Selain memeriksa tanda tangan JWT, token juga ditolak bila terbit sebelum kata
+    sandi pemiliknya terakhir diubah — memaksa login ulang setelah ganti kata sandi.
+    """
+    from fastapi import Header, HTTPException, Depends
+    from sqlalchemy.orm import Session
+    from .database import get_db
+    from .models import DbUser
+
+    def _dep(
+        authorization: str = Header(None, alias="Authorization"),
+        db: Session = Depends(get_db),
+    ):
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Missing or invalid token")
         token = authorization.split(" ", 1)[1]
         try:
             payload = decode_access_token(token)
-            return payload
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=401, detail="Token expired")
         except jwt.InvalidTokenError:
             raise HTTPException(status_code=401, detail="Invalid token")
+
+        user_id = payload.get("sub")
+        user = db.query(DbUser).filter(DbUser.id == user_id).first() if user_id else None
+        if user and _token_issued_before_password_change(payload, user):
+            raise HTTPException(status_code=401, detail="Sesi berakhir karena kata sandi diubah. Silakan login ulang.")
+        return payload
     return _dep
 
 # Reusable dependency instance
@@ -138,6 +170,8 @@ def _require_manager_dep(authorization: str = None):
         user = db.query(DbUser).filter(DbUser.id == user_id).first() if user_id else None
         if not user:
             raise HTTPException(status_code=401, detail="Invalid token")
+        if _token_issued_before_password_change(payload, user):
+            raise HTTPException(status_code=401, detail="Sesi berakhir karena kata sandi diubah. Silakan login ulang.")
         # Compare against the live DB role, not the (possibly stale) JWT claim.
         role = user.role.value if hasattr(user.role, "value") else user.role
         if role != "manager":

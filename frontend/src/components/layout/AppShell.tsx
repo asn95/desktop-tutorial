@@ -107,9 +107,11 @@ export function AppShell({
     setPwMsg(null);
     try {
       await apiClient.post("/auth/change-password", { current_password: curPw, new_password: newPw });
-      setPwMsg({ ok: true, text: "Kata sandi berhasil diubah." });
+      setPwMsg({ ok: true, text: "Kata sandi berhasil diubah. Anda akan diminta login ulang…" });
       setCurPw("");
       setNewPw("");
+      // Kata sandi berubah → server membatalkan token lama. Paksa login ulang.
+      setTimeout(() => logout(), 1800);
     } catch (err: any) {
       setPwMsg({ ok: false, text: err.response?.data?.detail || "Gagal mengubah kata sandi." });
     } finally {

@@ -270,3 +270,46 @@ def test_delete_user_with_targets_blocked(client, db, auth_headers):
 
     res = client.delete(f"/api/users/{officer.id}", headers=auth_headers)
     assert res.status_code == 409
+
+
+# ── Ganti kata sandi membatalkan token lama ──────────────────────────
+
+def test_password_change_forces_relogin(client, db):
+    """Setelah kata sandi diubah, token lama harus ditolak (wajib login ulang),
+    sedangkan login dengan kata sandi baru menghasilkan token yang valid."""
+    import time
+
+    user = DbUser(
+        name="Pw Manager",
+        email="pwmgr@c3mr.id",
+        password_hash=hash_password("oldpass123"),
+        role=UserRole.manager,
+    )
+    db.add(user)
+    db.commit()
+
+    # Login → token lama, dan token itu valid untuk endpoint terproteksi.
+    res = client.post("/api/auth/login", json={"username": "pwmgr@c3mr.id", "password": "oldpass123"})
+    assert res.status_code == 200
+    old_headers = {"Authorization": f"Bearer {res.json()['token']}"}
+    assert client.get("/api/dashboard/", headers=old_headers).status_code == 200
+
+    # iat JWT presisi detik — lewati batas detik agar iat token lama < password_changed_at.
+    time.sleep(1.1)
+
+    # Ganti kata sandi (pakai token lama yang masih berlaku).
+    res = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "oldpass123", "new_password": "newpass456"},
+        headers=old_headers,
+    )
+    assert res.status_code == 200
+
+    # Token lama kini DITOLAK.
+    assert client.get("/api/dashboard/", headers=old_headers).status_code == 401
+
+    # Login dengan kata sandi baru → token baru valid.
+    res = client.post("/api/auth/login", json={"username": "pwmgr@c3mr.id", "password": "newpass456"})
+    assert res.status_code == 200
+    new_headers = {"Authorization": f"Bearer {res.json()['token']}"}
+    assert client.get("/api/dashboard/", headers=new_headers).status_code == 200

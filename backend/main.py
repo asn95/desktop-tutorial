@@ -63,10 +63,25 @@ def _migrate_target_geo():
             except Exception:
                 logger.exception(f"Gagal menambahkan kolom {col} (mungkin sudah ada)")
 
+
+def _migrate_user_password_changed_at():
+    """Kolom penanda waktu ganti kata sandi: token yang terbit sebelum waktu ini
+    ditolak (lihat security.py) sehingga user wajib login ulang setelah ganti sandi."""
+    from sqlalchemy import inspect, text
+
+    cols = {c["name"] for c in inspect(engine).get_columns("users")}
+    if "password_changed_at" not in cols:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE users ADD COLUMN password_changed_at TIMESTAMP"))
+        except Exception:
+            logger.exception("Gagal menambahkan kolom password_changed_at (mungkin sudah ada)")
+
 # Kolom geo harus ada lebih dulu: backfill period men-SELECT seluruh kolom model
 # (termasuk latitude/longitude), jadi urutan sebaliknya gagal di skema lama.
 _migrate_target_geo()
 _migrate_target_period()
+_migrate_user_password_changed_at()
 
 def _geocode_active_period_backfill():
     """Geocode target periode aktif yang belum punya koordinat, di thread terpisah

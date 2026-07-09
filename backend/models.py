@@ -39,6 +39,9 @@ class DbUser(Base):
     email = Column(String, unique=True, nullable=True)
     role = _enum_col(UserRole, "user_role", default=UserRole.officer)
     password_hash = Column(String, nullable=True)
+    # Distempel saat kata sandi diubah; token yang terbit sebelum waktu ini ditolak
+    # (lihat security.py) sehingga pengguna wajib login ulang setelah ganti sandi.
+    password_changed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class DbTarget(Base):

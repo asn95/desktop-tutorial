@@ -91,11 +91,11 @@ def _assign_one(db_target, db_officer, db, auth_sub):
     if db_officer.telegram_id:
         formatted_amount = format_currency_python(db_target.amount_due)
         msg = (
-            f"🚨 *TUGAS BARU*\n\n"
+            f"*Penugasan Baru*\n\n"
             f"Target: *{db_target.customer_name}*\n"
             f"Jumlah: *{formatted_amount}*\n"
             f"Lokasi: {db_target.address}\n\n"
-            f"Buka C3MR Field App untuk mulai melakukan collection."
+            f"Silakan buka Aplikasi Lapangan C3MR untuk memulai proses penagihan."
         )
         success = send_telegram_notification(db_officer.telegram_id, msg, include_field_app=True)
         db.add(DbNotificationLog(recipient_id=db_officer.id, message=msg, success="true" if success else "false"))

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Text, Integer
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Text, Integer, Boolean
 import uuid
 from datetime import datetime, timezone
 from .database import Base, SQLALCHEMY_DATABASE_URL
@@ -50,6 +50,8 @@ class DbUser(Base):
     # Distempel saat kata sandi diubah; token yang terbit sebelum waktu ini ditolak
     # (lihat security.py) sehingga pengguna wajib login ulang setelah ganti sandi.
     password_changed_at = Column(DateTime, nullable=True)
+    # Soft-delete: petugas nonaktif disembunyikan dari penugasan tapi datanya tetap ada.
+    active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class DbTarget(Base):
@@ -111,6 +113,7 @@ class UserBase(BaseModel):
 class User(UserBase):
     id: str
     created_at: datetime
+    active: bool = True
     model_config = ConfigDict(from_attributes=True)
 
     @field_validator('id', mode='before')

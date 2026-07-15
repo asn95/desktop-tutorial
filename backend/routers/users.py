@@ -33,6 +33,7 @@ async def create_user(user: UserBase, db: Session = Depends(get_db), _auth: dict
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     telegram_id: Optional[str] = None
+    active: Optional[bool] = None
 
 @router.patch("/{user_id}", response_model=User)
 async def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
@@ -46,7 +47,12 @@ async def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(g
         db_user.telegram_id = payload.telegram_id
     if payload.name is not None:
         db_user.name = payload.name
-    db.add(DbAuditLog(user_id=_auth["sub"], action="edit_user", detail=f"Edited user '{db_user.name}'"))
+    if payload.active is not None:
+        db_user.active = payload.active
+        action = "activate user" if payload.active else "deactivate user"
+        db.add(DbAuditLog(user_id=_auth["sub"], action=action, detail=f"{action.title()} '{db_user.name}'"))
+    else:
+        db.add(DbAuditLog(user_id=_auth["sub"], action="edit_user", detail=f"Edited user '{db_user.name}'"))
     db.commit()
     db.refresh(db_user)
     return db_user

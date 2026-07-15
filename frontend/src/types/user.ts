@@ -9,4 +9,5 @@ export interface UserBase {
 export interface User extends UserBase {
   id: string;
   created_at: string;
+  active: boolean;
 }

@@ -52,7 +52,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
   useEffect(() => {
     getUsers().then(data => {
       setAllUsers(data);
-      setOfficers(data.filter(u => u.role === "officer"));
+      setOfficers(data.filter(u => u.role === "officer" && u.active !== false));
     }).catch(() => {});
   }, []);
 

@@ -106,6 +106,17 @@ export function UserManagementPage() {
     setPasswordError(null);
   }
 
+  async function toggleActive(user: User) {
+    const deactivating = user.active !== false;
+    if (deactivating && !confirm(`Nonaktifkan ${user.name}? Petugas ini tidak akan muncul lagi saat penugasan, tapi semua data lamanya tetap tersimpan.`)) return;
+    try {
+      await updateUser(user.id, { active: !deactivating });
+      loadData();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || "Gagal mengubah status petugas.");
+    }
+  }
+
   async function handlePasswordConfirm(e: React.FormEvent) {
     e.preventDefault();
     if (!pendingAction || !confirmPassword) return;
@@ -191,13 +202,13 @@ export function UserManagementPage() {
             ) : (
               <div className="border border-gray-200 bg-white overflow-x-auto overflow-hidden">
                 {/* Table header */}
-                <div className="min-w-[560px] grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 border-b-2 border-gray-200 bg-[#f8f8f6] px-6 py-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <div className="min-w-[620px] grid grid-cols-[1fr_80px_100px_60px_60px_150px] gap-0 border-b-2 border-gray-200 bg-[#f8f8f6] px-6 py-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                   <span>Nama</span>
                   <span>Peran</span>
                   <span>Telegram</span>
                   <span className="text-center">Tugas</span>
                   <span className="text-center">Selesai</span>
-                  <span className="text-center" />
+                  <span className="text-center">Aksi</span>
                 </div>
 
                 {/* Rows */}
@@ -206,12 +217,19 @@ export function UserManagementPage() {
                   return (
                     <div
                       key={user.id}
-                      className={`min-w-[560px] grid grid-cols-[1fr_80px_100px_60px_60px_100px] gap-0 items-center px-6 py-3 ${
+                      className={`min-w-[620px] grid grid-cols-[1fr_80px_100px_60px_60px_150px] gap-0 items-center px-6 py-3 ${
                         i > 0 ? "border-t border-slate-200" : ""
-                      }`}
+                      } ${user.active === false ? "opacity-60" : ""}`}
                     >
                       <div>
-                        <p className="text-xs font-bold text-[#1a1c1e]">{user.name}</p>
+                        <p className="text-xs font-bold text-[#1a1c1e] flex items-center gap-1.5">
+                          {user.name}
+                          {user.active === false && (
+                            <span className="text-[8px] font-semibold uppercase tracking-wider text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                              Nonaktif
+                            </span>
+                          )}
+                        </p>
                         <p className="text-[9px] text-slate-400 mt-0.5">
                           {new Date(user.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                         </p>
@@ -236,6 +254,12 @@ export function UserManagementPage() {
                           className="text-[9px] text-blue-600 font-semibold uppercase tracking-wider hover:underline"
                         >
                           Ubah
+                        </button>
+                        <button
+                          onClick={() => toggleActive(user)}
+                          className="text-[9px] text-amber-700 font-semibold uppercase tracking-wider hover:underline"
+                        >
+                          {user.active === false ? "Aktifkan" : "Nonaktifkan"}
                         </button>
                         <button
                           onClick={() => requestDelete(user)}

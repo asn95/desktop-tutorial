@@ -79,9 +79,22 @@ def _migrate_user_password_changed_at():
 
 # Kolom geo harus ada lebih dulu: backfill period men-SELECT seluruh kolom model
 # (termasuk latitude/longitude), jadi urutan sebaliknya gagal di skema lama.
+def _migrate_user_active():
+    """Kolom soft-delete: petugas nonaktif disembunyikan dari penugasan tapi datanya tetap ada."""
+    from sqlalchemy import inspect, text
+
+    cols = {c["name"] for c in inspect(engine).get_columns("users")}
+    if "active" not in cols:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE users ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE"))
+        except Exception:
+            logger.exception("Gagal menambahkan kolom active (mungkin sudah ada)")
+
 _migrate_target_geo()
 _migrate_target_period()
 _migrate_user_password_changed_at()
+_migrate_user_active()
 
 def _geocode_active_period_backfill():
     """Geocode target periode aktif yang belum punya koordinat, di thread terpisah

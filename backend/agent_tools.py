@@ -107,9 +107,11 @@ def get_dashboard_stats(period: str | None = None) -> dict:
 
 
 def list_officers() -> list[dict]:
-    """List all officers with their workload stats."""
+    """List active officers with their workload stats."""
     with get_db() as db:
-        officers = db.query(DbUser).filter(DbUser.role == UserRole.officer).all()
+        officers = db.query(DbUser).filter(
+            DbUser.role == UserRole.officer, DbUser.active == True
+        ).all()
         result = []
         for o in officers:
             assigned = db.query(func.count(DbTarget.id)).filter(
@@ -272,7 +274,9 @@ def assign_targets_to_officer(target_ids: list[str], officer_id: str) -> dict:
 def auto_assign_pending_targets(address_filter: str | None = None, period: str | None = None) -> dict:
     """Evenly distribute unassigned (pending) targets among all officers."""
     with get_db() as db:
-        officers = db.query(DbUser).filter(DbUser.role == UserRole.officer).all()
+        officers = db.query(DbUser).filter(
+            DbUser.role == UserRole.officer, DbUser.active == True
+        ).all()
         if not officers:
             return {"success": False, "error": "No officers available"}
 

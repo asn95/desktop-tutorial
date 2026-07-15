@@ -11,7 +11,7 @@ export async function createUser(payload: UserBase): Promise<User> {
   return response.data;
 }
 
-export async function updateUser(userId: string, payload: { name?: string; telegram_id?: string }): Promise<User> {
+export async function updateUser(userId: string, payload: { name?: string; telegram_id?: string; active?: boolean }): Promise<User> {
   const response = await apiClient.patch<User>(`/users/${userId}`, payload);
   return response.data;
 }

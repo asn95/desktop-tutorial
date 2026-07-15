@@ -124,8 +124,13 @@ export function UserManagementPage() {
         try {
           await deleteUser(action.user.id);
           loadData();
-        } catch {
-          alert("Gagal menghapus pengguna.");
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail;
+          alert(
+            detail === "Cannot delete user with assigned targets, reports, or comments. Reassign them first."
+              ? "Petugas ini masih memiliki target, laporan, atau komentar. Pindahkan penugasannya ke petugas lain terlebih dahulu, lalu hapus."
+              : detail || "Gagal menghapus pengguna."
+          );
         }
       }
     } catch {

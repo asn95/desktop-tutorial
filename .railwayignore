@@ -1,0 +1,10 @@
+.venv/
+frontend/node_modules/
+frontend/dist/
+_temp/
+*.docx
+*.pptx
+*.pdf
+*.zip
+dummy_*.csv
+Gemini_Generated_Image_*.png

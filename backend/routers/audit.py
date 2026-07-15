@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import DbAuditLog, DbUser, DbNotificationLog
+from ..models import DbAuditLog, DbUser, DbNotificationLog, utc_iso
 from ..security import require_manager
 
 router = APIRouter()
@@ -21,7 +21,7 @@ async def get_audit_logs(skip: int = 0, limit: int = 50, db: Session = Depends(g
             "action": log.action,
             "detail": log.detail,
             "userName": name,
-            "created_at": log.created_at.isoformat(),
+            "created_at": utc_iso(log.created_at),
         }
         for log, name in logs
     ]
@@ -41,7 +41,7 @@ async def get_notification_logs(skip: int = 0, limit: int = 50, db: Session = De
             "recipientName": name,
             "message": log.message,
             "success": log.success == "true",
-            "created_at": log.created_at.isoformat(),
+            "created_at": utc_iso(log.created_at),
         }
         for log, name in logs
     ]

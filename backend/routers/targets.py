@@ -7,7 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..database import get_db
-from ..models import DbTarget, DbComment, DbReport, DbUser, DbAuditLog, DbNotificationLog, Target, TargetCreate, TargetStatus
+from ..models import DbTarget, DbComment, DbReport, DbUser, DbAuditLog, DbNotificationLog, Target, TargetCreate, TargetStatus, utc_iso
 from ..security import require_auth
 
 router = APIRouter()
@@ -180,7 +180,7 @@ async def get_target_reports(target_id: str, db: Session = Depends(get_db), _aut
             "notes": r.notes,
             "photo_url": r.photo_url,
             "officerName": u.name,
-            "submitted_at": r.submitted_at.isoformat(),
+            "submitted_at": utc_iso(r.submitted_at),
         }
         for r, u in reports
     ]
@@ -200,7 +200,7 @@ async def get_target_comments(target_id: str, db: Session = Depends(get_db), _au
             "message": c.message,
             "tag": c.tag,
             "officerName": u.name,
-            "created_at": c.created_at.isoformat()
+            "created_at": utc_iso(c.created_at)
         }
         for c, u in comments
     ]

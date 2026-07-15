@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import DbTarget, DbComment, DbUser, DashboardStats, TargetStatus, Target
+from ..models import DbTarget, DbComment, DbUser, DashboardStats, TargetStatus, Target, utc_iso
 from ..security import require_auth
 from pydantic import BaseModel
 from typing import List, Optional
@@ -59,7 +59,7 @@ async def get_recent_comments(limit: int = 5, db: Session = Depends(get_db), _au
             "tag": c.tag,
             "officerName": officer_name,
             "customerName": customer_name,
-            "created_at": c.created_at.isoformat(),
+            "created_at": utc_iso(c.created_at),
         }
         for c, officer_name, customer_name in comments
     ]

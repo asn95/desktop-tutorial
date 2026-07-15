@@ -7,7 +7,7 @@ import uuid
 import json
 from urllib.parse import parse_qsl
 from ..database import get_db
-from ..models import DbTarget, DbUser, DbReport, DbComment, Target, TargetStatus, PaymentStatus
+from ..models import DbTarget, DbUser, DbReport, DbComment, Target, TargetStatus, PaymentStatus, utc_iso
 from ..security import validate_telegram_data
 
 router = APIRouter()
@@ -141,7 +141,7 @@ async def get_comments(
             "id": c.id,
             "message": c.message,
             "tag": c.tag,
-            "created_at": c.created_at.isoformat()
+            "created_at": utc_iso(c.created_at)
         }
         for c in comments
     ]

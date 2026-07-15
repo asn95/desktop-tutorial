@@ -2,11 +2,19 @@ from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLE
 import uuid
 from datetime import datetime, timezone
 from .database import Base, SQLALCHEMY_DATABASE_URL
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, field_serializer
 from typing import List, Optional, Any
 from enum import Enum
 
 _is_pg = SQLALCHEMY_DATABASE_URL.startswith("postgresql")
+
+
+def utc_iso(dt: datetime) -> str:
+    """Timestamps are stored as UTC but the DB strips tzinfo; stamp it back
+    so clients (JS new Date) convert to local time instead of misreading UTC as local."""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 # --- SQLAlchemy Models ---
 
@@ -110,6 +118,10 @@ class User(UserBase):
     def coerce_id(cls, v: Any) -> str:
         return str(v)
 
+    @field_serializer('created_at')
+    def serialize_created_at(self, dt: datetime) -> str:
+        return utc_iso(dt)
+
 class TargetBase(BaseModel):
     customerName: str = Field(..., alias="customer_name", validation_alias="customer_name", serialization_alias="customerName")
     address: str
@@ -137,6 +149,10 @@ class Target(TargetBase):
     @classmethod
     def coerce_id(cls, v: Any) -> str:
         return str(v)
+
+    @field_serializer('created_at')
+    def serialize_created_at(self, dt: datetime) -> str:
+        return utc_iso(dt)
 
 class DashboardStats(BaseModel):
     totalTargets: int

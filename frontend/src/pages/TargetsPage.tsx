@@ -6,6 +6,7 @@ import { PeriodSelector } from "../components/dashboard/PeriodSelector";
 import { getDashboardSnapshot, getPeriods } from "../services/dashboardService";
 import { getUsers } from "../services/userService";
 import { apiClient } from "../lib/apiClient";
+import { useLang } from "../contexts/LanguageContext";
 import type { DashboardSnapshot, PeriodInfo } from "../types/dashboard";
 import type { TargetStatus } from "../types/target";
 import type { User } from "../types/user";
@@ -13,6 +14,7 @@ import type { User } from "../types/user";
 type FilterValue = TargetStatus | "all";
 
 export function TargetsPage() {
+  const { t } = useLang();
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -104,7 +106,7 @@ export function TargetsPage() {
       refreshData();
       setBulkOfficer("");
     } catch {
-      alert("Gagal menugaskan massal.");
+      alert(t("Gagal menugaskan massal."));
     } finally {
       setBulkAssigning(false);
     }
@@ -121,7 +123,7 @@ export function TargetsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Gagal mengekspor.");
+      alert(t("Gagal mengekspor."));
     }
   }
 
@@ -130,7 +132,7 @@ export function TargetsPage() {
       <div className="space-y-10">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black dark:text-white">
-            Inventaris Manajemen Target
+            {t("Inventaris Manajemen Target")}
           </h1>
           <div className="flex flex-wrap items-center gap-3">
             {period && <PeriodSelector periods={periods} value={period} onChange={setPeriod} />}
@@ -138,7 +140,7 @@ export function TargetsPage() {
               onClick={handleExport}
               className="border border-gray-200 dark:border-slate-600 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide hover:bg-gray-50 transition w-fit"
             >
-              Ekspor CSV
+              {t("Ekspor CSV")}
             </button>
           </div>
         </div>
@@ -150,7 +152,7 @@ export function TargetsPage() {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Cari nama/ID..."
+                  placeholder={t("Cari nama/ID...")}
                   className="w-full sm:w-64 border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
                 />
                 <select
@@ -158,10 +160,10 @@ export function TargetsPage() {
                   onChange={(e) => setStatusFilter(e.target.value as FilterValue)}
                   className="w-full sm:w-auto border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 text-xs font-bold uppercase tracking-wider outline-none"
                 >
-                  <option value="all">Semua</option>
-                  <option value="pending">Menunggu</option>
-                  <option value="in_progress">Sedang Berjalan</option>
-                  <option value="completed">Selesai</option>
+                  <option value="all">{t("Semua")}</option>
+                  <option value="pending">{t("Menunggu")}</option>
+                  <option value="in_progress">{t("Sedang Berjalan")}</option>
+                  <option value="completed">{t("Selesai")}</option>
                 </select>
               </div>
             </div>
@@ -170,14 +172,14 @@ export function TargetsPage() {
             {selected.size > 0 && (
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-md border border-[#E81E28]/40 bg-red-50 dark:bg-red-900/20 px-4 py-3">
                 <span className="text-xs font-bold text-[#E81E28] dark:text-red-300">
-                  {selected.size} dipilih
+                  {selected.size} {t("dipilih")}
                 </span>
                 <select
                   value={bulkOfficer}
                   onChange={e => setBulkOfficer(e.target.value)}
                   className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-white px-2 py-1 text-[10px] font-bold"
                 >
-                  <option value="">Pilih Petugas</option>
+                  <option value="">{t("Pilih Petugas")}</option>
                   {officers.map(o => (
                     <option key={o.id} value={o.id}>{o.name}</option>
                   ))}
@@ -187,19 +189,19 @@ export function TargetsPage() {
                   disabled={!bulkOfficer || bulkAssigning}
                   className="bg-[#E81E28] text-white px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide disabled:opacity-30"
                 >
-                  {bulkAssigning ? "Menugaskan..." : "Tugaskan Semua"}
+                  {bulkAssigning ? t("Menugaskan...") : t("Tugaskan Semua")}
                 </button>
                 <button
                   onClick={() => setSelected(new Set())}
                   className="text-[10px] font-bold text-slate-500 hover:underline"
                 >
-                  Bersihkan
+                  {t("Bersihkan")}
                 </button>
               </div>
             )}
 
             {isLoading ? (
-              <p className="py-10 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">Memuat data...</p>
+              <p className="py-10 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">{t("Memuat data...")}</p>
             ) : (
               <TargetsTable
                 targets={filteredTargets}

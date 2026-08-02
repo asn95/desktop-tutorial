@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../contexts/AuthContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
+import { LanguageProvider } from "../contexts/LanguageContext";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ProtectedRoute } from "../components/routing/ProtectedRoute";
 import { LoginPage } from "../pages/LoginPage";
@@ -16,6 +17,7 @@ export function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
+      <LanguageProvider>
       <AuthProvider>
         <ErrorBoundary>
         <Routes>
@@ -36,6 +38,7 @@ export function App() {
         </Routes>
         </ErrorBoundary>
       </AuthProvider>
+      </LanguageProvider>
       </ThemeProvider>
     </BrowserRouter>
   );

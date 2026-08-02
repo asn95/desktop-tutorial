@@ -1,5 +1,6 @@
 import { formatStatus } from "../../lib/format";
 import type { TargetStatus } from "../../types/target";
+import { useLang } from "../../contexts/LanguageContext";
 
 const statusClassMap: Record<TargetStatus, string> = {
   completed: "bg-c3mr-success/10 text-c3mr-success",
@@ -8,9 +9,10 @@ const statusClassMap: Record<TargetStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: TargetStatus }) {
+  const { t } = useLang();
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassMap[status]}`}>
-      {formatStatus(status)}
+      {t(formatStatus(status))}
     </span>
   );
 }

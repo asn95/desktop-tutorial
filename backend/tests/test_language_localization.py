@@ -94,3 +94,50 @@ def test_user_facing_copy_is_indonesian():
                     offenders.append(f"{relative_path}:{lineno}: {phrase}")
 
     assert offenders == [], f"English user-facing copy found: {offenders}"
+
+
+# --- Opsi bahasa (portal manajer) --------------------------------------------
+# Bahasa Inggris boleh ada, tapi HANYA di dalam kamus terjemahan, dan Indonesia
+# harus tetap jadi default. Tiga tes di bawah menjaga kedua syarat itu.
+
+_I18N = ROOT / "frontend/src/lib/i18n.ts"
+_LANG_CTX = ROOT / "frontend/src/contexts/LanguageContext.tsx"
+
+
+def test_indonesian_stays_the_default_language():
+    """Kalau default bergeser ke Inggris, seluruh portal berubah bahasa diam-diam."""
+    ctx = _LANG_CTX.read_text(encoding="utf-8")
+    assert 'useState<Lang>' in ctx
+    assert '"en" ? "en" : "id"' in ctx, "default bahasa harus jatuh ke 'id'"
+
+    i18n = _I18N.read_text(encoding="utf-8")
+    assert 'if (lang === "id") return text;' in i18n, (
+        "mode Indonesia harus mengembalikan teks apa adanya, tanpa lewat kamus"
+    )
+
+
+def test_missing_translation_falls_back_to_indonesian():
+    """String yang belum diterjemahkan harus jatuh ke Indonesia, bukan kunci mentah."""
+    i18n = _I18N.read_text(encoding="utf-8")
+    assert "EN[text] ?? text" in i18n, (
+        "translate() harus punya fallback ke teks aslinya"
+    )
+
+
+def test_translation_keys_still_exist_in_the_ui():
+    """Kunci kamus yang sudah tidak dipakai di UI = kamus mulai basi.
+
+    Dicek longgar: cukup ada satu file frontend yang masih memuat teksnya.
+    """
+    import re
+
+    entries = re.findall(r'^\s+"((?:[^"\\]|\\.)+)":', _I18N.read_text(encoding="utf-8"), re.M)
+    assert entries, "kamus EN kosong"
+
+    haystack = "\n".join(
+        p.read_text(encoding="utf-8")
+        for p in (ROOT / "frontend/src").rglob("*.tsx")
+    )
+
+    stale = [e for e in entries if e.replace('\\"', '"') not in haystack]
+    assert stale == [], f"kunci kamus tidak lagi dipakai di UI: {stale[:10]}"

@@ -4,6 +4,7 @@ import type { Target } from "../../types/target";
 import type { User } from "../../types/user";
 import { getUsers } from "../../services/userService";
 import { apiClient } from "../../lib/apiClient";
+import { useLang } from "../../contexts/LanguageContext";
 
 interface Comment {
   id: string;
@@ -40,6 +41,7 @@ interface TableProps {
 }
 
 export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onToggleAll, pendingCount }: TableProps) {
+  const { t } = useLang();
   const [officers, setOfficers] = useState<User[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
       setSelectedTarget(null);
       if (onRefresh) onRefresh();
     } catch (err) {
-      alert("Gagal menugaskan petugas.");
+      alert(t("Gagal menugaskan petugas."));
     } finally {
       setIsAssigning(false);
     }
@@ -109,19 +111,19 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                   </th>
                 )}
                 <th className="px-4 py-4">ID</th>
-                <th className="px-4 py-4">Nama Pelanggan</th>
-                <th className="px-4 py-4">Alamat</th>
-                <th className="px-4 py-4">Jumlah Tagihan</th>
-                <th className="px-4 py-4">Petugas</th>
-                <th className="px-4 py-4">Status</th>
-                <th className="px-4 py-4 text-center">Aksi</th>
+                <th className="px-4 py-4">{t("Nama Pelanggan")}</th>
+                <th className="px-4 py-4">{t("Alamat")}</th>
+                <th className="px-4 py-4">{t("Jumlah Tagihan")}</th>
+                <th className="px-4 py-4">{t("Petugas")}</th>
+                <th className="px-4 py-4">{t("Status")}</th>
+                <th className="px-4 py-4 text-center">{t("Aksi")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {targets.length === 0 ? (
                 <tr>
                   <td colSpan={onToggleSelect ? 8 : 7} className="px-4 py-10 text-center text-[#5e6671] normal-case italic">
-                    Tidak ada data.
+                    {t("Tidak ada data.")}
                   </td>
                 </tr>
               ) : (
@@ -147,7 +149,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                           onBlur={() => setSelectedTarget(null)}
                           disabled={isAssigning}
                         >
-                          <option value="">Pilih Petugas</option>
+                          <option value="">{t("Pilih Petugas")}</option>
                           {officers.map(o => (
                             <option key={o.id} value={o.id}>{o.name}</option>
                           ))}
@@ -163,7 +165,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                       target.status === 'pending' ? 'text-red-600' :
                       'text-amber-600'
                     }`}>
-                      {formatStatus(target.status)}
+                      {t(formatStatus(target.status))}
                     </td>
                     <td className="px-4 py-4 text-center">
                       {!target.assignedOfficer ? (
@@ -171,14 +173,14 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                           onClick={() => setSelectedTarget(target.id)}
                           className="border border-gray-200 px-3 py-1 hover:bg-gray-50 transition"
                         >
-                          Tugaskan
+                          {t("Tugaskan")}
                         </button>
                       ) : (
                         <button
                           onClick={() => openDetail(target)}
                           className="border border-gray-200 px-3 py-1 hover:bg-gray-50 transition"
                         >
-                          Lihat Detail
+                          {t("Lihat Detail")}
                         </button>
                       )}
                     </td>
@@ -195,7 +197,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={() => setDetailTarget(null)}>
           <div className="bg-white rounded-md border border-gray-100 w-full sm:max-w-lg sm:mx-4 p-0 max-h-[92vh] sm:max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
-              <h2 className="text-xs font-semibold uppercase tracking-wide">Detail Target</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wide">{t("Detail Target")}</h2>
               <button onClick={() => setDetailTarget(null)} className="text-lg font-bold hover:text-red-600">&times;</button>
             </div>
             <div className="overflow-y-auto flex-1">
@@ -204,27 +206,27 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">ID</span>
                   <span className="font-mono text-xs">{detailTarget.id}</span>
 
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Pelanggan</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t("Pelanggan")}</span>
                   <span className="font-bold">{detailTarget.customerName}</span>
 
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Telepon</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t("Telepon")}</span>
                   <span className="font-medium">{detailTarget.phone || "—"}</span>
 
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Alamat</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t("Alamat")}</span>
                   <span className="font-medium">{detailTarget.address}</span>
 
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Jumlah Tagihan</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t("Jumlah Tagihan")}</span>
                   <span className="font-semibold text-red-600">{formatCurrency(detailTarget.amountDue)}</span>
 
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Petugas</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t("Petugas")}</span>
                   <span className="font-bold">{getOfficerName(detailTarget.assignedOfficer)}</span>
 
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t("Status")}</span>
                   <span className={`font-semibold uppercase ${
                     detailTarget.status === 'completed' ? 'text-green-600' :
                     detailTarget.status === 'pending' ? 'text-red-600' :
                     'text-amber-600'
-                  }`}>{formatStatus(detailTarget.status)}</span>
+                  }`}>{t(formatStatus(detailTarget.status))}</span>
                 </div>
               </div>
 
@@ -232,7 +234,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
               {reports.length > 0 && (
                 <div className="border-t border-slate-200 px-6 py-5">
                   <h3 className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-3">
-                    Laporan Lapangan
+                    {t("Laporan Lapangan")}
                   </h3>
                   <div className="space-y-3">
                     {reports.map(r => (
@@ -248,7 +250,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                           <a href={`/api${r.photo_url}`} target="_blank" rel="noopener noreferrer">
                             <img
                               src={`/api${r.photo_url}`}
-                              alt="Bukti foto"
+                              alt={t("Bukti foto")}
                               className="w-full max-h-48 object-cover rounded border border-slate-200 cursor-pointer hover:opacity-90"
                             />
                           </a>
@@ -268,12 +270,12 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
               {/* Officer Comments Section */}
               <div className="border-t border-slate-200 px-6 py-5">
                 <h3 className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-3">
-                  Komentar Petugas
+                  {t("Komentar Petugas")}
                 </h3>
                 {loadingComments ? (
-                  <p className="text-xs text-slate-400 italic">Memuat komentar...</p>
+                  <p className="text-xs text-slate-400 italic">{t("Memuat komentar...")}</p>
                 ) : comments.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">Belum ada komentar dari petugas.</p>
+                  <p className="text-xs text-slate-400 italic">{t("Belum ada komentar dari petugas.")}</p>
                 ) : (
                   <div className="space-y-3">
                     {comments.map(c => (
@@ -282,7 +284,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                           <span className="text-[10px] font-bold text-slate-600">{c.officerName}</span>
                           {c.tag && (
                             <span className="text-[8px] font-semibold uppercase tracking-wider bg-red-100 text-red-600 px-2 py-0.5 rounded">
-                              {TAG_LABELS[c.tag] || c.tag}
+                              {t(TAG_LABELS[c.tag] || c.tag)}
                             </span>
                           )}
                         </div>
@@ -304,7 +306,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                 onClick={() => setDetailTarget(null)}
                 className="w-full bg-[#E81E28] text-white py-2 text-xs font-semibold uppercase tracking-wide hover:bg-[#c8161f] transition"
               >
-                Tutup
+                {t("Tutup")}
               </button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { PeriodSelector } from "../components/dashboard/PeriodSelector";
 import { TargetMap } from "../components/dashboard/TargetMap";
 import { getDashboardSnapshot, getPeriods } from "../services/dashboardService";
 import { apiClient } from "../lib/apiClient";
+import { useLang } from "../contexts/LanguageContext";
 import { formatCurrency } from "../lib/format";
 import type { DashboardSnapshot, PeriodInfo } from "../types/dashboard";
 
@@ -27,6 +28,7 @@ const TAG_LABELS: Record<string, string> = {
 };
 
 export function DashboardPage() {
+  const { t } = useLang();
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export function DashboardPage() {
   if (isLoading) {
     return (
       <AppShell activeTab="DASHBOARD">
-        <div className="py-24 text-center text-sm font-medium text-gray-400">Memuat dashboard…</div>
+        <div className="py-24 text-center text-sm font-medium text-gray-400">{t("Memuat dashboard…")}</div>
       </AppShell>
     );
   }
@@ -105,7 +107,7 @@ export function DashboardPage() {
     return (
       <AppShell activeTab="DASHBOARD">
         <div className="rounded-md border border-red-200 bg-red-50 p-6 text-center text-sm font-medium text-[#E81E28]">
-          {error || "Gagal memuat data."}
+          {error || t("Gagal memuat data.")}
         </div>
       </AppShell>
     );
@@ -126,18 +128,18 @@ export function DashboardPage() {
       <div className="space-y-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard Operasional</h1>
-            <p className="mt-1 text-sm text-gray-500">Ringkasan real-time target penagihan dan aktivitas lapangan.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">{t("Dashboard Operasional")}</h1>
+            <p className="mt-1 text-sm text-gray-500">{t("Ringkasan real-time target penagihan dan aktivitas lapangan.")}</p>
           </div>
           {period && <PeriodSelector periods={periods} value={period} onChange={setPeriod} />}
         </div>
 
         {/* Summary Cards */}
         <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <SummaryCard label="Total Target" value={stats.totalTargets} accent="default" />
-          <SummaryCard label="Selesai" value={stats.completed} accent="success" />
-          <SummaryCard label="Sedang Berjalan" value={stats.inProgress} accent="warning" />
-          <SummaryCard label="Menunggu" value={stats.pending} accent="danger" />
+          <SummaryCard label={t("Total Target")} value={stats.totalTargets} accent="default" />
+          <SummaryCard label={t("Selesai")} value={stats.completed} accent="success" />
+          <SummaryCard label={t("Sedang Berjalan")} value={stats.inProgress} accent="warning" />
+          <SummaryCard label={t("Menunggu")} value={stats.pending} accent="danger" />
         </section>
 
         {/* Peta sebaran target (koordinat hasil geocoding Nominatim) */}
@@ -148,12 +150,12 @@ export function DashboardPage() {
           {/* Unassigned Targets (Action Required) */}
           <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <h3 className="text-sm font-semibold text-gray-900">Perlu Penugasan</h3>
+              <h3 className="text-sm font-semibold text-gray-900">{t("Perlu Penugasan")}</h3>
               <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-[#E81E28]">{pendingTargets.length}</span>
             </div>
             <div className="max-h-[320px] divide-y divide-gray-100 overflow-y-auto">
               {pendingTargets.length === 0 ? (
-                <p className="px-5 py-8 text-center text-xs text-gray-400">Semua target sudah ditugaskan</p>
+                <p className="px-5 py-8 text-center text-xs text-gray-400">{t("Semua target sudah ditugaskan")}</p>
               ) : (
                 pendingTargets.slice(0, 8).map(t => (
                   <div key={t.id} className="px-5 py-3">
@@ -169,21 +171,21 @@ export function DashboardPage() {
           {/* Recently Assigned (In Progress) */}
           <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <h3 className="text-sm font-semibold text-gray-900">Penugasan Aktif</h3>
+              <h3 className="text-sm font-semibold text-gray-900">{t("Penugasan Aktif")}</h3>
               <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600">{stats.inProgress}</span>
             </div>
             <div className="max-h-[320px] divide-y divide-gray-100 overflow-y-auto">
               {recentAssigned.length === 0 ? (
-                <p className="px-5 py-8 text-center text-xs text-gray-400">Tidak ada penugasan aktif</p>
+                <p className="px-5 py-8 text-center text-xs text-gray-400">{t("Tidak ada penugasan aktif")}</p>
               ) : (
-                recentAssigned.map(t => (
-                  <div key={t.id} className="px-5 py-3">
+                recentAssigned.map(target => (
+                  <div key={target.id} className="px-5 py-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900">{t.customerName}</p>
-                      <p className="text-xs font-semibold text-amber-600">{formatCurrency(t.amountDue)}</p>
+                      <p className="text-sm font-medium text-gray-900">{target.customerName}</p>
+                      <p className="text-xs font-semibold text-amber-600">{formatCurrency(target.amountDue)}</p>
                     </div>
                     <p className="mt-0.5 text-xs text-gray-500">
-                      Petugas: <span className="font-medium text-gray-700">{getOfficerName(t.assignedOfficer)}</span>
+                      {t("Petugas")}: <span className="font-medium text-gray-700">{getOfficerName(target.assignedOfficer)}</span>
                     </p>
                   </div>
                 ))
@@ -194,12 +196,12 @@ export function DashboardPage() {
           {/* Recent Officer Comments */}
           <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <h3 className="text-sm font-semibold text-gray-900">Masukan Petugas</h3>
+              <h3 className="text-sm font-semibold text-gray-900">{t("Masukan Petugas")}</h3>
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">{recentComments.length}</span>
             </div>
             <div className="max-h-[320px] divide-y divide-gray-100 overflow-y-auto">
               {recentComments.length === 0 ? (
-                <p className="px-5 py-8 text-center text-xs text-gray-400">Belum ada komentar</p>
+                <p className="px-5 py-8 text-center text-xs text-gray-400">{t("Belum ada komentar")}</p>
               ) : (
                 recentComments.map(c => (
                   <div key={c.id} className="px-5 py-3">
@@ -207,7 +209,7 @@ export function DashboardPage() {
                       <span className="text-xs font-medium text-gray-700">{c.officerName}</span>
                       {c.tag && (
                         <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-[#E81E28]">
-                          {TAG_LABELS[c.tag] || c.tag}
+                          {t(TAG_LABELS[c.tag] || c.tag)}
                         </span>
                       )}
                     </div>
@@ -228,8 +230,8 @@ export function DashboardPage() {
         {/* Officer Quick View */}
         <section className="overflow-hidden rounded-md border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-            <h3 className="text-sm font-semibold text-gray-900">Petugas Aktif</h3>
-            <span className="text-xs text-gray-400">{officers.length} terdaftar</span>
+            <h3 className="text-sm font-semibold text-gray-900">{t("Petugas Aktif")}</h3>
+            <span className="text-xs text-gray-400">{officers.length} {t("terdaftar")}</span>
           </div>
           <div className="grid grid-cols-3 gap-px bg-gray-100 lg:grid-cols-6">
             {officers.map(o => {
@@ -241,7 +243,7 @@ export function DashboardPage() {
                     {o.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                   </div>
                   <p className="truncate text-xs font-medium text-gray-900">{o.name}</p>
-                  <p className="mt-1 text-[11px] text-gray-400">{assigned} ditugaskan · {completed} selesai</p>
+                  <p className="mt-1 text-[11px] text-gray-400">{assigned} {t("ditugaskan")} · {completed} {t("selesai")}</p>
                 </div>
               );
             })}

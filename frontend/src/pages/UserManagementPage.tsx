@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
+import { useLang } from "../contexts/LanguageContext";
 import { getUsers, createUser, updateUser, deleteUser } from "../services/userService";
 import { getDashboardSnapshot } from "../services/dashboardService";
 import { apiClient } from "../lib/apiClient";
@@ -9,6 +10,7 @@ import type { Target } from "../types/target";
 type PendingAction = { type: "edit"; user: User } | { type: "delete"; user: User };
 
 export function UserManagementPage() {
+  const { t } = useLang();
   const [users, setUsers] = useState<User[]>([]);
   const [targets, setTargets] = useState<Target[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,7 +68,7 @@ export function UserManagementPage() {
   const linked = (users || []).filter(u => u.telegram_id).length;
 
   function formatRole(role: string) {
-    return role === "manager" ? "Manajer" : "Petugas";
+    return role === "manager" ? t("Manajer") : t("Petugas");
   }
 
   async function handleAddUser(e: React.FormEvent) {
@@ -85,10 +87,10 @@ export function UserManagementPage() {
       const created = await createUser(payload);
       setName("");
       setTelegramId("");
-      setSuccess(`${created.name} berhasil didaftarkan.`);
+      setSuccess(`${created.name} ${t("berhasil didaftarkan.")}`);
       loadData();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Gagal menambahkan pengguna.");
+      setError(err.response?.data?.detail || t("Gagal menambahkan pengguna."));
     } finally {
       setIsSubmitting(false);
     }
@@ -108,12 +110,12 @@ export function UserManagementPage() {
 
   async function toggleActive(user: User) {
     const deactivating = user.active !== false;
-    if (deactivating && !confirm(`Nonaktifkan ${user.name}? Petugas ini tidak akan muncul lagi saat penugasan, tapi semua data lamanya tetap tersimpan.`)) return;
+    if (deactivating && !confirm(`${t("Nonaktifkan")} ${user.name}? ${t("Petugas ini tidak akan muncul lagi saat penugasan, tapi semua data lamanya tetap tersimpan.")}`)) return;
     try {
       await updateUser(user.id, { active: !deactivating });
       loadData();
     } catch (err: any) {
-      alert(err?.response?.data?.detail || "Gagal mengubah status petugas.");
+      alert(err?.response?.data?.detail || t("Gagal mengubah status petugas."));
     }
   }
 
@@ -139,13 +141,13 @@ export function UserManagementPage() {
           const detail = err?.response?.data?.detail;
           alert(
             detail === "Cannot delete user with assigned targets, reports, or comments. Reassign them first."
-              ? "Petugas ini masih memiliki target, laporan, atau komentar. Pindahkan penugasannya ke petugas lain terlebih dahulu, lalu hapus."
-              : detail || "Gagal menghapus pengguna."
+              ? t("Petugas ini masih memiliki target, laporan, atau komentar. Pindahkan penugasannya ke petugas lain terlebih dahulu, lalu hapus.")
+              : detail || t("Gagal menghapus pengguna.")
           );
         }
       }
     } catch {
-      setPasswordError("Kata sandi tidak valid.");
+      setPasswordError(t("Kata sandi tidak valid."));
     } finally {
       setIsVerifying(false);
     }
@@ -162,7 +164,7 @@ export function UserManagementPage() {
       setEditingUser(null);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Gagal memperbarui pengguna.");
+      alert(err.response?.data?.detail || t("Gagal memperbarui pengguna."));
     }
   }
 
@@ -171,10 +173,10 @@ export function UserManagementPage() {
       <div className="space-y-12 font-sans">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black">
-            Direktori Personel
+            {t("Direktori Personel")}
           </h1>
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-            {users.length} Total &middot; {officers.length} Petugas &middot; {managers.length} Manajer
+            {users.length} Total &middot; {officers.length} {t("Petugas")} &middot; {managers.length} {t("Manajer")}
           </p>
         </div>
 
@@ -182,33 +184,33 @@ export function UserManagementPage() {
           {/* Main Directory */}
           <section className="min-w-0">
             <div className="border-b-2 border-gray-200 pb-2 mb-6 flex items-center justify-between">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Personel Terdaftar</h2>
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">{t("Personel Terdaftar")}</h2>
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Cari nama atau ID..."
+                placeholder={t("Cari nama atau ID...")}
                 className="w-52 border-b border-gray-200 bg-transparent px-1 py-1 text-[10px] font-bold uppercase tracking-wider outline-none placeholder:text-slate-300"
               />
             </div>
 
             {isLoading ? (
               <p className="py-16 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                Memuat data personel...
+                {t("Memuat data personel...")}
               </p>
             ) : filteredUsers.length === 0 ? (
               <p className="py-16 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                {query ? "Data tidak ditemukan." : "Belum ada personel terdaftar."}
+                {query ? t("Data tidak ditemukan.") : t("Belum ada personel terdaftar.")}
               </p>
             ) : (
               <div className="border border-gray-200 bg-white overflow-x-auto overflow-hidden">
                 {/* Table header */}
                 <div className="min-w-[620px] grid grid-cols-[1fr_80px_100px_60px_60px_150px] gap-0 border-b-2 border-gray-200 bg-[#f8f8f6] px-6 py-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  <span>Nama</span>
-                  <span>Peran</span>
+                  <span>{t("Nama")}</span>
+                  <span>{t("Peran")}</span>
                   <span>Telegram</span>
-                  <span className="text-center">Tugas</span>
-                  <span className="text-center">Selesai</span>
-                  <span className="text-center">Aksi</span>
+                  <span className="text-center">{t("Tugas")}</span>
+                  <span className="text-center">{t("Selesai")}</span>
+                  <span className="text-center">{t("Aksi")}</span>
                 </div>
 
                 {/* Rows */}
@@ -226,7 +228,7 @@ export function UserManagementPage() {
                           {user.name}
                           {user.active === false && (
                             <span className="text-[8px] font-semibold uppercase tracking-wider text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                              Nonaktif
+                              {t("Nonaktif")}
                             </span>
                           )}
                         </p>
@@ -253,19 +255,19 @@ export function UserManagementPage() {
                           onClick={() => requestEdit(user)}
                           className="text-[9px] text-blue-600 font-semibold uppercase tracking-wider hover:underline"
                         >
-                          Ubah
+                          {t("Ubah")}
                         </button>
                         <button
                           onClick={() => toggleActive(user)}
                           className="text-[9px] text-amber-700 font-semibold uppercase tracking-wider hover:underline"
                         >
-                          {user.active === false ? "Aktifkan" : "Nonaktifkan"}
+                          {user.active === false ? t("Aktifkan") : t("Nonaktifkan")}
                         </button>
                         <button
                           onClick={() => requestDelete(user)}
                           className="text-[9px] text-red-600 font-semibold uppercase tracking-wider hover:underline"
                         >
-                          Hapus
+                          {t("Hapus")}
                         </button>
                       </span>
                     </div>
@@ -277,10 +279,10 @@ export function UserManagementPage() {
             {/* Telegram link status */}
             {users.length > 0 && (
               <div className="mt-6 flex items-center gap-6 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                <span>{linked} dari {users.length} terhubung ke Telegram</span>
+                <span>{linked} {t("dari")} {users.length} {t("terhubung ke Telegram")}</span>
                 {users.length - linked > 0 && (
                   <span className="text-amber-600">
-                    {users.length - linked} belum terhubung &mdash; tidak dapat menerima notifikasi
+                    {users.length - linked} {t("belum terhubung")} &mdash; {t("tidak dapat menerima notifikasi")}
                   </span>
                 )}
               </div>
@@ -290,16 +292,16 @@ export function UserManagementPage() {
           {/* Sidebar: Registration */}
           <section>
             <div className="border-b-2 border-gray-200 pb-2 mb-6">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Daftarkan Petugas</h2>
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">{t("Daftarkan Petugas")}</h2>
             </div>
 
             <form onSubmit={handleAddUser} className="border border-gray-200 bg-white p-6 space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Nama Lengkap *</label>
+                <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Nama Lengkap")} *</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Masukkan nama petugas"
+                  placeholder={t("Masukkan nama petugas")}
                   className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold outline-none placeholder:text-slate-300 focus:border-b-2"
                 />
               </div>
@@ -308,11 +310,11 @@ export function UserManagementPage() {
                 <input
                   value={telegramId}
                   onChange={(e) => setTelegramId(e.target.value)}
-                  placeholder="mis. 123456789"
+                  placeholder={t("mis. 123456789")}
                   className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
                 />
                 <p className="text-[9px] text-slate-400">
-                  Diperlukan untuk akses Mini App dan notifikasi.
+                  {t("Diperlukan untuk akses Mini App dan notifikasi.")}
                 </p>
               </div>
 
@@ -323,19 +325,19 @@ export function UserManagementPage() {
                 disabled={isSubmitting || !name}
                 className="w-full border-2 border-gray-200 bg-black py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white hover:text-black disabled:opacity-30"
               >
-                {isSubmitting ? "Memproses..." : "Daftar"}
+                {isSubmitting ? t("Memproses...") : t("Daftar")}
               </button>
             </form>
 
             {/* Quick Stats */}
             <div className="mt-8 space-y-3">
               <div className="border-b-2 border-gray-200 pb-2 mb-4">
-                <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Ringkasan</h2>
+                <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">{t("Ringkasan")}</h2>
               </div>
-              <Row label="Total Personel" value={users.length} />
-              <Row label="Petugas Lapangan" value={officers.length} />
-              <Row label="Manajer" value={managers.length} />
-              <Row label="Terhubung Telegram" value={linked} total={users.length} />
+              <Row label={t("Total Personel")} value={users.length} />
+              <Row label={t("Petugas Lapangan")} value={officers.length} />
+              <Row label={t("Manajer")} value={managers.length} />
+              <Row label={t("Terhubung Telegram")} value={linked} total={users.length} />
             </div>
           </section>
         </div>
@@ -350,14 +352,14 @@ export function UserManagementPage() {
             className="bg-white rounded-md border border-gray-100 w-full max-w-xs mx-4 p-6 space-y-5"
           >
             <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wide">Konfirmasi Kata Sandi</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wide">{t("Konfirmasi Kata Sandi")}</h2>
               <p className="text-[10px] text-slate-500 mt-2">
-                Masukkan kata sandi Anda untuk {pendingAction.type === "edit" ? "mengubah" : "menghapus"}{" "}
+                {t("Masukkan kata sandi Anda untuk")} {pendingAction.type === "edit" ? t("mengubah") : t("menghapus")}{" "}
                 <span className="font-bold text-[#1a1c1e]">{pendingAction.user.name}</span>
               </p>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Kata Sandi</label>
+              <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Kata Sandi")}</label>
               <input
                 type="password"
                 autoFocus
@@ -373,14 +375,14 @@ export function UserManagementPage() {
                 disabled={!confirmPassword || isVerifying}
                 className="flex-1 bg-[#E81E28] text-white py-2.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-[#c8161f] disabled:opacity-30"
               >
-                {isVerifying ? "Memverifikasi..." : "Konfirmasi"}
+                {isVerifying ? t("Memverifikasi...") : t("Konfirmasi")}
               </button>
               <button
                 type="button"
                 onClick={() => setPendingAction(null)}
                 className="flex-1 border border-gray-200 py-2.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-slate-100"
               >
-                Batal
+                {t("Batal")}
               </button>
             </div>
           </form>
@@ -395,9 +397,9 @@ export function UserManagementPage() {
             onClick={e => e.stopPropagation()}
             className="bg-white rounded-md border border-gray-100 w-full max-w-sm mx-4 p-6 space-y-5"
           >
-            <h2 className="text-xs font-semibold uppercase tracking-wide">Ubah {editingUser.name}</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide">{t("Ubah")} {editingUser.name}</h2>
             <div className="space-y-1.5">
-              <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Nama</label>
+              <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Nama")}</label>
               <input
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
@@ -409,16 +411,16 @@ export function UserManagementPage() {
               <input
                 value={editTelegramId}
                 onChange={e => setEditTelegramId(e.target.value)}
-                placeholder="mis. 123456789"
+                placeholder={t("mis. 123456789")}
                 className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none focus:border-b-2"
               />
             </div>
             <div className="flex gap-3">
               <button type="submit" className="flex-1 bg-[#E81E28] text-white py-2.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-[#c8161f]">
-                Simpan
+                {t("Simpan")}
               </button>
               <button type="button" onClick={() => setEditingUser(null)} className="flex-1 border border-gray-200 py-2.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-slate-100">
-                Batal
+                {t("Batal")}
               </button>
             </div>
           </form>

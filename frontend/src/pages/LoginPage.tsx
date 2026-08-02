@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useLang } from "../contexts/LanguageContext";
 import indihomeLogo from "../assets/indihome-logo.svg";
 
 const FAILED_KEY = "c3mr:login-failures";
@@ -41,6 +42,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, login } = useAuth();
+  const { t, lang, toggle: toggleLang } = useLang();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -71,7 +73,7 @@ export function LoginPage() {
     const lockCheck = isLockedOut();
     if (lockCheck.locked) {
       setLockoutSec(lockCheck.remainingSec);
-      setError(`Terlalu banyak percobaan gagal. Coba lagi dalam ${lockCheck.remainingSec} detik.`);
+      setError(`${t("Terlalu banyak percobaan gagal. Coba lagi dalam")} ${lockCheck.remainingSec} ${t("detik.")}`);
       return;
     }
 
@@ -89,13 +91,13 @@ export function LoginPage() {
       recordFailure();
       const failures = getFailures();
       const remaining = MAX_ATTEMPTS - failures.count;
-      const message = err instanceof Error ? err.message : "Tidak dapat masuk. Silakan coba lagi.";
+      const message = err instanceof Error ? err.message : t("Tidak dapat masuk. Silakan coba lagi.");
       if (remaining > 0) {
-        setError(`${message} (${remaining} percobaan tersisa)`);
+        setError(`${message} (${remaining} ${t("percobaan tersisa")})`);
       } else {
         const lockCheck = isLockedOut();
         setLockoutSec(lockCheck.remainingSec);
-        setError(`Akun terkunci sementara. Coba lagi dalam ${lockCheck.remainingSec} detik.`);
+        setError(`${t("Akun terkunci sementara. Coba lagi dalam")} ${lockCheck.remainingSec} ${t("detik.")}`);
       }
     } finally {
       setIsSubmitting(false);
@@ -107,11 +109,22 @@ export function LoginPage() {
   return (
     <div
       className={
-        "grid min-h-[100dvh] bg-white transition-opacity duration-500 ease-out lg:grid-cols-2 " +
+        "relative grid min-h-[100dvh] bg-white transition-opacity duration-500 ease-out lg:grid-cols-2 " +
         (mounted ? "opacity-100" : "opacity-0")
       }
       style={{ fontFamily: "'IBM Plex Sans', system-ui, -apple-system, sans-serif" }}
     >
+      {/* Pemilih bahasa harus tersedia SEBELUM login — kalau hanya ada di AppShell,
+          layar pertama terkunci satu bahasa dan opsinya tidak bisa ditemukan. */}
+      <button
+        type="button"
+        onClick={toggleLang}
+        aria-label={lang === "id" ? "Switch to English" : "Ganti ke Bahasa Indonesia"}
+        className="absolute right-4 top-4 z-20 rounded-md border border-white/25 bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur transition-colors hover:bg-white/20 lg:border-gray-200 lg:bg-white lg:text-gray-600 lg:hover:bg-gray-50"
+      >
+        {lang === "id" ? "EN" : "ID"}
+      </button>
+
       {/* ───────────── LEFT — IndiHome by Telkomsel brand panel (full height) ───────────── */}
       <div className="relative flex min-h-[260px] flex-col justify-between gap-8 overflow-hidden bg-gradient-to-br from-[#F0564A] via-[#E30425] to-[#7E1216] p-8 text-white sm:p-10 lg:p-14">
         {/* Logo blends into the brand panel: white monochrome via CSS filter */}
@@ -122,9 +135,9 @@ export function LoginPage() {
         {/* Product */}
         <div className="relative">
           <h1 className="text-4xl font-bold tracking-tight">C3MR</h1>
-          <p className="mt-1.5 text-sm font-semibold text-white/90">Sistem Manajemen Terpadu</p>
+          <p className="mt-1.5 text-sm font-semibold text-white/90">{t("Sistem Manajemen Terpadu")}</p>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/75">
-            Portal operasional untuk penagihan, akun pelanggan, dan pelaporan.
+            {t("Portal operasional untuk penagihan, akun pelanggan, dan pelaporan.")}
           </p>
         </div>
 
@@ -136,15 +149,15 @@ export function LoginPage() {
       <div className="flex items-center justify-center bg-white px-6 py-10 sm:px-10">
         <div className="w-full max-w-md">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Masuk ke akun Anda</h2>
-            <p className="mt-1.5 text-sm text-gray-500">Masukkan kredensial untuk mengakses C3MR.</p>
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">{t("Masuk ke akun Anda")}</h2>
+            <p className="mt-1.5 text-sm text-gray-500">{t("Masukkan kredensial untuk mengakses C3MR.")}</p>
           </div>
 
             <form className="space-y-5" onSubmit={onSubmit}>
               {/* Username */}
               <div>
                 <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Nama Pengguna
+                  {t("Nama Pengguna")}
                 </label>
                 <input
                   id="username"
@@ -162,7 +175,7 @@ export function LoginPage() {
               {/* Password */}
               <div>
                 <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Kata Sandi
+                  {t("Kata Sandi")}
                 </label>
                 <div className="relative">
                   <input
@@ -181,7 +194,7 @@ export function LoginPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
-                    aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                    aria-label={showPassword ? t("Sembunyikan kata sandi") : t("Tampilkan kata sandi")}
                   >
                     {showPassword ? (
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -208,14 +221,14 @@ export function LoginPage() {
                     checked={rememberDevice}
                     onChange={(e) => setRememberDevice(e.target.checked)}
                   />
-                  Ingat perangkat ini
+                  {t("Ingat perangkat ini")}
                 </label>
                 <button
                   type="button"
                   className="text-sm font-medium text-[#EA0A2C] transition-colors hover:text-[#C80825]"
                   onClick={() => setShowRecovery(true)}
                 >
-                  Opsi pemulihan
+                  {t("Opsi pemulihan")}
                 </button>
               </div>
 
@@ -241,13 +254,13 @@ export function LoginPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Memproses…
+                    {t("Memproses…")}
                   </>
                 ) : locked ? (
-                  "Terkunci sementara"
+                  t("Terkunci sementara")
                 ) : (
                   <>
-                    Masuk
+                    {t("Masuk")}
                     <svg className="transition-transform duration-200 group-hover:translate-x-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14" /><path d="M13 6l6 6-6 6" />
                     </svg>
@@ -258,8 +271,7 @@ export function LoginPage() {
 
             {/* Security notice */}
             <p className="mt-8 border-t border-gray-100 pt-6 text-xs leading-relaxed text-gray-400">
-              Sistem terbatas. Akses hanya untuk personel IndiHome by Telkomsel yang berwenang; seluruh aktivitas
-              dicatat dan dipantau.
+              {t("Sistem terbatas. Akses hanya untuk personel IndiHome by Telkomsel yang berwenang; seluruh aktivitas dicatat dan dipantau.")}
             </p>
         </div>
       </div>
@@ -275,11 +287,11 @@ export function LoginPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Pemulihan akun</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t("Pemulihan akun")}</h3>
               <button
                 onClick={() => setShowRecovery(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Tutup"
+                aria-label={t("Tutup")}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -289,27 +301,25 @@ export function LoginPage() {
 
             <div className="space-y-3 text-sm">
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-1 font-semibold text-gray-900">Opsi 1 — Reset oleh admin</p>
+                <p className="mb-1 font-semibold text-gray-900">{t("Opsi 1 — Reset oleh admin")}</p>
                 <p className="text-xs leading-relaxed text-gray-500">
-                  Hubungi Administrator Sistem untuk mereset kata sandi Anda lewat panel Manajemen Pengguna.
-                  Admin dapat memberikan kata sandi sementara yang baru.
+                  {t("Hubungi Administrator Sistem untuk mereset kata sandi Anda lewat panel Manajemen Pengguna. Admin dapat memberikan kata sandi sementara yang baru.")}
                 </p>
               </div>
 
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-1 font-semibold text-gray-900">Opsi 2 — Inisialisasi ulang akun</p>
+                <p className="mb-1 font-semibold text-gray-900">{t("Opsi 2 — Inisialisasi ulang akun")}</p>
                 <p className="text-xs leading-relaxed text-gray-500">
-                  Jika akun admin sendiri terkunci, operator sistem yang memiliki{" "}
+                  {t("Jika akun admin sendiri terkunci, operator sistem yang memiliki")}{" "}
                   <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-[11px] text-gray-700">SEED_TOKEN</code>{" "}
-                  dapat menginisialisasi ulang akun admin lewat endpoint seed API.
+                  {t("dapat menginisialisasi ulang akun admin lewat endpoint seed API.")}
                 </p>
               </div>
 
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <p className="mb-1 font-semibold text-amber-800">Catatan keamanan</p>
+                <p className="mb-1 font-semibold text-amber-800">{t("Catatan keamanan")}</p>
                 <p className="text-xs leading-relaxed text-amber-700">
-                  Demi keamanan, reset kata sandi mandiri tidak tersedia. Semua perubahan kredensial
-                  memerlukan verifikasi administrator untuk mencegah akses tidak sah.
+                  {t("Demi keamanan, reset kata sandi mandiri tidak tersedia. Semua perubahan kredensial memerlukan verifikasi administrator untuk mencegah akses tidak sah.")}
                 </p>
               </div>
             </div>
@@ -318,7 +328,7 @@ export function LoginPage() {
               onClick={() => setShowRecovery(false)}
               className="mt-6 w-full rounded-lg bg-[#EA0A2C] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] active:bg-[#A60620]"
             >
-              Mengerti
+              {t("Mengerti")}
             </button>
           </div>
         </div>

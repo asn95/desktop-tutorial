@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PeriodInfo } from "../../types/dashboard";
 import { formatPeriodLabel } from "../../lib/format";
+import { useLang } from "../../contexts/LanguageContext";
 
 interface PeriodSelectorProps {
   periods: PeriodInfo[];
@@ -9,6 +10,7 @@ interface PeriodSelectorProps {
 }
 
 export function PeriodSelector({ periods, value, onChange }: PeriodSelectorProps) {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -45,8 +47,8 @@ export function PeriodSelector({ periods, value, onChange }: PeriodSelectorProps
           <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
           <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" />
         </svg>
-        <span className="text-gray-500 dark:text-slate-400">Periode:</span>
-        <span className="font-semibold text-gray-900 dark:text-white">{formatPeriodLabel(value)}</span>
+        <span className="text-gray-500 dark:text-slate-400">{t("Periode:")}</span>
+        <span className="font-semibold text-gray-900 dark:text-white">{t(formatPeriodLabel(value))}</span>
         <svg
           viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
           className={`h-3.5 w-3.5 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
@@ -58,7 +60,7 @@ export function PeriodSelector({ periods, value, onChange }: PeriodSelectorProps
       {open && (
         <div className="absolute right-0 z-40 mt-1 w-60 rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-800">
           <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
-            Periode Data
+            {t("Periode Data")}
           </p>
           <div className="max-h-72 overflow-y-auto">
             {options.map((opt) => {
@@ -76,7 +78,7 @@ export function PeriodSelector({ periods, value, onChange }: PeriodSelectorProps
                         : "text-gray-700 hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-700/50"
                     }`}
                   >
-                    <span>{opt.label}</span>
+                    <span>{t(opt.label)}</span>
                     <span className="text-xs text-gray-400 dark:text-slate-400">{opt.total}</span>
                   </button>
                 </div>

@@ -1,9 +1,11 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { DashboardStats } from "../../types/dashboard";
+import { useLang } from "../../contexts/LanguageContext";
 
 const COLORS = ["#16a34a", "#d97706", "#dc2626"];
 
 export function CompletionChart({ stats }: { stats: DashboardStats }) {
+  const { t } = useLang();
   const chartData = [
     { name: "Completed", value: stats.completed },
     { name: "In Progress", value: stats.inProgress },
@@ -12,7 +14,7 @@ export function CompletionChart({ stats }: { stats: DashboardStats }) {
 
   return (
     <div className="rounded-md border border-c3mr-border bg-c3mr-surface p-4">
-      <p className="mb-4 text-sm font-medium text-c3mr-text">Tingkat Penyelesaian</p>
+      <p className="mb-4 text-sm font-medium text-c3mr-text">{t("Tingkat Penyelesaian")}</p>
       <div className="h-56 w-full">
         <ResponsiveContainer>
           <PieChart>

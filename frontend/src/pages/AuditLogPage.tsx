@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
+import { useLang } from "../contexts/LanguageContext";
 import { apiClient } from "../lib/apiClient";
 
 interface AuditEntry {
@@ -27,6 +28,7 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 export function AuditLogPage() {
+  const { t } = useLang();
   const [tab, setTab] = useState<"audit" | "notifications">("audit");
   const [logs, setLogs] = useState<AuditEntry[]>([]);
   const [notifs, setNotifs] = useState<NotifEntry[]>([]);
@@ -48,34 +50,35 @@ export function AuditLogPage() {
     <AppShell>
       <div className="space-y-8">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black dark:text-white">
-          Log Audit
+          {t("Log Audit")}
         </h1>
 
         <div className="flex gap-0 border border-gray-200 dark:border-slate-600">
-          {(["audit", "notifications"] as const).map((t) => (
+          {(["audit", "notifications"] as const).map((tabKey) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
               className={`flex-1 py-3 text-[10px] font-semibold uppercase tracking-wide transition ${
-                tab === t
+                tab === tabKey
                   ? "bg-[#E81E28] text-white"
                   : "bg-white text-slate-500 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400"
               }`}
             >
-              {t === "audit" ? "Log Aktivitas" : "Notifikasi"}
+              {tabKey === "audit" ? t("Log Aktivitas") : t("Notifikasi")}
+
             </button>
           ))}
         </div>
 
         {loading ? (
           <p className="py-16 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-            Memuat...
+            {t("Memuat...")}
           </p>
         ) : tab === "audit" ? (
           <div className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800">
             {logs.length === 0 ? (
               <p className="px-6 py-16 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                Belum ada aktivitas tercatat.
+                {t("Belum ada aktivitas tercatat.")}
               </p>
             ) : (
               logs.map((log, i) => (
@@ -86,7 +89,7 @@ export function AuditLogPage() {
                   }`}
                 >
                   <span className="text-[9px] font-semibold uppercase tracking-wider bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded w-fit">
-                    {ACTION_LABELS[log.action] || log.action}
+                    {t(ACTION_LABELS[log.action] || log.action)}
                   </span>
                   <span className="text-xs font-bold text-[#1a1c1e] dark:text-white flex-1">
                     {log.detail}
@@ -108,7 +111,7 @@ export function AuditLogPage() {
           <div className="border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800">
             {notifs.length === 0 ? (
               <p className="px-6 py-16 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                Belum ada notifikasi terkirim.
+                {t("Belum ada notifikasi terkirim.")}
               </p>
             ) : (
               notifs.map((n, i) => (
@@ -125,11 +128,11 @@ export function AuditLogPage() {
                         : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
                     }`}
                   >
-                    {n.success ? "Terkirim" : "Gagal"}
+                    {n.success ? t("Terkirim") : t("Gagal")}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                      Ke: {n.recipientName}
+                      {t("Ke:")} {n.recipientName}
                     </p>
                     <p className="text-xs text-[#1a1c1e] dark:text-white mt-1 line-clamp-2 whitespace-pre-line">
                       {n.message}

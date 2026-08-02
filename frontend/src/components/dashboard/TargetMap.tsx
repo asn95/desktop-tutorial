@@ -3,6 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { formatCurrency } from "../../lib/format";
 import type { Target } from "../../types/target";
+import { useLang } from "../../contexts/LanguageContext";
 
 const STATUS_COLOR: Record<string, string> = {
   pending: "#E81E28",
@@ -21,6 +22,8 @@ interface TargetMapProps {
 }
 
 export function TargetMap({ targets }: TargetMapProps) {
+  // dialias: `t` sudah dipakai sebagai variabel Target di file ini
+  const { t: tr } = useLang();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
@@ -90,7 +93,7 @@ export function TargetMap({ targets }: TargetMapProps) {
         .bindPopup(
           `<strong>${t.customerName}</strong><br/>` +
             `${t.address}<br/>` +
-            `${formatCurrency(t.amountDue)} · ${STATUS_LABEL[status]}`
+            `${formatCurrency(t.amountDue)} · ${tr(STATUS_LABEL[status])}`
         )
         .addTo(layer);
     }
@@ -104,9 +107,9 @@ export function TargetMap({ targets }: TargetMapProps) {
   return (
     <section className="overflow-hidden rounded-md border border-gray-200 bg-white">
       <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-        <h3 className="text-sm font-semibold text-gray-900">Peta Sebaran Target</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{tr("Peta Sebaran Target")}</h3>
         <span className="text-xs text-gray-400">
-          {located.length} dari {targets.length} target berkoordinat
+          {located.length} {tr("dari")} {targets.length} {tr("target berkoordinat")}
         </span>
       </div>
       <div className="relative">
@@ -114,8 +117,7 @@ export function TargetMap({ targets }: TargetMapProps) {
         {located.length === 0 && (
           <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-white/70">
             <p className="max-w-xs text-center text-xs text-gray-500">
-              Belum ada target dengan koordinat pada periode ini. Koordinat
-              terisi otomatis beberapa saat setelah CSV diunggah.
+              {tr("Belum ada target dengan koordinat pada periode ini. Koordinat terisi otomatis beberapa saat setelah CSV diunggah.")}
             </p>
           </div>
         )}

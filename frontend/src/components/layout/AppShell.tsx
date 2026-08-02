@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useLang } from "../../contexts/LanguageContext";
 import { apiClient } from "../../lib/apiClient";
 import { Link, useLocation } from "react-router-dom";
 import indihomeLogo from "../../assets/indihome-logo.svg";
@@ -58,6 +59,7 @@ export function AppShell({
 }) {
   const { logout, user } = useAuth();
   const { dark, toggle } = useTheme();
+  const { lang, toggle: toggleLang, t } = useLang();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
@@ -107,13 +109,13 @@ export function AppShell({
     setPwMsg(null);
     try {
       await apiClient.post("/auth/change-password", { current_password: curPw, new_password: newPw });
-      setPwMsg({ ok: true, text: "Kata sandi berhasil diubah. Anda akan diminta login ulang…" });
+      setPwMsg({ ok: true, text: t("Kata sandi berhasil diubah. Anda akan diminta login ulang…") });
       setCurPw("");
       setNewPw("");
       // Kata sandi berubah → server membatalkan token lama. Paksa login ulang.
       setTimeout(() => logout(), 1800);
     } catch (err: any) {
-      setPwMsg({ ok: false, text: err.response?.data?.detail || "Gagal mengubah kata sandi." });
+      setPwMsg({ ok: false, text: err.response?.data?.detail || t("Gagal mengubah kata sandi.") });
     } finally {
       setPwLoading(false);
     }
@@ -126,7 +128,7 @@ export function AppShell({
         <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-8 w-auto self-start object-contain" />
         <div className="leading-tight">
           <div className="text-lg font-extrabold tracking-tight"><span className="text-[#EA0A2C]">C</span>3MR</div>
-          <div className={`text-[10px] font-medium ${dark ? "text-slate-500" : "text-gray-400"}`}>Portal Manajemen</div>
+          <div className={`text-[10px] font-medium ${dark ? "text-slate-500" : "text-gray-400"}`}>{t("Portal Manajemen")}</div>
         </div>
       </div>
 
@@ -148,7 +150,7 @@ export function AppShell({
               }`}
             >
               <Icon className={`h-[18px] w-[18px] transition-transform duration-200 ${isActive ? "" : "group-hover:scale-110"}`} />
-              {tab.name}
+              {t(tab.name)}
             </Link>
           );
         })}
@@ -157,24 +159,30 @@ export function AppShell({
       {/* Actions */}
       <div className={`mt-auto space-y-1 border-t px-3 py-4 ${dark ? "border-slate-800" : "border-gray-100"}`}>
         <button onClick={toggle} className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
-          {dark ? "Mode Terang" : "Mode Gelap"}
+          {dark ? t("Mode Terang") : t("Mode Gelap")}
+        </button>
+        <button onClick={toggleLang} aria-label={lang === "id" ? "Switch to English" : "Ganti ke Bahasa Indonesia"} className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
+          {t("Bahasa")}
+          <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${dark ? "bg-slate-800 text-slate-300" : "bg-gray-100 text-gray-600"}`}>
+            {lang === "id" ? "ID" : "EN"}
+          </span>
         </button>
         <button onClick={() => { setMaintCustomMsg(maintMsg); setShowMaintModal(true); }} className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${maintenance ? "text-amber-600 hover:bg-amber-50" : dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
-          Pemeliharaan
+          {t("Pemeliharaan")}
           {maintenance && <span className="h-2 w-2 rounded-full bg-amber-500" />}
         </button>
         <button onClick={() => setShowPwModal(true)} className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
-          Ubah Kata Sandi
+          {t("Ubah Kata Sandi")}
         </button>
         <button onClick={logout} className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold text-[#EA0A2C] transition-colors hover:bg-red-50">
-          Keluar
+          {t("Keluar")}
         </button>
       </div>
     </div>
   );
 
   const activeTab = tabs.find((t) => location.pathname === t.path);
-  const pageTitle = activeTab?.name ?? "Portal Manajemen";
+  const pageTitle = t(activeTab?.name ?? "Portal Manajemen");
   const initials =
     (user?.name ?? "")
       .trim()
@@ -188,7 +196,7 @@ export function AppShell({
     <div className={`min-h-screen font-sans ${dark ? "bg-[#0f1117] text-slate-200" : "bg-[#f4f5f7] text-gray-900"}`}>
       {maintenance && (
         <div className="relative z-50 bg-amber-500 px-4 py-2 text-center text-xs font-semibold text-black">
-          Mode pemeliharaan aktif — hanya manajer yang dapat mengakses sistem
+          {t("Mode pemeliharaan aktif — hanya manajer yang dapat mengakses sistem")}
         </div>
       )}
 
@@ -220,7 +228,7 @@ export function AppShell({
             <div className="flex min-w-0 items-center gap-3">
               <button
                 onClick={() => setMenuOpen(true)}
-                aria-label="Buka menu"
+                aria-label={t("Buka menu")}
                 className={`grid h-9 w-9 shrink-0 place-items-center rounded-md transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-95 lg:hidden ${
                   dark ? "text-slate-300 hover:bg-slate-800/70" : "text-gray-700 hover:bg-gray-100"
                 }`}
@@ -233,7 +241,7 @@ export function AppShell({
               </button>
               <div className="min-w-0">
                 <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${dark ? "text-slate-500" : "text-gray-400"}`}>
-                  Portal Manajemen
+                  {t("Portal Manajemen")}
                 </p>
                 <h1 className={`truncate text-lg font-bold leading-tight tracking-tight ${dark ? "text-slate-100" : "text-gray-900"}`}>
                   {pageTitle}
@@ -251,10 +259,10 @@ export function AppShell({
             >
               <div className="hidden flex-col items-end leading-tight sm:flex">
                 <span className={`max-w-[160px] truncate text-[13px] font-semibold ${dark ? "text-slate-100" : "text-gray-900"}`}>
-                  {user?.name ?? "Manajer"}
+                  {user?.name ?? t("Manajer")}
                 </span>
                 <span className={`text-[10px] font-medium uppercase tracking-[0.14em] ${dark ? "text-slate-500" : "text-gray-400"}`}>
-                  Manajer
+                  {t("Manajer")}
                 </span>
               </div>
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EA0A2C] text-[13px] font-bold text-white ring-2 ring-[#EA0A2C]/15 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
@@ -276,8 +284,8 @@ export function AppShell({
       {location.pathname !== "/assistant" && (
         <Link
           to="/assistant"
-          title="Asisten AI"
-          aria-label="Buka Asisten AI"
+          title={t("Asisten AI")}
+          aria-label={t("Buka Asisten AI")}
           className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-[#E81E28] text-white shadow-[0_4px_12px_-2px_rgba(232,30,40,0.4)] transition-all duration-200 hover:bg-[#c8161f] hover:shadow-[0_6px_16px_-2px_rgba(232,30,40,0.5)] active:scale-95 sm:bottom-6 sm:right-6"
         >
           <I.assistant className="h-5 w-5" />
@@ -288,25 +296,25 @@ export function AppShell({
       {showMaintModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 px-4" onClick={() => setShowMaintModal(false)}>
           <div onClick={e => e.stopPropagation()} className={`w-full max-w-md rounded-md p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
-            <h2 className="text-lg font-bold text-gray-900">Mode Pemeliharaan</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t("Mode Pemeliharaan")}</h2>
             <p className="mt-1.5 text-sm text-gray-500">
               {maintenance
-                ? "Sistem sedang dalam mode pemeliharaan. Petugas dan pengguna eksternal tidak dapat mengakses API."
-                : "Aktifkan mode pemeliharaan untuk memblokir semua akses non-manajer ke sistem."}
+                ? t("Sistem sedang dalam mode pemeliharaan. Petugas dan pengguna eksternal tidak dapat mengakses API.")
+                : t("Aktifkan mode pemeliharaan untuk memblokir semua akses non-manajer ke sistem.")}
             </p>
             <div className="mt-5 space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Pesan yang ditampilkan ke pengguna</label>
-              <input value={maintCustomMsg} onChange={e => setMaintCustomMsg(e.target.value)} placeholder="Sistem sedang dalam pemeliharaan…"
+              <label className="block text-sm font-medium text-gray-700">{t("Pesan yang ditampilkan ke pengguna")}</label>
+              <input value={maintCustomMsg} onChange={e => setMaintCustomMsg(e.target.value)} placeholder={t("Sistem sedang dalam pemeliharaan…")}
                 className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20" />
             </div>
             <div className="mt-6 flex gap-3">
               <button onClick={handleToggleMaintenance} disabled={maintToggling}
                 className={`flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-40 ${maintenance ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-500 text-black hover:bg-amber-600"}`}>
-                {maintToggling ? "Memperbarui…" : maintenance ? "Nonaktifkan pemeliharaan" : "Aktifkan pemeliharaan"}
+                {maintToggling ? t("Memperbarui…") : maintenance ? t("Nonaktifkan pemeliharaan") : t("Aktifkan pemeliharaan")}
               </button>
               <button type="button" onClick={() => setShowMaintModal(false)}
                 className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-                Batal
+                {t("Batal")}
               </button>
             </div>
           </div>
@@ -317,15 +325,15 @@ export function AppShell({
       {showPwModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/40 px-4" onClick={() => setShowPwModal(false)}>
           <form onSubmit={handleChangePw} onClick={e => e.stopPropagation()} className={`w-full max-w-sm rounded-md p-6 shadow-2xl ${dark ? "bg-[#1a1d27]" : "bg-white"}`}>
-            <h2 className="text-lg font-bold text-gray-900">Ubah Kata Sandi</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t("Ubah Kata Sandi")}</h2>
             <div className="mt-5 space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700">Kata sandi saat ini</label>
+                <label className="block text-sm font-medium text-gray-700">{t("Kata sandi saat ini")}</label>
                 <input type="password" autoFocus value={curPw} onChange={e => setCurPw(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700">Kata sandi baru</label>
+                <label className="block text-sm font-medium text-gray-700">{t("Kata sandi baru")}</label>
                 <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20" />
               </div>
@@ -334,11 +342,11 @@ export function AppShell({
             <div className="mt-6 flex gap-3">
               <button type="submit" disabled={!curPw || !newPw || pwLoading}
                 className="flex-1 rounded-lg bg-[#EA0A2C] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] disabled:opacity-40">
-                {pwLoading ? "Menyimpan…" : "Simpan"}
+                {pwLoading ? t("Menyimpan…") : t("Simpan")}
               </button>
               <button type="button" onClick={() => { setShowPwModal(false); setPwMsg(null); setCurPw(""); setNewPw(""); }}
                 className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors ${dark ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-                Batal
+                {t("Batal")}
               </button>
             </div>
           </form>

@@ -3,12 +3,14 @@ import Papa from "papaparse";
 import { apiClient } from "../../lib/apiClient";
 import { currentPeriod, formatPeriodLabel } from "../../lib/format";
 import { NewPeriodDialog } from "./NewPeriodDialog";
+import { useLang } from "../../contexts/LanguageContext";
 
 const REQUIRED_COLUMNS = ["customer_name", "address", "phone", "amount_due"];
 
 type CsvRow = Record<string, string>;
 
 export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: (period?: string) => void } = {}) {
+  const { t } = useLang();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewRows, setPreviewRows] = useState<CsvRow[]>([]);
   const [fullData, setFullData] = useState<CsvRow[]>([]);
@@ -34,7 +36,7 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: (period?
     setFullData([]);
 
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      setError("Hanya file .csv yang diterima.");
+      setError(t("Hanya file .csv yang diterima."));
       return;
     }
 
@@ -46,13 +48,13 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: (period?
         const missingColumns = REQUIRED_COLUMNS.filter((column) => !normalizedHeaders.includes(column));
 
         if (missingColumns.length > 0) {
-          setError(`Kolom wajib tidak ada: ${missingColumns.join(", ")}`);
+          setError(`${t("Kolom wajib tidak ada")}: ${missingColumns.join(", ")}`);
           return;
         }
 
         setFullData(data);
         setPreviewRows(data.slice(0, 5));
-        setMessage(`Siap: ${data.length} baris terbaca.`);
+        setMessage(`${t("Siap")}: ${data.length} ${t("baris terbaca.")}`);
       },
       error: (parseError) => {
         setError(parseError.message);
@@ -67,7 +69,7 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: (period?
     setMessage(null);
     try {
       await apiClient.post(`/targets/upload?period=${encodeURIComponent(period)}`, fullData);
-      setMessage(`Berhasil mengunggah ${fullData.length} target ke periode ${periodLabel}.`);
+      setMessage(`${t("Berhasil mengunggah")} ${fullData.length} ${t("target ke periode")} ${periodLabel}.`);
       setFullData([]);
       setPreviewRows([]);
       setSelectedFile(null);
@@ -75,7 +77,7 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: (period?
       if (onUploadSuccess) onUploadSuccess(period);
     } catch (err: any) {
       setConfirmOpen(false);
-      setError(err.response?.data?.detail || "Sinkronisasi gagal.");
+      setError(err.response?.data?.detail || t("Sinkronisasi gagal."));
     } finally {
       setIsUploading(false);
     }
@@ -85,8 +87,8 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: (period?
     <div className="rounded-md border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Sinkronisasi Data</h3>
-          <p className="mt-1 text-xs text-gray-400 dark:text-slate-400">Impor target penagihan secara massal</p>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t("Sinkronisasi Data")}</h3>
+          <p className="mt-1 text-xs text-gray-400 dark:text-slate-400">{t("Impor target penagihan secara massal")}</p>
         </div>
         <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300">
           Batch {periodLabel}
@@ -100,7 +102,7 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: (period?
               <path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M4.5 16.5v1.5a2 2 0 002 2h11a2 2 0 002-2v-1.5" />
             </svg>
             <p className="max-w-full truncate text-xs font-semibold text-gray-700 dark:text-slate-200">
-              {selectedFile ? selectedFile.name : "Pilih Sumber CSV"}
+              {selectedFile ? selectedFile.name : t("Pilih Sumber CSV")}
             </p>
             <p className="mt-1 text-[10px] text-gray-400 dark:text-slate-500">customer_name, address, phone, amount_due</p>
           </div>
@@ -112,7 +114,7 @@ export function CsvUploadPanel({ onUploadSuccess }: { onUploadSuccess?: (period?
           disabled={!fullData.length || isUploading}
           className="w-full rounded-md bg-[#E81E28] py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#c8161f] disabled:opacity-30"
         >
-          {isUploading ? "Memproses…" : "Unggah Batch"}
+          {isUploading ? t("Memproses…") : t("Unggah Batch")}
         </button>
       </div>
 

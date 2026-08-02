@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "../lib/apiClient";
+import { useLang } from "../contexts/LanguageContext";
 import { formatCurrency } from "../lib/format";
 import type { Target } from "../types/target";
 import indihomeLogo from "../assets/indihome-logo.svg";
@@ -7,6 +8,7 @@ import indihomeLogo from "../assets/indihome-logo.svg";
 type ViewState = "login" | "list" | "detail";
 
 export function OfficerAppPage() {
+  const { t } = useLang();
   const [view, setView] = useState<ViewState>("login");
   const [telegramId, setTelegramId] = useState("");
   const [tasks, setTasks] = useState<Target[]>([]);
@@ -67,7 +69,7 @@ export function OfficerAppPage() {
       setTasks(res.data);
       setView("list");
     } catch (err) {
-      alert("Profil petugas tidak ditemukan. Daftarkan Telegram ID Anda di Portal Admin.");
+      alert(t("Profil petugas tidak ditemukan. Daftarkan Telegram ID Anda di Portal Admin."));
     }
   }
 
@@ -87,7 +89,7 @@ export function OfficerAppPage() {
       await apiClient.post("/officer/report", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      alert("Laporan berhasil dikirim!");
+      alert(t("Laporan berhasil dikirim!"));
       // Back to list
       const res = await apiClient.get<Target[]>(`/officer/tasks/${telegramId}`);
       setTasks(res.data);
@@ -96,7 +98,7 @@ export function OfficerAppPage() {
       setNotes("");
       setPhoto(null);
     } catch (err) {
-      alert("Gagal mengirim laporan.");
+      alert(t("Gagal mengirim laporan."));
     } finally {
       setIsSubmitting(false);
     }
@@ -109,9 +111,9 @@ export function OfficerAppPage() {
           <div className="mb-8 flex flex-col items-center text-center">
             <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="mb-4 h-12 w-auto object-contain" />
             <div className="text-2xl font-extrabold tracking-tight text-gray-900">
-              <span className="text-[#EA0A2C]">C</span>3MR Lapangan
+              <span className="text-[#EA0A2C]">C</span>3MR {t("Lapangan")}
             </div>
-            <p className="mt-1 text-sm text-gray-500">Portal petugas — masuk untuk melanjutkan</p>
+            <p className="mt-1 text-sm text-gray-500">{t("Portal petugas — masuk untuk melanjutkan")}</p>
           </div>
           <div className="space-y-5">
             <div className="space-y-1.5">
@@ -119,7 +121,7 @@ export function OfficerAppPage() {
               <input
                 value={telegramId}
                 onChange={(e) => setTelegramId(e.target.value)}
-                placeholder="mis. 123456789"
+                placeholder={t("mis. 123456789")}
                 className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
               />
             </div>
@@ -127,9 +129,9 @@ export function OfficerAppPage() {
               onClick={handleLogin}
               className="w-full rounded-md bg-[#EA0A2C] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,10,44,0.5)] transition-colors hover:bg-[#C80825] active:scale-[0.98]"
             >
-              Masuk
+              {t("Masuk")}
             </button>
-            <p className="text-center text-xs text-gray-400">Gunakan Telegram ID yang didaftarkan oleh manajer Anda.</p>
+            <p className="text-center text-xs text-gray-400">{t("Gunakan Telegram ID yang didaftarkan oleh manajer Anda.")}</p>
           </div>
         </div>
       </div>
@@ -144,14 +146,14 @@ export function OfficerAppPage() {
             <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-9 w-auto object-contain" />
             <span className="text-lg font-extrabold tracking-tight"><span className="text-[#EA0A2C]">C</span>3MR</span>
           </div>
-          <span className="rounded-full bg-[#EA0A2C]/10 px-3 py-1 text-xs font-semibold text-[#EA0A2C]">Petugas</span>
+          <span className="rounded-full bg-[#EA0A2C]/10 px-3 py-1 text-xs font-semibold text-[#EA0A2C]">{t("Petugas")}</span>
         </header>
 
         <div className="space-y-5 p-5">
-          <h2 className="text-xl font-bold tracking-tight text-gray-900">Tugas Saya</h2>
+          <h2 className="text-xl font-bold tracking-tight text-gray-900">{t("Tugas Saya")}</h2>
           <div className="space-y-3">
             {tasks.length === 0 ? (
-              <p className="py-12 text-center text-sm text-gray-400">Belum ada tugas.</p>
+              <p className="py-12 text-center text-sm text-gray-400">{t("Belum ada tugas.")}</p>
             ) : (
               tasks.map(task => (
                 <div
@@ -186,7 +188,7 @@ export function OfficerAppPage() {
           <button onClick={() => setView("list")} className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <div className="text-sm font-semibold text-gray-500">Detail Tugas</div>
+          <div className="text-sm font-semibold text-gray-500">{t("Detail Tugas")}</div>
         </header>
 
         <div className="space-y-8 px-5">
@@ -202,37 +204,37 @@ export function OfficerAppPage() {
 
           <form onSubmit={handleSubmitReport} className="space-y-6">
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Status penagihan</label>
+              <label className="block text-sm font-medium text-gray-700">{t("Status penagihan")}</label>
               <select
                 value={paymentStatus}
                 onChange={(e) => setPaymentStatus(e.target.value)}
                 className="w-full appearance-none rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
               >
-                <option>Janji Bayar</option>
-                <option>Lunas</option>
-                <option>Menolak</option>
-                <option>Tidak di Rumah</option>
-                <option>Bayar Sebagian</option>
+                <option value="Janji Bayar">{t("Janji Bayar")}</option>
+                <option value="Lunas">{t("Lunas")}</option>
+                <option value="Menolak">{t("Menolak")}</option>
+                <option value="Tidak di Rumah">{t("Tidak di Rumah")}</option>
+                <option value="Bayar Sebagian">{t("Bayar Sebagian")}</option>
               </select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Catatan kunjungan</label>
+              <label className="block text-sm font-medium text-gray-700">{t("Catatan kunjungan")}</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
                 className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20"
-                placeholder="Jelaskan hasil kunjungan…"
+                placeholder={t("Jelaskan hasil kunjungan…")}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Bukti foto</label>
+              <label className="block text-sm font-medium text-gray-700">{t("Bukti foto")}</label>
               <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-200 bg-gray-50 transition-colors hover:bg-gray-100">
                 <div className="text-center">
                   <svg className="mx-auto mb-2 h-7 w-7 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  <p className="text-xs font-medium text-gray-500">{photo ? photo.name : "Ketuk untuk ambil foto"}</p>
+                  <p className="text-xs font-medium text-gray-500">{photo ? photo.name : t("Ketuk untuk ambil foto")}</p>
                 </div>
                 <input type="file" className="hidden" accept="image/*" capture="environment" onChange={(e) => setPhoto(e.target.files?.[0] || null)} />
               </label>
@@ -242,7 +244,7 @@ export function OfficerAppPage() {
               disabled={isSubmitting || !photo}
               className="w-full rounded-md bg-[#EA0A2C] py-4 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(234,10,44,0.5)] transition-all hover:bg-[#C80825] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
             >
-              {isSubmitting ? "Mengunggah…" : "Kirim laporan"}
+              {isSubmitting ? t("Mengunggah…") : t("Kirim laporan")}
             </button>
           </form>
         </div>

@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
 import { apiClient } from "../lib/apiClient";
+import { useLang } from "../contexts/LanguageContext";
 
 interface Msg {
   role: "user" | "assistant";
@@ -30,6 +31,7 @@ function readStoredMessages(): Msg[] {
 }
 
 export function AssistantPage() {
+  const { t } = useLang();
   const [messages, setMessages] = useState<Msg[]>(() => readStoredMessages());
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,7 +69,7 @@ export function AssistantPage() {
       const res = await apiClient.post("/agent/ask", { question }, { timeout: 90_000 });
       setMessages(prev => [...prev, { role: "assistant", text: res.data.answer || "—" }]);
     } catch (err: any) {
-      const msg = err.response?.data?.detail || "Tidak bisa menghubungi asisten. Silakan coba lagi.";
+      const msg = err.response?.data?.detail || t("Tidak bisa menghubungi asisten. Silakan coba lagi.");
       setMessages(prev => [...prev, { role: "assistant", text: msg }]);
     } finally {
       setLoading(false);
@@ -84,9 +86,9 @@ export function AssistantPage() {
       <div className="mx-auto flex max-w-3xl flex-col">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Asisten AI</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">{t("Asisten AI")}</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Tanya soal penagihan, target, petugas, atau laporan pakai bahasa sehari-hari.
+              {t("Tanya soal penagihan, target, petugas, atau laporan pakai bahasa sehari-hari.")}
             </p>
           </div>
           {messages.length > 0 && (
@@ -95,7 +97,7 @@ export function AssistantPage() {
               onClick={clearChat}
               className="shrink-0 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-500 transition-colors hover:border-[#EA0A2C]/40 hover:bg-red-50 hover:text-[#EA0A2C]"
             >
-              Bersihkan riwayat
+              {t("Bersihkan riwayat")}
             </button>
           )}
         </div>
@@ -111,8 +113,8 @@ export function AssistantPage() {
                     <path d="M18.5 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z" />
                   </svg>
                 </span>
-                <p className="mt-4 text-sm font-semibold text-gray-900">Ada yang bisa saya bantu?</p>
-                <p className="mt-1 text-xs text-gray-400">Ditenagai Claude (Anthropic) · membaca data C3MR langsung</p>
+                <p className="mt-4 text-sm font-semibold text-gray-900">{t("Ada yang bisa saya bantu?")}</p>
+                <p className="mt-1 text-xs text-gray-400">{t("Ditenagai Claude (Anthropic) · membaca data C3MR langsung")}</p>
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {SUGGESTIONS.map(s => (
                     <button
@@ -156,7 +158,7 @@ export function AssistantPage() {
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                placeholder="Tanya apa saja soal operasional Anda…"
+                placeholder={t("Tanya apa saja soal operasional Anda…")}
                 disabled={loading}
                 className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-[#EA0A2C] focus:ring-2 focus:ring-[#EA0A2C]/20 disabled:bg-gray-50"
               />
@@ -165,7 +167,7 @@ export function AssistantPage() {
                 disabled={loading || !input.trim()}
                 className="rounded-md bg-[#EA0A2C] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
-                Kirim
+                {t("Kirim")}
               </button>
             </div>
           </form>

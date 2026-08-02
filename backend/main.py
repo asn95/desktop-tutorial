@@ -254,7 +254,7 @@ async def agent_ask(payload: AgentQuery, _auth: dict = Depends(require_manager))
         raise HTTPException(status_code=400, detail="Question is required.")
     try:
         from .agent import run_agent
-        answer = await run_agent(question)
+        answer = await run_agent(question, actor_id=_auth.get("sub"))
         return {"answer": answer}
     except Exception as e:
         logger.exception("AI agent error")

@@ -88,8 +88,12 @@ def _run_tool(name: str, tool_input: dict) -> str:
         return json.dumps({"error": str(e)})
 
 
-async def run_agent(user_message: str) -> str:
+async def run_agent(user_message: str, actor_id: str | None = None) -> str:
     """Run the agent with a user message and return the final text response."""
+    # Aksi agen dicatat atas nama manusia yang memerintahkannya, bukan tanpa pemilik.
+    from .agent_tools import CURRENT_ACTOR
+    CURRENT_ACTOR.set(actor_id)
+
     messages: list[dict] = [{"role": "user", "content": user_message}]
 
     for _ in range(MAX_TOOL_ROUNDS):

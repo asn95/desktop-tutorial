@@ -6,11 +6,38 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
 from .database import SessionLocal
 from .models import (
-    DbTarget, DbUser, DbReport, DbComment, DbAuditLog,
+    DbTarget, DbUser, DbReport, DbComment, DbAuditLog, DbNotificationLog,
     TargetStatus, PaymentStatus, UserRole,
 )
 from .notifications import send_telegram_notification
 from contextlib import contextmanager
+import contextvars
+
+# Siapa yang sedang menyuruh agen. Diisi run_agent() dari endpoint web maupun
+# handler bot, dibaca oleh action tool agar aksinya tercatat di audit log atas
+# nama manusia yang memerintahkannya — bukan atas nama "agen" tanpa pemilik.
+CURRENT_ACTOR = contextvars.ContextVar("c3mr_agent_actor", default=None)
+
+
+def _log_action(db, action: str, detail: str) -> None:
+    """Catat aksi agen ke audit log, kalau pemanggilnya diketahui."""
+    actor = CURRENT_ACTOR.get()
+    if actor:
+        db.add(DbAuditLog(user_id=actor, action=action, detail=detail))
+
+
+def _notify(db, officer, message: str, include_field_app: bool = True) -> bool:
+    """Kirim notifikasi DAN catat hasilnya, meniru jalur REST di routers/targets.py.
+
+    Petugas tanpa telegram_id tetap dicatat sebagai gagal, supaya penugasan yang
+    tidak sampai ke siapa pun tidak hilang diam-diam."""
+    if not officer.telegram_id:
+        db.add(DbNotificationLog(recipient_id=officer.id, message=message, success="false"))
+        return False
+    ok = send_telegram_notification(officer.telegram_id, message, include_field_app=include_field_app)
+    db.add(DbNotificationLog(recipient_id=officer.id, message=message,
+                             success="true" if ok else "false"))
+    return ok
 
 
 @contextmanager
@@ -145,8 +172,11 @@ def query_targets(
     min_amount: float | None = None,
     period: str | None = None,
     limit: int = 20,
-) -> list[dict]:
-    """Query targets with flexible filters."""
+) -> dict:
+    """Query targets with flexible filters.
+
+    Mengembalikan objek, bukan list, supaya pemanggil tahu total sebenarnya dan
+    tahu bila daftarnya terpotong oleh `limit`."""
     with get_db() as db:
         q = db.query(DbTarget, DbUser).outerjoin(
             DbUser, DbTarget.assigned_officer == DbUser.id
@@ -164,8 +194,11 @@ def query_targets(
         if period and period != "all":
             q = q.filter(DbTarget.period == period)
 
+        # Hitung total SEBELUM limit. Tanpa ini pemanggil hanya melihat daftar
+        # terpotong dan bisa menyimpulkan panjangnya sebagai jumlah seluruhnya.
+        total = q.count()
         rows = q.order_by(DbTarget.created_at.desc()).limit(limit).all()
-        return [
+        items = [
             {
                 "id": t.id,
                 "customer_name": t.customer_name,
@@ -178,6 +211,12 @@ def query_targets(
             }
             for t, u in rows
         ]
+        return {
+            "total_matching": total,
+            "showing": len(items),
+            "truncated": total > len(items),
+            "targets": items,
+        }
 
 
 def get_overdue_targets(days: int = 7) -> list[dict]:
@@ -254,15 +293,12 @@ def assign_targets_to_officer(target_ids: list[str], officer_id: str) -> dict:
                 if target.status == TargetStatus.pending:
                     target.status = TargetStatus.in_progress
                 updated += 1
+        if updated > 0:
+            _log_action(db, "assign",
+                        f"Agen menugaskan {updated} target ke {officer.name}")
+            _notify(db, officer,
+                    f"Anda mendapat {updated} target baru. Buka Aplikasi Lapangan untuk melihat.")
         db.commit()
-
-        # Notify officer via Telegram
-        if officer.telegram_id and updated > 0:
-            send_telegram_notification(
-                officer.telegram_id,
-                f"Anda mendapat {updated} target baru. Buka Aplikasi Lapangan untuk melihat.",
-                include_field_app=True,
-            )
 
         return {
             "success": True,
@@ -311,19 +347,17 @@ def auto_assign_pending_targets(address_filter: str | None = None, period: str |
             assignments[least_busy].append(target.id)
             workloads[least_busy] += 1
 
-        db.commit()
-
-        # Notify each officer
         summary = []
         for o in officers:
             count = len(assignments[o.id])
-            if count > 0 and o.telegram_id:
-                send_telegram_notification(
-                    o.telegram_id,
-                    f"Anda mendapat {count} target baru. Buka Aplikasi Lapangan untuk melihat.",
-                    include_field_app=True,
-                )
+            if count > 0:
+                _notify(db, o,
+                        f"Anda mendapat {count} target baru. Buka Aplikasi Lapangan untuk melihat.")
             summary.append({"officer": o.name, "new_assignments": count})
+        _log_action(db, "assign",
+                    f"Agen membagikan {len(pending)} target pending ke "
+                    f"{sum(1 for o in officers if assignments[o.id])} petugas")
+        db.commit()
 
         return {
             "success": True,
@@ -364,14 +398,13 @@ def assign_all_pending_to_officer(officer: str, address_filter: str | None = Non
             target.assigned_officer = person.id
             target.status = TargetStatus.in_progress
             count += 1
-        db.commit()
 
-        if count > 0 and person.telegram_id:
-            send_telegram_notification(
-                person.telegram_id,
-                f"Anda mendapat {count} target baru. Buka Aplikasi Lapangan untuk melihat.",
-                include_field_app=True,
-            )
+        if count > 0:
+            _log_action(db, "assign",
+                        f"Agen menugaskan semua {count} target pending ke {person.name}")
+            _notify(db, person,
+                    f"Anda mendapat {count} target baru. Buka Aplikasi Lapangan untuk melihat.")
+        db.commit()
 
         return {
             "success": True,
@@ -756,7 +789,7 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "query_targets",
-        "description": "Search and filter collection targets. Can filter by customer name, status (pending/in_progress/completed), officer name, address, and minimum amount. Use customer_name to look up a specific target before assigning it.",
+        "description": "Search and filter collection targets. Returns an object: total_matching is the REAL number of targets matching the filters, targets is at most `limit` of them, and truncated says whether rows were left out. For counting questions always use total_matching, never the length of targets. To get counts by status for a period, get_dashboard_stats is cheaper and exact. Can filter by customer name, status (pending/in_progress/completed), officer name, address, and minimum amount. Use customer_name to look up a specific target before assigning it.",
         "input_schema": {
             "type": "object",
             "properties": {

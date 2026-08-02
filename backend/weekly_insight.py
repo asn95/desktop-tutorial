@@ -14,7 +14,7 @@ from .agent_tools import (
     get_db, extract_area, _active_period,
     get_priority_targets, summarize_field_feedback,
 )
-from .models import DbTarget, DbReport, DbUser, TargetStatus, PaymentStatus, UserRole
+from .models import DbTarget, DbReport, DbUser, DbNotificationLog, TargetStatus, PaymentStatus, UserRole
 from .notifications import send_telegram_notification
 
 WIB = timezone(timedelta(hours=7))
@@ -185,8 +185,14 @@ async def send_weekly_report() -> dict:
         )
 
     sent, failed = [], []
-    for m in managers:
-        ok = send_telegram_notification(m.telegram_id, text, parse_mode=None)
-        (sent if ok else failed).append(m.name)
+    with get_db() as db:
+        for m in managers:
+            ok = send_telegram_notification(m.telegram_id, text, parse_mode=None)
+            (sent if ok else failed).append(m.name)
+            # Laporan mingguan juga notifikasi: tanpa baris ini pengirimannya
+            # tidak meninggalkan jejak sama sekali.
+            db.add(DbNotificationLog(recipient_id=m.id, message=text,
+                                     success="true" if ok else "false"))
+        db.commit()
 
     return {"sent_to": sent, "failed": failed, "chars": len(text)}

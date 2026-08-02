@@ -33,6 +33,13 @@ def get_db():
     finally:
         db.close()
 
+def _actor_id_from_telegram(telegram_id: str) -> str | None:
+    """users.id dari telegram_id, supaya aksi agen lewat bot tercatat atas nama orangnya."""
+    with get_db() as db:
+        u = db.query(DbUser).filter(DbUser.telegram_id == str(telegram_id)).first()
+        return u.id if u else None
+
+
 def is_manager(telegram_id: str, db) -> bool:
     """Check if the Telegram user is a registered manager or officer with access."""
     user = db.query(DbUser).filter(
@@ -197,7 +204,8 @@ async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         from .agent import run_agent
-        response = await run_agent(question)
+        response = await run_agent(
+            question, actor_id=_actor_id_from_telegram(update.effective_user.id))
 
         # Telegram max message is 4096 chars
         if len(response) > 4000:
@@ -270,7 +278,8 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     try:
         from .agent import run_agent
-        response = await run_agent(question)
+        response = await run_agent(
+            question, actor_id=_actor_id_from_telegram(update.effective_user.id))
         if len(response) > 4000:
             for i in range(0, len(response), 4000):
                 await update.message.reply_text(response[i:i + 4000])

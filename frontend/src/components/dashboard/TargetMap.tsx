@@ -105,7 +105,10 @@ export function TargetMap({ targets }: TargetMapProps) {
   }, [signature]);
 
   return (
-    <section className="overflow-hidden rounded-md border border-gray-200 bg-white">
+    // `isolate` membentuk stacking context sendiri. Leaflet memberi z-index 400
+    // pada panel peta dan 1000 pada kontrol zoom; tanpa ini keduanya bersaing
+    // langsung dengan header sticky (z-30) dan menutupinya saat halaman digulir.
+    <section className="isolate overflow-hidden rounded-md border border-gray-200 bg-white">
       <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
         <h3 className="text-sm font-semibold text-gray-900">{tr("Peta Sebaran Target")}</h3>
         <span className="text-xs text-gray-400">

@@ -306,25 +306,25 @@ export function LoginPage() {
 
             <div className="space-y-3 text-sm">
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-1 font-semibold text-gray-900">{t("Opsi 1 — Reset oleh admin")}</p>
+                <p className="mb-1 font-semibold text-gray-900">{t("Masih ingat kata sandi lama")}</p>
                 <p className="text-xs leading-relaxed text-gray-500">
-                  {t("Hubungi Administrator Sistem untuk mereset kata sandi Anda lewat panel Manajemen Pengguna. Admin dapat memberikan kata sandi sementara yang baru.")}
+                  {t("Masuk seperti biasa, lalu ganti lewat menu Ubah Kata Sandi di panel kiri. Ini satu-satunya cara mengubah kredensial dari dalam aplikasi, dan kata sandi lama tetap diminta.")}
                 </p>
               </div>
 
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-1 font-semibold text-gray-900">{t("Opsi 2 — Inisialisasi ulang akun")}</p>
+                <p className="mb-1 font-semibold text-gray-900">{t("Kata sandi hilang")}</p>
                 <p className="text-xs leading-relaxed text-gray-500">
-                  {t("Jika akun admin sendiri terkunci, operator sistem yang memiliki")}{" "}
-                  <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-[11px] text-gray-700">SEED_TOKEN</code>{" "}
-                  {t("dapat menginisialisasi ulang akun admin lewat endpoint seed API.")}
+                  {t("Hubungi operator yang memegang akses basis data. Pemulihan dilakukan di tingkat infrastruktur, bukan dari dalam aplikasi, karena tidak ada jalur reset mandiri di sistem ini.")}
                 </p>
               </div>
 
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                 <p className="mb-1 font-semibold text-amber-800">{t("Catatan keamanan")}</p>
                 <p className="text-xs leading-relaxed text-amber-700">
-                  {t("Demi keamanan, reset kata sandi mandiri tidak tersedia. Semua perubahan kredensial memerlukan verifikasi administrator untuk mencegah akses tidak sah.")}
+                  {t("Reset mandiri sengaja tidak disediakan: alur reset adalah salah satu jalur pengambilalihan akun yang paling sering disalahgunakan, dan sistem ini hanya memiliki sedikit akun manajer tanpa layanan surel.")}{" "}
+                  <code className="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] text-amber-800">SEED_TOKEN</code>{" "}
+                  {t("hanya membuat administrator pertama pada pemasangan baru, dan menolak berjalan begitu sudah ada manajer — jadi token yang bocor tidak bisa menimpa akun yang aktif.")}
                 </p>
               </div>
             </div>

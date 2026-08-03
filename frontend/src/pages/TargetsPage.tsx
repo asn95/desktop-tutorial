@@ -3,6 +3,11 @@ import { AppShell } from "../components/layout/AppShell";
 import { TargetsTable } from "../components/dashboard/TargetsTable";
 import { CsvUploadPanel } from "../components/dashboard/CsvUploadPanel";
 import { PeriodSelector } from "../components/dashboard/PeriodSelector";
+
+// Dashboard cukup 50 baris terbaru, tapi di halaman ini manajer memilih dan
+// menugaskan secara massal — kalau daftarnya terpotong, target yang tidak
+// tampil mustahil dipilih. Dibatasi di sisi server pada 2000.
+const ALL_ROWS = 2000;
 import { getDashboardSnapshot, getPeriods } from "../services/dashboardService";
 import { getUsers } from "../services/userService";
 import { apiClient } from "../lib/apiClient";
@@ -37,14 +42,14 @@ export function TargetsPage() {
 
   useEffect(() => {
     if (!period) return;
-    Promise.all([getDashboardSnapshot(period), getUsers()])
+    Promise.all([getDashboardSnapshot(period, ALL_ROWS), getUsers()])
       .then(([snap, users]) => {
         setSnapshot(snap);
         setOfficers(users.filter(u => u.role === "officer"));
       })
       .finally(() => setIsLoading(false));
     const interval = setInterval(() => {
-      getDashboardSnapshot(period).then(setSnapshot).catch(() => {});
+      getDashboardSnapshot(period, ALL_ROWS).then(setSnapshot).catch(() => {});
     }, 10000);
     return () => clearInterval(interval);
   }, [period]);
@@ -63,7 +68,7 @@ export function TargetsPage() {
   const pendingTargets = useMemo(() => filteredTargets.filter(t => t.status === "pending"), [filteredTargets]);
 
   const refreshData = () => {
-    getDashboardSnapshot(period).then(setSnapshot);
+    getDashboardSnapshot(period, ALL_ROWS).then(setSnapshot);
     setSelected(new Set());
   };
 
@@ -198,6 +203,13 @@ export function TargetsPage() {
                   {t("Bersihkan")}
                 </button>
               </div>
+            )}
+
+            {!isLoading && (
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                {t("Menampilkan")} {filteredTargets.length} {t("dari")} {snapshot?.stats.totalTargets ?? 0} {t("target")}
+                {filteredTargets.length < (snapshot?.stats.totalTargets ?? 0) && ` · ${t("disaring")}`}
+              </p>
             )}
 
             {isLoading ? (

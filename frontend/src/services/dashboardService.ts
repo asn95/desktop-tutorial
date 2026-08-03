@@ -12,10 +12,13 @@ export async function getPeriods(): Promise<PeriodsResponse> {
   };
 }
 
-export async function getDashboardSnapshot(period?: string | null): Promise<DashboardSnapshot> {
+export async function getDashboardSnapshot(period?: string | null, limit?: number): Promise<DashboardSnapshot> {
   if (!USE_MOCK) {
     try {
-      const query = period && period !== "all" ? `?period=${encodeURIComponent(period)}` : "";
+      const params = new URLSearchParams();
+      if (period && period !== "all") params.set("period", period);
+      if (limit) params.set("limit", String(limit));
+      const query = params.toString() ? `?${params}` : "";
       const response = await apiClient.get<DashboardSnapshot>(`/dashboard/${query}`);
       const data = response.data;
       return {

@@ -13,7 +13,21 @@ class DashboardSnapshot(BaseModel):
     targets: List[Target]
 
 @router.get("/", response_model=DashboardSnapshot)
-async def get_dashboard_snapshot(period: Optional[str] = None, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def get_dashboard_snapshot(
+    period: Optional[str] = None,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+):
+    """Ringkasan + daftar target.
+
+    `limit` default 50 supaya dashboard tetap ringan. Halaman Target meminta
+    angka lebih besar karena di sana manajer memang perlu melihat seluruh
+    batch — termasuk untuk memilih dan menugaskan secara massal. Sebelum ini
+    batasnya dipaku 50 tanpa penanda apa pun, sehingga target di luar 50
+    terbaru tidak pernah sampai ke layar dan penugasan massal tampak rusak.
+    """
+    limit = min(max(limit, 1), 2000)
     def base_query():
         q = db.query(DbTarget)
         if period and period != "all":
@@ -35,7 +49,7 @@ async def get_dashboard_snapshot(period: Optional[str] = None, db: Session = Dep
 
     # 2. Fetch Targets for the dashboard table
     # Using the Pydantic Target model which handles the snake_case mapping
-    targets = base_query().order_by(DbTarget.created_at.desc()).limit(50).all()
+    targets = base_query().order_by(DbTarget.created_at.desc()).limit(limit).all()
 
     return {
         "stats": stats,

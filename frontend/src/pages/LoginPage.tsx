@@ -142,7 +142,12 @@ export function LoginPage() {
         </div>
 
         {/* Copyright */}
-        <p className="relative hidden text-xs text-white/70 lg:block">&copy; 2026 IndiHome by Telkomsel &middot; PT Telekomunikasi Selular</p>
+        <div className="relative hidden text-xs leading-relaxed text-white/70 lg:block">
+          <div className="font-semibold text-white/90">IndiHome by Telkomsel &middot; {t("Kantor Banda Aceh")}</div>
+          <div className="mt-1">Jl. Teuku Moh. Daud Beureueh No.&nbsp;23, Laksana</div>
+          <div>Kec. Kuta Alam, Kota Banda Aceh, Aceh 23122</div>
+          <div className="mt-2.5 text-white/55">&copy; 2026 PT Telekomunikasi Selular</div>
+        </div>
       </div>
 
       {/* ───────────── RIGHT — sign-in form (centered) ───────────── */}

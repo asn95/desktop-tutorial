@@ -8,6 +8,9 @@
 export type Lang = "id" | "en";
 
 export const EN: Record<string, string> = {
+  "Seluruh hak cipta dilindungi.": "All rights reserved.",
+  "Sistem Manajemen Terpadu Penagihan Lapangan": "Integrated Field Collection Management System",
+  "Kantor Banda Aceh": "Banda Aceh Office",
   "Ada yang bisa saya bantu?": "How can I help you?",
   "Aksi": "Actions",
   "Aktifkan": "Activate",

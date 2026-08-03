@@ -274,8 +274,35 @@ export function AppShell({
 
         <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
           {children}
-          <footer className={`mt-16 pt-6 text-xs ${dark ? "text-slate-600" : "text-gray-400"}`}>
-            C3MR — IndiHome by Telkomsel
+          <footer
+            className={`mt-16 border-t pt-6 text-xs leading-relaxed ${
+              dark ? "border-slate-800 text-slate-500" : "border-gray-200 text-gray-400"
+            }`}
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className={`font-semibold ${dark ? "text-slate-300" : "text-gray-600"}`}>
+                  C3MR &middot; {t("Portal Manajemen")}
+                </div>
+                <div className="mt-1">{t("Sistem Manajemen Terpadu Penagihan Lapangan")}</div>
+              </div>
+              <div className="sm:text-right">
+                <div className={`font-semibold ${dark ? "text-slate-300" : "text-gray-600"}`}>
+                  IndiHome by Telkomsel &middot; {t("Kantor Banda Aceh")}
+                </div>
+                <div className="mt-1">
+                  Jl. Teuku Moh. Daud Beureueh No.&nbsp;23, Laksana
+                </div>
+                <div>Kec. Kuta Alam, Kota Banda Aceh, Aceh 23122</div>
+              </div>
+            </div>
+            <div
+              className={`mt-5 border-t pt-4 ${
+                dark ? "border-slate-800/70" : "border-gray-100"
+              }`}
+            >
+              &copy; 2026 PT Telekomunikasi Selular. {t("Seluruh hak cipta dilindungi.")}
+            </div>
           </footer>
         </main>
       </div>

@@ -366,8 +366,13 @@ def auto_assign_pending_targets(address_filter: str | None = None, period: str |
         }
 
 
-def assign_all_pending_to_officer(officer: str, address_filter: str | None = None, period: str | None = None) -> dict:
-    """Assign ALL unassigned pending targets to a SINGLE officer (bulk).
+def assign_all_pending_to_officer(officer: str, address_filter: str | None = None,
+                                  period: str | None = None, limit: int | None = None) -> dict:
+    """Assign unassigned pending targets to a SINGLE officer.
+
+    `limit` menugaskan HANYA sebanyak itu (yang paling prioritas lebih dulu). Tanpa
+    `limit` seluruh target pending yang cocok ikut tertugaskan — jadi ketika pengguna
+    menyebut angka, angka itu WAJIB diteruskan ke sini.
 
     `officer` may be the officer's id or name (case-insensitive partial match).
     Returns only a summary count — never the full target list — so the result
@@ -393,8 +398,14 @@ def assign_all_pending_to_officer(officer: str, address_filter: str | None = Non
         if period and period != "all":
             q = q.filter(DbTarget.period == period)
 
+        # Yang tunggakannya terbesar didahulukan, supaya "tugaskan 5" memberi
+        # lima yang paling berarti, bukan lima yang kebetulan paling awal.
+        q = q.order_by(DbTarget.amount_due.desc())
+        matching = q.count()
+        rows = q.limit(limit).all() if limit and limit > 0 else q.all()
+
         count = 0
-        for target in q.all():
+        for target in rows:
             target.assigned_officer = person.id
             target.status = TargetStatus.in_progress
             count += 1
@@ -410,6 +421,7 @@ def assign_all_pending_to_officer(officer: str, address_filter: str | None = Non
             "success": True,
             "officer_name": person.name,
             "targets_assigned": count,
+            "still_unassigned": max(matching - count, 0),
         }
 
 
@@ -893,7 +905,7 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "assign_all_pending_to_officer",
-        "description": "Assign ALL unassigned pending targets to ONE specific officer (bulk). Use this when the user wants every remaining/pending target given to a single officer (e.g. 'assign all remaining tasks to Budi'). The officer is given by name or id. Optionally filter by address area. Returns only a count — prefer this over fetching every target id yourself.",
+        "description": "Assign unassigned pending targets to ONE specific officer. If the user names a number (\"assign 5 to Atta\"), pass it as `limit` — never assign more than the user asked for. Without `limit` this assigns EVERY remaining/pending target given to a single officer (e.g. 'assign all remaining tasks to Budi'). The officer is given by name or id. Optionally filter by address area. Returns only a count — prefer this over fetching every target id yourself.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -909,6 +921,10 @@ TOOL_DEFINITIONS = [
                     "type": "string",
                     "description": "Only assign targets from this monthly upload period, YYYY-MM format (e.g. '2026-07'). Omit for all periods.",
                 },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Assign at most this many targets, highest amount due first. Use it whenever the user names a quantity.",
+                    },
             },
             "required": ["officer"],
         },

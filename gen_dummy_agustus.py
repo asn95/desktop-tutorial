@@ -95,7 +95,10 @@ def tunggakan():
     return bulan * random.choice([285000, 315000, 345000, 375000, 445000, 525000])
 
 
-def bangun(n=50):
+def bangun(n=50, hindari_nama=(), hindari_telepon=()):
+    """hindari_* berisi nama/telepon yang SUDAH ada di basis data, supaya batch
+    berikutnya tidak menghasilkan pelanggan ganda. Unggahan tidak memeriksa
+    duplikat, jadi pencegahannya harus di sini."""
     kota = [l for l in LOKASI if l[1] == "Banda Aceh"]
     luar = [l for l in LOKASI if l[1] == "Aceh Besar"]
     n_kota = round(n * 0.75)   # mayoritas di kota, sisanya Aceh Besar
@@ -104,7 +107,7 @@ def bangun(n=50):
                [random.choice(luar) for _ in range(n - n_kota)])
     random.shuffle(pilihan)
 
-    baris, nm, tp = [], set(), set()
+    baris, nm, tp = [], set(hindari_nama), set(hindari_telepon)
     for alamat, _wilayah in pilihan:
         baris.append({
             "customer_name": nama(nm),
@@ -116,11 +119,25 @@ def bangun(n=50):
 
 
 if __name__ == "__main__":
-    import sys
+    import argparse, json
     from collections import Counter
-    n = int(sys.argv[1]) if len(sys.argv) > 1 else 50
-    out = sys.argv[2] if len(sys.argv) > 2 else "dummy_targets_agustus.csv"
-    rows = bangun(n)
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("n", nargs="?", type=int, default=50)
+    ap.add_argument("out", nargs="?", default="dummy_targets_agustus.csv")
+    ap.add_argument("--seed", type=int, default=20260807,
+                    help="ubah untuk batch berikutnya, supaya datanya bukan salinan")
+    ap.add_argument("--exclude", metavar="FILE.json",
+                    help='{"nama":[...], "telepon":[...]} yang sudah ada di basis data')
+    a = ap.parse_args()
+    n, out = a.n, a.out
+
+    random.seed(a.seed)          # seed modul dipakai untuk batch 1; ini menimpanya
+    hn = ht = ()
+    if a.exclude:
+        ex = json.load(open(a.exclude))
+        hn, ht = ex.get("nama", []), ex.get("telepon", [])
+        print(f"menghindari {len(hn)} nama dan {len(ht)} nomor yang sudah terpakai")
+    rows = bangun(n, hn, ht)
     with open(out, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["customer_name", "address", "phone", "amount_due"])
         w.writeheader()

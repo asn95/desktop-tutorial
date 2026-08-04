@@ -10,36 +10,43 @@ tidak masuk riwayat shell. Skrip menulis hash bcrypt dan menstempel
 password_changed_at, sehingga seluruh sesi lama ikut berakhir — sama persis
 dengan efek mengganti kata sandi lewat portal.
 """
-import getpass
 import subprocess
 import sys
-
-
-def _tty():
-    """Terminal sungguhan, kalau ada. Dibaca langsung supaya skrip tetap jalan
-    walau stdin dialihkan — itu yang bikin versi sebelumnya kena EOFError."""
-    try:
-        return open("/dev/tty", "r+")
-    except OSError:
-        return None
+import termios
 
 
 def tanya(prompt: str) -> str:
-    t = _tty()
-    if t is None:
+    if not sys.stdin.isatty():
         sys.exit(BUTUH_TERMINAL)
-    with t:
-        t.write(prompt)
-        t.flush()
-        return (t.readline() or "").strip()
+    return input(prompt).strip()
 
 
 def sandi(prompt: str) -> str:
-    """getpass membaca /dev/tty sendiri; kalau tidak ada, ia diam-diam jatuh ke
-    stdin tanpa menyembunyikan ketikan. Itu bahaya, jadi dicegat lebih dulu."""
-    if _tty() is None:
+    """Baca kata sandi tanpa menampilkannya.
+
+    Sengaja TIDAK memakai getpass: getpass menuntut /dev/tty bisa dibuka, dan
+    di sebagian terminal itu gagal walau stdin jelas-jelas sebuah terminal —
+    lalu ia diam-diam jatuh ke stdin dan ketikan JUSTRU terlihat. Di sini echo
+    dimatikan langsung pada stdin, dan selalu dinyalakan lagi lewat finally,
+    supaya terminal tidak ditinggalkan dalam keadaan bisu kalau skrip dibatalkan."""
+    if not sys.stdin.isatty():
         sys.exit(BUTUH_TERMINAL)
-    return getpass.getpass(prompt)
+
+    fd = sys.stdin.fileno()
+    lama = termios.tcgetattr(fd)
+    baru = termios.tcgetattr(fd)
+    baru[3] &= ~termios.ECHO          # lflag: matikan gema ketikan
+    try:
+        # Echo dimatikan LEBIH DULU, baru prompt dicetak: kalau urutannya
+        # dibalik, karakter yang terlanjur diketik di sela itu ikut tergema.
+        # TCSAFLUSH sekalian membuang ketikan-mendahului, seperti getpass.
+        termios.tcsetattr(fd, termios.TCSAFLUSH, baru)
+        sys.stderr.write(prompt)
+        sys.stderr.flush()
+        return sys.stdin.readline().rstrip("\n")
+    finally:
+        termios.tcsetattr(fd, termios.TCSAFLUSH, lama)
+        sys.stderr.write("\n")
 
 
 BUTUH_TERMINAL = """

@@ -9,14 +9,12 @@ let selectedPeriod = null; // batch bulanan "YYYY-MM" yang sedang ditampilkan
 let loginAttempts = 0;
 const MAX_LOGIN_ATTEMPTS = 5;
 
-// --- HTML Escaping ---
 function esc(str) {
     const d = document.createElement('div');
     d.textContent = str;
     return d.innerHTML;
 }
 
-// --- Offline Cache ---
 const CACHE_KEY = 'c3mr_tasks_cache';
 const CACHE_CMT_PREFIX = 'c3mr_cmt_';
 
@@ -159,7 +157,7 @@ tg.MainButton.onClick(async () => {
     }
 });
 
-// --- Sistem Periode Bulanan (selaras dengan dashboard web) ---
+// Periode bulanan, selaras dengan pemilih periode di dashboard web.
 
 const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
@@ -277,7 +275,6 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// --- Comment Functions ---
 
 document.addEventListener('click', (e) => {
     if (e.target.classList.contains('cmt-tag')) {

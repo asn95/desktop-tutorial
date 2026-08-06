@@ -9,6 +9,8 @@ import type { Target } from "../types/target";
 
 type PendingAction = { type: "edit"; user: User } | { type: "delete"; user: User };
 
+const ALL_ROWS = 2000;   // batas atas yang diterima backend (dashboard.py)
+
 export function UserManagementPage() {
   const { t } = useLang();
   const [users, setUsers] = useState<User[]>([]);
@@ -36,7 +38,11 @@ export function UserManagementPage() {
     try {
       const [userData, snap] = await Promise.all([
         getUsers(),
-        getDashboardSnapshot(),
+        // Statistik per petugas dihitung dari daftar target ini, jadi daftarnya harus
+        // UTUH. Tanpa argumen, backend memakai limit default 50 dan yang terhitung
+        // cuma 50 target terbaru — petugas yang seluruh tugasnya di batch lama tampil
+        // sebagai nol. Null = semua periode, ALL_ROWS = batas atas backend (2000).
+        getDashboardSnapshot(null, ALL_ROWS),
       ]);
       setUsers(userData);
       setTargets(snap.targets);
@@ -204,7 +210,11 @@ export function UserManagementPage() {
             ) : (
               <div className="border border-gray-200 bg-white overflow-x-auto overflow-hidden">
                 {/* Table header */}
-                <div className="min-w-[620px] grid grid-cols-[1fr_80px_100px_60px_60px_150px] gap-0 border-b-2 border-gray-200 bg-[#f8f8f6] px-6 py-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                {/* Kolom angka 90px, bukan 60px: judul bahasa Inggris "ASSIGNED" dan
+                    "COMPLETED" dengan tracking 0.2em melebihi 60px lalu saling dempet.
+                    Versi Indonesia ("Tugas"/"Selesai") muat, jadi ini hanya terlihat
+                    setelah bahasa diganti ke EN. */}
+                <div className="min-w-[700px] grid grid-cols-[1fr_80px_100px_90px_90px_150px] gap-0 border-b-2 border-gray-200 bg-[#f8f8f6] px-6 py-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                   <span>{t("Nama")}</span>
                   <span>{t("Peran")}</span>
                   <span>Telegram</span>
@@ -219,7 +229,7 @@ export function UserManagementPage() {
                   return (
                     <div
                       key={user.id}
-                      className={`min-w-[620px] grid grid-cols-[1fr_80px_100px_60px_60px_150px] gap-0 items-center px-6 py-3 ${
+                      className={`min-w-[700px] grid grid-cols-[1fr_80px_100px_90px_90px_150px] gap-0 items-center px-6 py-3 ${
                         i > 0 ? "border-t border-slate-200" : ""
                       } ${user.active === false ? "opacity-60" : ""}`}
                     >

@@ -131,7 +131,13 @@ def get_current_manager(authorization: str = None):
 
         user_id = payload.get("sub")
         user = db.query(DbUser).filter(DbUser.id == user_id).first() if user_id else None
-        if user and _token_issued_before_password_change(payload, user):
+        # Pemilik token WAJIB masih ada. Sebelumnya pemeriksaan di bawah ditulis
+        # `if user and ...`, sehingga pengguna yang akunnya sudah DIHAPUS justru lolos:
+        # user bernilai None, syaratnya salah, requestnya diteruskan. Akibatnya token
+        # milik akun terhapus tetap bisa dipakai sampai kedaluwarsa sendiri.
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        if _token_issued_before_password_change(payload, user):
             raise HTTPException(status_code=401, detail="Sesi berakhir karena kata sandi diubah. Silakan login ulang.")
         return payload
     return _dep

@@ -313,3 +313,35 @@ def test_password_change_forces_relogin(client, db):
     assert res.status_code == 200
     new_headers = {"Authorization": f"Bearer {res.json()['token']}"}
     assert client.get("/api/dashboard/", headers=new_headers).status_code == 200
+
+
+def test_token_ditolak_setelah_akun_dihapus(client, db):
+    """Token yang sah tidak boleh berlaku lagi begitu akunnya dihapus.
+
+    Dulu require_auth menulis `if user and ...`, sehingga pengguna terhapus JUSTRU
+    lolos: user bernilai None, syaratnya salah, requestnya diteruskan. Endpoint
+    dashboard/targets/analytics memakai require_auth, jadi celahnya nyata di sana.
+    """
+    from backend.models import DbUser, UserRole
+    from backend.security import hash_password
+
+    user = DbUser(
+        name="Segera Dihapus",
+        email="hapus@c3mr.id",
+        password_hash=hash_password("pass123"),
+        role=UserRole.manager,
+    )
+    db.add(user)
+    db.commit()
+
+    res = client.post("/api/auth/login", json={"username": "hapus@c3mr.id", "password": "pass123"})
+    assert res.status_code == 200
+    headers = {"Authorization": f"Bearer {res.json()['token']}"}
+    assert client.get("/api/dashboard/", headers=headers).status_code == 200
+
+    db.delete(db.query(DbUser).filter(DbUser.email == "hapus@c3mr.id").first())
+    db.commit()
+
+    # Token masih sah secara kriptografis dan belum kedaluwarsa — tetap harus ditolak.
+    assert client.get("/api/dashboard/", headers=headers).status_code == 401
+    assert client.get("/api/targets/", headers=headers).status_code == 401

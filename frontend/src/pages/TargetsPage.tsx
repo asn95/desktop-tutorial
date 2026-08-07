@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/layout/AppShell";
 import { TargetsTable } from "../components/dashboard/TargetsTable";
 import { CsvUploadPanel } from "../components/dashboard/CsvUploadPanel";
+import { ManualTargetForm } from "../components/dashboard/ManualTargetForm";
 import { PeriodSelector } from "../components/dashboard/PeriodSelector";
 
 // Dashboard cukup 50 baris terbaru, tapi di halaman ini manajer memilih dan
@@ -228,6 +229,7 @@ export function TargetsPage() {
 
           <div className="space-y-6">
             <CsvUploadPanel onUploadSuccess={handleUploadSuccess} />
+            <ManualTargetForm onCreated={handleUploadSuccess} />
           </div>
         </div>
       </div>

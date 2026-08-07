@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useLang } from "../contexts/LanguageContext";
+import { apiClient } from "../lib/apiClient";
 import indihomeLogo from "../assets/indihome-logo.svg";
 
 const FAILED_KEY = "c3mr:login-failures";
@@ -55,15 +56,78 @@ export function LoginPage() {
   const [lockoutSec, setLockoutSec] = useState(() => isLockedOut().remainingSec);
   const [mounted, setMounted] = useState(false);
 
+  // Reset kata sandi: langkah 1 minta kode ke Telegram, langkah 2 tukar kode
+  // dengan kata sandi baru.
+  const [recoveryStep, setRecoveryStep] = useState<1 | 2>(1);
+  const [recoveryUser, setRecoveryUser] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [recoveryNewPw, setRecoveryNewPw] = useState("");
+  const [recoveryNote, setRecoveryNote] = useState<string | null>(null);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+
+  function openRecovery() {
+    setRecoveryStep(1);
+    setRecoveryUser(username);
+    setRecoveryCode("");
+    setRecoveryNewPw("");
+    setRecoveryNote(null);
+    setRecoveryError(null);
+    setShowRecovery(true);
+  }
+
+  async function requestResetCode() {
+    setRecoveryLoading(true);
+    setRecoveryError(null);
+    try {
+      const res = await apiClient.post("/auth/forgot-password", { username: recoveryUser.trim() });
+      // Balasannya sengaja sama persis ada atau tidaknya akun — jangan tambahkan
+      // pesan lain di sini yang membocorkan mana nama pengguna yang valid.
+      setRecoveryNote(res.data?.message ?? null);
+      setRecoveryStep(2);
+    } catch (err: any) {
+      setRecoveryError(err.response?.data?.detail ?? t("Gagal mengirim kode. Coba lagi sebentar lagi."));
+    } finally {
+      setRecoveryLoading(false);
+    }
+  }
+
+  async function submitNewPassword() {
+    setRecoveryLoading(true);
+    setRecoveryError(null);
+    try {
+      await apiClient.post("/auth/reset-password", {
+        username: recoveryUser.trim(),
+        code: recoveryCode.trim(),
+        new_password: recoveryNewPw,
+      });
+      setShowRecovery(false);
+      setUsername(recoveryUser.trim());
+      setPassword("");
+      setError(null);
+      // Reset menyetel password_changed_at, jadi semua token lama sudah mati —
+      // hitungan gagal-login lokal ikut dibersihkan supaya tidak ada sisa kunci.
+      clearFailures();
+      setLockoutSec(0);
+    } catch (err: any) {
+      setRecoveryError(err.response?.data?.detail ?? t("Gagal mengubah kata sandi."));
+    } finally {
+      setRecoveryLoading(false);
+    }
+  }
+
   useEffect(() => {
     const id = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
-  const redirectPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/dashboard";
+  // "/" dilayani RoleHome (App.tsx) yang tahu beranda tiap peran — admin ke
+  // /users, manajer ke /dashboard. Memaku "/dashboard" di sini akan melempar
+  // admin ke rute yang bukan haknya dan langsung dipantulkan kembali.
+  const redirectPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/";
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -234,9 +298,9 @@ export function LoginPage() {
                 <button
                   type="button"
                   className="text-sm font-medium text-[#EA0A2C] transition-colors hover:text-[#C80825]"
-                  onClick={() => setShowRecovery(true)}
+                  onClick={openRecovery}
                 >
-                  {t("Opsi pemulihan")}
+                  {t("Lupa kata sandi?")}
                 </button>
               </div>
 
@@ -295,7 +359,7 @@ export function LoginPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">{t("Pemulihan akun")}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t("Lupa kata sandi")}</h3>
               <button
                 onClick={() => setShowRecovery(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
@@ -307,37 +371,85 @@ export function LoginPage() {
               </button>
             </div>
 
-            <div className="space-y-3 text-sm">
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-1 font-semibold text-gray-900">{t("Masih ingat kata sandi lama")}</p>
+            {recoveryStep === 1 ? (
+              <div className="space-y-4">
+                <p className="text-sm leading-relaxed text-gray-600">
+                  {t("Kode verifikasi enam digit akan dikirim ke Telegram yang tertaut pada akun Anda. Tidak ada surel yang dikirim.")}
+                </p>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-semibold text-gray-800">{t("Nama pengguna")}</label>
+                  <input
+                    value={recoveryUser}
+                    onChange={(e) => setRecoveryUser(e.target.value)}
+                    autoComplete="username"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-base text-gray-900 placeholder-gray-500 transition focus:border-[#EA0A2C] focus:outline-none focus:ring-2 focus:ring-[#EA0A2C]/20"
+                    placeholder="admin"
+                  />
+                </div>
+                {recoveryError && <p className="text-sm text-red-600">{recoveryError}</p>}
+                <button
+                  onClick={requestResetCode}
+                  disabled={recoveryLoading || !recoveryUser.trim()}
+                  className="w-full rounded-lg bg-[#EA0A2C] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] active:bg-[#A60620] disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  {recoveryLoading ? t("Memproses…") : t("Kirim kode ke Telegram")}
+                </button>
+                <button
+                  onClick={() => setRecoveryStep(2)}
+                  className="w-full text-center text-sm font-medium text-gray-500 transition-colors hover:text-gray-800"
+                >
+                  {t("Saya sudah punya kode")}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recoveryNote && (
+                  <p className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm leading-relaxed text-gray-600">
+                    {recoveryNote}
+                  </p>
+                )}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-semibold text-gray-800">{t("Kode verifikasi")}</label>
+                  <input
+                    value={recoveryCode}
+                    onChange={(e) => setRecoveryCode(e.target.value)}
+                    inputMode="numeric"
+                    maxLength={6}
+                    autoComplete="one-time-code"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-center text-lg font-semibold tracking-[0.4em] text-gray-900 placeholder-gray-400 transition focus:border-[#EA0A2C] focus:outline-none focus:ring-2 focus:ring-[#EA0A2C]/20"
+                    placeholder="000000"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-semibold text-gray-800">{t("Kata sandi baru")}</label>
+                  <input
+                    type="password"
+                    value={recoveryNewPw}
+                    onChange={(e) => setRecoveryNewPw(e.target.value)}
+                    autoComplete="new-password"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-base text-gray-900 placeholder-gray-500 transition focus:border-[#EA0A2C] focus:outline-none focus:ring-2 focus:ring-[#EA0A2C]/20"
+                    placeholder={t("Minimal 8 karakter")}
+                  />
+                </div>
                 <p className="text-xs leading-relaxed text-gray-500">
-                  {t("Masuk seperti biasa, lalu ganti lewat menu Ubah Kata Sandi di panel kiri. Ini satu-satunya cara mengubah kredensial dari dalam aplikasi, dan kata sandi lama tetap diminta.")}
+                  {t("Kode berlaku 15 menit dan hanya bisa dipakai sekali. Mengubah kata sandi akan mengakhiri semua sesi yang sedang berjalan.")}
                 </p>
+                {recoveryError && <p className="text-sm text-red-600">{recoveryError}</p>}
+                <button
+                  onClick={submitNewPassword}
+                  disabled={recoveryLoading || recoveryCode.trim().length < 6 || recoveryNewPw.length < 8}
+                  className="w-full rounded-lg bg-[#EA0A2C] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] active:bg-[#A60620] disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  {recoveryLoading ? t("Memproses…") : t("Ubah kata sandi")}
+                </button>
+                <button
+                  onClick={() => { setRecoveryStep(1); setRecoveryError(null); }}
+                  className="w-full text-center text-sm font-medium text-gray-500 transition-colors hover:text-gray-800"
+                >
+                  {t("Kembali")}
+                </button>
               </div>
-
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="mb-1 font-semibold text-gray-900">{t("Kata sandi hilang")}</p>
-                <p className="text-xs leading-relaxed text-gray-500">
-                  {t("Hubungi operator yang memegang akses basis data. Pemulihan dilakukan di tingkat infrastruktur, bukan dari dalam aplikasi, karena tidak ada jalur reset mandiri di sistem ini.")}
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <p className="mb-1 font-semibold text-amber-800">{t("Catatan keamanan")}</p>
-                <p className="text-xs leading-relaxed text-amber-700">
-                  {t("Reset mandiri sengaja tidak disediakan: alur reset adalah salah satu jalur pengambilalihan akun yang paling sering disalahgunakan, dan sistem ini hanya memiliki sedikit akun manajer tanpa layanan surel.")}{" "}
-                  <code className="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] text-amber-800">SEED_TOKEN</code>{" "}
-                  {t("hanya membuat administrator pertama pada pemasangan baru, dan menolak berjalan begitu sudah ada manajer — jadi token yang bocor tidak bisa menimpa akun yang aktif.")}
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowRecovery(false)}
-              className="mt-6 w-full rounded-lg bg-[#EA0A2C] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] active:bg-[#A60620]"
-            >
-              {t("Mengerti")}
-            </button>
+            )}
           </div>
         </div>
       )}

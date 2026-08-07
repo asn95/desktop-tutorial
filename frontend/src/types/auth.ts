@@ -1,3 +1,5 @@
+import type { PortalRole } from "./user";
+
 export interface LoginPayload {
   username: string;
   password: string;
@@ -7,6 +9,6 @@ export interface AuthUser {
   id: string;
   name: string;
   username: string;
-  role: "manager";
+  role: PortalRole;
   token: string;
 }

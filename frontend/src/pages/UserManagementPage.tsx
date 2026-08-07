@@ -4,7 +4,7 @@ import { useLang } from "../contexts/LanguageContext";
 import { getUsers, createUser, updateUser, deleteUser } from "../services/userService";
 import { getDashboardSnapshot } from "../services/dashboardService";
 import { apiClient } from "../lib/apiClient";
-import type { User, UserBase } from "../types/user";
+import type { User, UserRole } from "../types/user";
 import type { Target } from "../types/target";
 
 type PendingAction = { type: "edit"; user: User } | { type: "delete"; user: User };
@@ -18,6 +18,10 @@ export function UserManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [name, setName] = useState("");
   const [telegramId, setTelegramId] = useState("");
+  const [phone, setPhone] = useState("");
+  const [newRole, setNewRole] = useState<UserRole>("officer");
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -85,14 +89,22 @@ export function UserManagementPage() {
     setError(null);
     setSuccess(null);
     try {
-      const payload: UserBase = {
+      const isPortal = newRole !== "officer";
+      const created = await createUser({
         name,
         telegram_id: telegramId || undefined,
-        role: "officer",
-      };
-      const created = await createUser(payload);
+        phone: phone || undefined,
+        role: newRole,
+        // Kredensial hanya untuk peran portal. Petugas masuk lewat Mini App yang
+        // diautentikasi HMAC initData Telegram; memberi mereka kata sandi portal
+        // cuma memperluas permukaan serangan tanpa menambah kemampuan apa pun.
+        ...(isPortal ? { email: newUsername.trim(), password: newPassword } : {}),
+      });
       setName("");
       setTelegramId("");
+      setPhone("");
+      setNewUsername("");
+      setNewPassword("");
       setSuccess(`${created.name} ${t("berhasil didaftarkan.")}`);
       loadData();
     } catch (err: any) {
@@ -302,7 +314,7 @@ export function UserManagementPage() {
           {/* Sidebar: Registration */}
           <section>
             <div className="border-b-2 border-gray-200 pb-2 mb-6">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">{t("Daftarkan Petugas")}</h2>
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">{t("Daftarkan Pengguna")}</h2>
             </div>
 
             <form onSubmit={handleAddUser} className="border border-gray-200 bg-white p-6 space-y-5">
@@ -316,23 +328,82 @@ export function UserManagementPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Telegram ID</label>
-                <input
-                  value={telegramId}
-                  onChange={(e) => setTelegramId(e.target.value)}
-                  placeholder={t("mis. 123456789")}
-                  className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
-                />
-                <p className="text-[9px] text-slate-400">
-                  {t("Diperlukan untuk akses Mini App dan notifikasi.")}
-                </p>
+                <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Peran akun")}</label>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value as UserRole)}
+                  className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold outline-none focus:border-b-2"
+                >
+                  <option value="officer">{t("Petugas Lapangan (Telegram)")}</option>
+                  <option value="manager">{t("Manajer (portal web)")}</option>
+                  <option value="admin">{t("Administrator (portal web)")}</option>
+                </select>
               </div>
+
+              {newRole === "officer" ? (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Nomor telepon")}</label>
+                    <input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      inputMode="tel"
+                      placeholder="0812-3456-7890"
+                      className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
+                    />
+                    <p className="text-[9px] text-slate-400">
+                      {t("Nomor telepon petugas — dipakai untuk menautkan Telegram lewat tombol Bagikan Nomor.")}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Telegram ID</label>
+                    <input
+                      value={telegramId}
+                      onChange={(e) => setTelegramId(e.target.value)}
+                      placeholder={t("mis. 123456789")}
+                      className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
+                    />
+                    <p className="text-[9px] text-slate-400">
+                      {t("Opsional jika nomor telepon diisi — petugas menautkan sendiri lewat bot.")}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Nama pengguna")} *</label>
+                    <input
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value)}
+                      autoComplete="off"
+                      className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Kata sandi")} *</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      autoComplete="new-password"
+                      placeholder={t("Minimal 8 karakter")}
+                      className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold outline-none placeholder:text-slate-300 focus:border-b-2"
+                    />
+                    <p className="text-[9px] text-slate-400">
+                      {t("Akun portal butuh nama pengguna dan kata sandi.")}
+                    </p>
+                  </div>
+                </>
+              )}
 
               {error && <p className="text-[10px] font-bold text-red-600">{error}</p>}
               {success && <p className="text-[10px] font-bold text-green-700">{success}</p>}
 
               <button
-                disabled={isSubmitting || !name}
+                disabled={
+                  isSubmitting || !name ||
+                  (newRole !== "officer" && (!newUsername.trim() || newPassword.length < 8))
+                }
                 className="w-full border-2 border-gray-200 bg-black py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white hover:text-black disabled:opacity-30"
               >
                 {isSubmitting ? t("Memproses...") : t("Daftar")}

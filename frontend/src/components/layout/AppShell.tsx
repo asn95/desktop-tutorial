@@ -6,6 +6,7 @@ import { useLang } from "../../contexts/LanguageContext";
 import { apiClient } from "../../lib/apiClient";
 import { Link, useLocation } from "react-router-dom";
 import indihomeLogo from "../../assets/indihome-logo.svg";
+import type { PortalRole } from "../../types/user";
 
 type IconProps = { className?: string };
 const I = {
@@ -42,14 +43,20 @@ const I = {
   ),
 };
 
-const tabs = [
-  { name: "Dashboard", path: "/dashboard", icon: I.dashboard },
-  { name: "Analitik", path: "/analytics", icon: I.analytics },
-  { name: "Manajemen Pengguna", path: "/users", icon: I.users },
-  { name: "Target", path: "/targets", icon: I.targets },
-  { name: "Log Audit", path: "/audit", icon: I.audit },
-  { name: "Asisten AI", path: "/assistant", icon: I.assistant },
+// Pemisahan portal: satu URL, menu berbeda. Admin mengurus akun dan jejak audit;
+// manajer mengurus pekerjaan penagihan. Daftar ini harus sejalan dengan penjaga
+// rute di App.tsx — menu yang lolos di sini tapi ditolak di sana menghasilkan
+// tautan yang memantul balik ke beranda.
+const tabs: { name: string; path: string; icon: (p: IconProps) => JSX.Element; roles: PortalRole[] }[] = [
+  { name: "Dashboard", path: "/dashboard", icon: I.dashboard, roles: ["manager"] },
+  { name: "Analitik", path: "/analytics", icon: I.analytics, roles: ["manager"] },
+  { name: "Target", path: "/targets", icon: I.targets, roles: ["manager"] },
+  { name: "Asisten AI", path: "/assistant", icon: I.assistant, roles: ["manager"] },
+  { name: "Manajemen Pengguna", path: "/users", icon: I.users, roles: ["admin"] },
+  { name: "Log Audit", path: "/audit", icon: I.audit, roles: ["admin"] },
 ];
+
+const ROLE_LABEL: Record<PortalRole, string> = { admin: "Administrator", manager: "Manajer" };
 
 export function AppShell({
   children,
@@ -72,6 +79,11 @@ export function AppShell({
   const [maintToggling, setMaintToggling] = useState(false);
   const [showMaintModal, setShowMaintModal] = useState(false);
   const [maintCustomMsg, setMaintCustomMsg] = useState("");
+
+  // Default "manager" untuk sesi localStorage yang terbit sebelum peran admin ada.
+  const role: PortalRole = user?.role ?? "manager";
+  const isAdmin = role === "admin";
+  const visibleTabs = tabs.filter((tab) => tab.roles.includes(role));
 
   useEffect(() => {
     apiClient.get("/admin/maintenance")
@@ -134,7 +146,7 @@ export function AppShell({
 
       {/* Nav */}
       <nav className="flex-1 space-y-1 px-3 py-2">
-        {tabs.map((tab) => {
+        {visibleTabs.map((tab) => {
           const isActive = location.pathname === tab.path;
           const Icon = tab.icon;
           return (
@@ -167,10 +179,14 @@ export function AppShell({
             {lang === "id" ? "ID" : "EN"}
           </span>
         </button>
-        <button onClick={() => { setMaintCustomMsg(maintMsg); setShowMaintModal(true); }} className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${maintenance ? "text-amber-600 hover:bg-amber-50" : dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
-          {t("Pemeliharaan")}
-          {maintenance && <span className="h-2 w-2 rounded-full bg-amber-500" />}
-        </button>
+        {/* Pemeliharaan admin-saja: backend menjaganya lewat require_admin, jadi
+            menampilkannya ke manajer hanya menghasilkan tombol yang selalu 403. */}
+        {isAdmin && (
+          <button onClick={() => { setMaintCustomMsg(maintMsg); setShowMaintModal(true); }} className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${maintenance ? "text-amber-600 hover:bg-amber-50" : dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
+            {t("Pemeliharaan")}
+            {maintenance && <span className="h-2 w-2 rounded-full bg-amber-500" />}
+          </button>
+        )}
         <button onClick={() => setShowPwModal(true)} className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${dark ? "text-slate-400 hover:bg-slate-800/70" : "text-gray-500 hover:bg-gray-100"}`}>
           {t("Ubah Kata Sandi")}
         </button>
@@ -259,10 +275,10 @@ export function AppShell({
             >
               <div className="hidden flex-col items-end leading-tight sm:flex">
                 <span className={`max-w-[160px] truncate text-[13px] font-semibold ${dark ? "text-slate-100" : "text-gray-900"}`}>
-                  {user?.name ?? t("Manajer")}
+                  {user?.name ?? t(ROLE_LABEL[role])}
                 </span>
                 <span className={`text-[10px] font-medium uppercase tracking-[0.14em] ${dark ? "text-slate-500" : "text-gray-400"}`}>
-                  {t("Manajer")}
+                  {t(ROLE_LABEL[role])}
                 </span>
               </div>
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EA0A2C] text-[13px] font-bold text-white ring-2 ring-[#EA0A2C]/15 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
@@ -307,8 +323,8 @@ export function AppShell({
         </main>
       </div>
 
-      {/* Floating AI Assistant shortcut */}
-      {location.pathname !== "/assistant" && (
+      {/* Floating AI Assistant shortcut — manajer saja; /assistant bukan rute admin. */}
+      {!isAdmin && location.pathname !== "/assistant" && (
         <Link
           to="/assistant"
           title={t("Asisten AI")}

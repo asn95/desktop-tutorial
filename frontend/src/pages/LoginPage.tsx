@@ -126,7 +126,10 @@ export function LoginPage() {
       </button>
 
       {/* ───────────── LEFT — IndiHome by Telkomsel brand panel (full height) ───────────── */}
-      <div className="relative flex min-h-[260px] flex-col justify-between gap-8 overflow-hidden bg-gradient-to-br from-[#F0564A] via-[#E30425] to-[#7E1216] p-8 text-white sm:p-10 lg:p-14">
+      {/* justify-center, bukan justify-between: panel ini setinggi layar, dan
+          "between" melempar logo ke atas mutlak dan alamat ke bawah mutlak —
+          di layar 1080p tersisa ratusan piksel kosong di antaranya. */}
+      <div className="relative flex min-h-[260px] flex-col justify-center gap-10 overflow-hidden bg-gradient-to-br from-[#F0564A] via-[#E30425] to-[#7E1216] p-8 text-white sm:p-10 lg:p-14">
         {/* Logo blends into the brand panel: white monochrome via CSS filter */}
         <div className="relative">
           <img src={indihomeLogo} alt="IndiHome by Telkomsel" className="h-14 w-auto object-contain brightness-0 invert" />
@@ -135,18 +138,18 @@ export function LoginPage() {
         {/* Product */}
         <div className="relative">
           <h1 className="text-4xl font-bold tracking-tight">C3MR</h1>
-          <p className="mt-1.5 text-sm font-semibold text-white/90">{t("Sistem Manajemen Terpadu")}</p>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/75">
+          <p className="mt-1.5 text-base font-semibold text-white/90">{t("Sistem Manajemen Terpadu")}</p>
+          <p className="mt-3 max-w-sm text-base leading-relaxed text-white/80">
             {t("Portal operasional untuk penagihan, akun pelanggan, dan pelaporan.")}
           </p>
         </div>
 
         {/* Copyright */}
-        <div className="relative hidden text-xs leading-relaxed text-white/70 lg:block">
-          <div className="font-semibold text-white/90">IndiHome by Telkomsel &middot; {t("Kantor Banda Aceh")}</div>
+        <div className="relative hidden text-sm leading-6 text-white/80 lg:block">
+          <div className="font-semibold text-white">IndiHome by Telkomsel &middot; {t("Kantor Banda Aceh")}</div>
           <div className="mt-1">Jl. Teuku Moh. Daud Beureueh No.&nbsp;23, Laksana</div>
           <div>Kec. Kuta Alam, Kota Banda Aceh, Aceh 23122</div>
-          <div className="mt-2.5 text-white/55">&copy; 2026 PT Telekomunikasi Selular</div>
+          <div className="mt-2 text-white/65">&copy; 2026 PT Telekomunikasi Selular</div>
         </div>
       </div>
 

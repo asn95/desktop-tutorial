@@ -80,3 +80,23 @@ def auth_headers(client, db):
     res = client.post("/api/auth/login", json={"username": "mgr@test.id", "password": "pass123"})
     token = res.json()["token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def admin_headers(client, db):
+    """Akun admin — CRUD pengguna dan mode pemeliharaan menolak peran manajer."""
+    from backend.models import DbUser, UserRole
+    from backend.security import hash_password
+
+    user = DbUser(
+        name="Test Admin",
+        email="adm@test.id",
+        password_hash=hash_password("pass1234"),
+        role=UserRole.admin,
+    )
+    db.add(user)
+    db.commit()
+
+    res = client.post("/api/auth/login", json={"username": "adm@test.id", "password": "pass1234"})
+    token = res.json()["token"]
+    return {"Authorization": f"Bearer {token}"}

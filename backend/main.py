@@ -91,10 +91,52 @@ def _migrate_user_active():
         except Exception:
             logger.exception("Gagal menambahkan kolom active (mungkin sudah ada)")
 
+def _migrate_user_role_admin():
+    """Tambahkan nilai 'admin' ke enum peran.
+
+    Di PostgreSQL peran disimpan sebagai tipe ENUM asli yang dibuat lewat schema.sql
+    (create_type=False di models.py), jadi menambah anggota enum di Python saja tidak
+    cukup — basis data akan menolak nilainya. ALTER TYPE ... ADD VALUE tidak boleh
+    berjalan di dalam transaksi yang kemudian memakai nilai itu, karena itu koneksinya
+    dipaksa AUTOCOMMIT.
+
+    SQLite tidak punya tipe enum (SQLAlchemy menyimpannya sebagai VARCHAR + CHECK yang
+    hanya dievaluasi saat CREATE TABLE), jadi di dev tidak ada yang perlu dikerjakan.
+
+    Catatan: penambahan nilai enum TIDAK bisa dibatalkan di PostgreSQL. Rollback kode
+    aman, tapi baris ber-role='admin' harus dikembalikan lebih dulu.
+    """
+    from sqlalchemy import text
+
+    if not engine.url.drivername.startswith("postgresql"):
+        return
+    try:
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute(text("ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'admin'"))
+    except Exception:
+        logger.exception("Gagal menambahkan nilai enum 'admin' (mungkin sudah ada)")
+
+
+def _migrate_user_phone():
+    """Kolom nomor telepon: petugas menautkan Telegram-nya sendiri lewat nomor ini."""
+    from sqlalchemy import inspect, text
+
+    cols = {c["name"] for c in inspect(engine).get_columns("users")}
+    if "phone" not in cols:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_phone ON users (phone)"))
+        except Exception:
+            logger.exception("Gagal menambahkan kolom phone (mungkin sudah ada)")
+
+
 _migrate_target_geo()
 _migrate_target_period()
 _migrate_user_password_changed_at()
 _migrate_user_active()
+_migrate_user_role_admin()
+_migrate_user_phone()
 
 def _geocode_active_period_backfill():
     """Geocode target periode aktif yang belum punya koordinat, di thread terpisah
@@ -187,7 +229,15 @@ class MaintenanceMiddleware(BaseHTTPMiddleware):
     # API paths that bypass maintenance mode so managers can still login and toggle it off.
     # Exact-match (with optional trailing slash) so future sibling routes don't inherit the
     # bypass accidentally via a loose startswith() prefix match.
-    BYPASS_PATHS = ("/api/auth/login", "/api/admin/maintenance")
+    # Dua jalur reset ikut dibebaskan: tanpa itu admin yang lupa kata sandinya saat
+    # mode pemeliharaan menyala terkunci permanen — ia tidak bisa login untuk
+    # mematikan pemeliharaan, dan tidak bisa reset karena pemeliharaan menyala.
+    BYPASS_PATHS = (
+        "/api/auth/login",
+        "/api/auth/forgot-password",
+        "/api/auth/reset-password",
+        "/api/admin/maintenance",
+    )
 
     def _is_bypass(self, path: str) -> bool:
         return any(path == p or path == p + "/" for p in self.BYPASS_PATHS)
@@ -203,7 +253,7 @@ class MaintenanceMiddleware(BaseHTTPMiddleware):
                 if auth_header.startswith("Bearer "):
                     try:
                         payload = decode_access_token(auth_header.split(" ", 1)[1])
-                        is_manager = payload.get("role") == "manager"
+                        is_manager = payload.get("role") in ("manager", "admin")
                     except Exception:
                         pass
                 if not is_manager:
@@ -220,7 +270,7 @@ async def api_root():
     return {"message": "Welcome to C3MR API"}
 
 # Maintenance mode endpoints
-from .security import require_manager
+from .security import require_manager, require_admin
 from fastapi import Depends
 from pydantic import BaseModel
 
@@ -233,7 +283,7 @@ async def get_maintenance_status():
     return {"enabled": maintenance_state.enabled, "message": maintenance_state.message}
 
 @app.post("/api/admin/maintenance")
-async def set_maintenance(payload: MaintenancePayload, _auth: dict = Depends(require_manager)):
+async def set_maintenance(payload: MaintenancePayload, _auth: dict = Depends(require_admin)):
     maintenance_state.toggle(payload.enabled, payload.message)
     return {"enabled": maintenance_state.enabled, "message": maintenance_state.message}
 

@@ -13,11 +13,15 @@ import os
 import asyncio
 from datetime import datetime
 from dotenv import load_dotenv
-from telegram import Update, WebAppInfo, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import (
+    Update, WebAppInfo, InlineKeyboardButton, InlineKeyboardMarkup,
+    KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove,
+)
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from sqlalchemy import func, text
 from .database import SessionLocal
 from .models import DbTarget, DbReport, DbUser, TargetStatus, PaymentStatus
+from .lib.format import normalize_phone
 
 load_dotenv()
 
@@ -47,14 +51,89 @@ def is_manager(telegram_id: str, db) -> bool:
     ).first()
     if not user:
         return False
-    # Managers always have access
-    if user.role == "manager":
+    # Managers and admins always have access. Admin sengaja ikut: perannya dipisah
+    # untuk memisahkan menu web, bukan mencabut akses bot — kalau di sini tetap
+    # "manager" saja, admin kehilangan /summary, /report, /ask, dan /mingguan.
+    if user.role in ("manager", "admin"):
         return True
     # Also allow specific officer IDs set via env (comma-separated)
     allowed = os.environ.get("MANAGER_BOT_ALLOWED_IDS", "")
     if allowed and telegram_id in allowed.split(","):
         return True
     return False
+
+
+def link_telegram_by_phone(db, raw_phone: str, telegram_id: str) -> str:
+    """Tautkan akun yang nomornya cocok ke Telegram ini.
+
+    Mengembalikan: ok | already | taken | tg_used | ambiguous | not_found.
+    """
+    phone = normalize_phone(raw_phone)
+    if not phone:
+        return "not_found"
+
+    matches = db.query(DbUser).filter(DbUser.phone == phone).all()
+    if not matches:
+        return "not_found"
+    if len(matches) > 1:
+        # Seharusnya dicegah pemeriksaan keunikan di users.py; kalau tetap terjadi,
+        # menebak salah satunya berarti menautkan orang ke akun yang bukan miliknya.
+        return "ambiguous"
+
+    user = matches[0]
+    telegram_id = str(telegram_id)
+    if user.telegram_id == telegram_id:
+        return "already"
+    if user.telegram_id:
+        # Nomor cocok tapi akunnya sudah tertaut ke Telegram LAIN. Ini penjaga
+        # pengambilalihan akun: tanpa cabang ini, siapa pun yang tahu nomor seorang
+        # petugas bisa memindahkan akun itu ke Telegram miliknya sendiri.
+        return "taken"
+    if db.query(DbUser).filter(DbUser.telegram_id == telegram_id).first():
+        return "tg_used"
+
+    user.telegram_id = telegram_id
+    db.commit()
+    return "ok"
+
+
+async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Tautkan petugas ke akunnya lewat nomor telepon yang ia bagikan sendiri."""
+    contact = update.message.contact
+    tg_user = update.effective_user
+
+    # Baris penentu. Telegram mengizinkan siapa pun MENERUSKAN kartu kontak orang
+    # lain, dan kartu semacam itu tetap berisi nomor telepon yang sah. Hanya kontak
+    # yang dibagikan lewat tombol request_contact yang membawa user_id pengirimnya —
+    # jadi tanpa pemeriksaan ini, meneruskan kartu kontak seorang petugas sudah cukup
+    # untuk menautkan akun petugas itu ke Telegram si penerus.
+    if not contact or contact.user_id != tg_user.id:
+        await update.message.reply_text(
+            "Gunakan tombol “Bagikan Nomor Saya” di bawah — nomor milik orang lain tidak bisa dipakai menautkan akun."
+        )
+        return
+
+    with get_db() as db:
+        result = link_telegram_by_phone(db, contact.phone_number, tg_user.id)
+
+    replies = {
+        "ok": (
+            "Akun Anda berhasil ditautkan.\n\n"
+            "Silakan buka Aplikasi Lapangan C3MR lewat tombol pada notifikasi penugasan."
+        ),
+        "already": "Akun Anda memang sudah tertaut ke Telegram ini. Tidak ada yang perlu diubah.",
+        "taken": "Nomor ini sudah tertaut ke akun Telegram lain. Hubungi administrator jika itu bukan Anda.",
+        "tg_used": "Telegram Anda sudah tertaut ke akun C3MR lain. Hubungi administrator.",
+        "ambiguous": "Nomor ini terdaftar pada lebih dari satu akun. Hubungi administrator.",
+        "not_found": (
+            "Nomor Anda belum terdaftar di sistem C3MR.\n\n"
+            "Minta administrator mendaftarkan nomor ini lebih dulu, lalu coba lagi."
+        ),
+    }
+    await update.message.reply_text(
+        replies.get(result, replies["not_found"]),
+        reply_markup=ReplyKeyboardRemove() if result in ("ok", "already") else None,
+    )
 
 
 def format_payment_status(status) -> str:
@@ -108,12 +187,21 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
     else:
+        # Tombol bagikan-kontak adalah jalur utama penautan: petugas cukup menekannya
+        # dan sistem mencocokkan nomornya sendiri. Cetakan Telegram ID dipertahankan
+        # sebagai jalur cadangan untuk akun yang nomornya belum sempat didaftarkan.
+        share_keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("📱 Bagikan Nomor Saya", request_contact=True)]],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        )
         await update.message.reply_text(
             f"Halo, {user.first_name}\\.\n\n"
-            "⛔ Anda belum terdaftar sebagai manajer\\.\n"
-            f"Telegram ID Anda: `{tid}`\n\n"
-            "Silakan hubungi administrator untuk mendapatkan akses\\.",
-            parse_mode="MarkdownV2"
+            "Untuk mengaktifkan akun petugas, tekan *Bagikan Nomor Saya* di bawah\\. "
+            "Sistem akan mencocokkan nomor Anda dengan data yang didaftarkan administrator\\.\n\n"
+            f"Jika nomor Anda belum didaftarkan, berikan Telegram ID ini ke administrator: `{tid}`",
+            parse_mode="MarkdownV2",
+            reply_markup=share_keyboard,
         )
 
 async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -316,6 +404,9 @@ def run_bot():
     app.add_handler(CommandHandler("ask", ask_command))
     app.add_handler(CommandHandler("mingguan", weekly_command))
     app.add_handler(CommandHandler("weekly", weekly_command))
+    # filters.CONTACT tidak bentrok dengan handler teks di bawah: yang itu disaring
+    # filters.TEXT, dan pesan kartu kontak bukan pesan teks.
+    app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
 
     print("Bot Manajer C3MR berjalan dengan Agen AI...", flush=True)

@@ -1,18 +1,96 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Header
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, Form, Header
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import logging
 import shutil
 import os
 import uuid
 import json
 from urllib.parse import parse_qsl
 from ..database import get_db
-from ..models import DbTarget, DbUser, DbReport, DbComment, Target, TargetStatus, PaymentStatus, utc_iso
+from ..models import DbTarget, DbUser, DbReport, DbComment, DbNotificationLog, Target, TargetStatus, PaymentStatus, UserRole, utc_iso
 from ..security import validate_telegram_data
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = "backend/uploads"
+
+# Disalin dari bot_service.format_payment_status alih-alih diimpor: bot_service
+# mengimpor paket `telegram` di tingkat modul, dan menariknya ke jalur request API
+# berarti kontainer API memuat seluruh pustaka bot hanya demi lima baris peta ini.
+_PAYMENT_LABEL_ID = {
+    "Promise to Pay": "Janji Bayar",
+    "Paid": "Lunas",
+    "Refused": "Menolak",
+    "Not Home": "Tidak di Rumah",
+    "Partial Payment": "Bayar Sebagian",
+}
+
+
+def notify_managers_of_report(report_id: str):
+    """Kabari manajer & admin bahwa satu kunjungan lapangan sudah dilaporkan.
+
+    Membuka sesinya sendiri (pola external.geocode_targets): dijalankan sebagai
+    BackgroundTask setelah respons terkirim, jadi sesi request-nya sudah ditutup.
+    """
+    from ..database import SessionLocal
+    from ..notifications import send_telegram_notification
+    from ..lib.format import format_currency_python
+
+    db = SessionLocal()
+    try:
+        row = (
+            db.query(DbReport, DbTarget, DbUser)
+            .join(DbTarget, DbReport.target_id == DbTarget.id)
+            .join(DbUser, DbReport.officer_id == DbUser.id)
+            .filter(DbReport.id == report_id)
+            .first()
+        )
+        if not row:
+            return
+        report, target, officer = row
+
+        status_value = report.payment_status.value if hasattr(report.payment_status, "value") else report.payment_status
+        notes = (report.notes or "").strip()
+        if len(notes) > 200:
+            notes = notes[:200].rstrip() + "…"
+
+        message = (
+            "*Kunjungan Selesai*\n\n"
+            f"Nasabah: *{target.customer_name}*\n"
+            f"Petugas: {officer.name}\n"
+            f"Hasil: *{_PAYMENT_LABEL_ID.get(status_value, status_value)}*\n"
+            f"Tagihan: {format_currency_python(target.amount_due)}\n"
+            f"Alamat: {target.address}\n"
+            f"Catatan: {notes or '-'}"
+        )
+
+        # Penerima disaring dengan `!= officer`, BUKAN `== manager`. Setelah peran
+        # admin dipisah, organisasi bisa saja hanya punya akun admin — filter
+        # `== manager` akan mengirim nol notifikasi tanpa satu pun galat.
+        recipients = (
+            db.query(DbUser)
+            .filter(
+                DbUser.role != UserRole.officer,
+                DbUser.active.is_(True),
+                DbUser.telegram_id.isnot(None),
+            )
+            .all()
+        )
+        for recipient in recipients:
+            ok = send_telegram_notification(recipient.telegram_id, message)
+            db.add(DbNotificationLog(
+                recipient_id=recipient.id,
+                message=f"Kunjungan selesai: {target.customer_name}",
+                success="true" if ok else "false",
+            ))
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Gagal mengirim notifikasi kunjungan selesai")
+    finally:
+        db.close()
 
 def get_current_officer(x_telegram_auth: str = Header(None), db: Session = Depends(get_db)):
     """Dependency to extract and validate officer from Telegram header"""
@@ -57,6 +135,7 @@ async def get_officer_tasks(officer: DbUser = Depends(get_current_officer), db: 
 
 @router.post("/report")
 async def submit_report(
+    background_tasks: BackgroundTasks,
     target_id: str = Form(...),
     payment_status: str = Form(...),
     notes: Optional[str] = Form(None),
@@ -100,9 +179,14 @@ async def submit_report(
 
     # 4. Update Target Status — finalized report means collection is complete
     target.status = TargetStatus.completed
-        
+
     db.commit()
-    
+
+    # Di latar, bukan inline: petugas ada di jaringan seluler dan baru saja
+    # mengunggah foto — menahan responsnya selama beberapa panggilan Telegram
+    # membuat aplikasi terasa menggantung tepat setelah pekerjaan selesai.
+    background_tasks.add_task(notify_managers_of_report, db_report.id)
+
     return {"message": "Report submitted successfully", "report_id": db_report.id}
 
 @router.post("/comment")

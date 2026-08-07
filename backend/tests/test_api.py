@@ -1,5 +1,7 @@
 """Tests for C3MR API endpoints."""
 import io
+import time
+import pytest
 from backend.models import DbUser, DbTarget, DbComment, DbReport, UserRole, TargetStatus
 from backend.security import hash_password
 
@@ -67,30 +69,91 @@ def test_login_rate_limit(client):
 
 # ── Users ────────────────────────────────────────────────────────────
 
-def test_create_and_list_users(client, auth_headers):
-    res = client.post("/api/users/", json={"name": "Officer A", "role": "officer"}, headers=auth_headers)
+def test_create_and_list_users(client, admin_headers):
+    res = client.post("/api/users/", json={"name": "Officer A", "role": "officer"}, headers=admin_headers)
     assert res.status_code == 200
     assert res.json()["name"] == "Officer A"
 
-    res = client.get("/api/users/", headers=auth_headers)
+    res = client.get("/api/users/", headers=admin_headers)
     assert res.status_code == 200
     assert len(res.json()) >= 1
 
 
-def test_create_user_duplicate_telegram(client, auth_headers):
-    client.post("/api/users/", json={"name": "A", "telegram_id": "111", "role": "officer"}, headers=auth_headers)
-    res = client.post("/api/users/", json={"name": "B", "telegram_id": "111", "role": "officer"}, headers=auth_headers)
+def test_manager_can_still_list_users(client, auth_headers, admin_headers):
+    """GET /users/ WAJIB tetap terbuka untuk manajer.
+
+    Dropdown penugasan di TargetsTable, DashboardPage dan TargetsPage mengambil
+    daftar petugas dari endpoint ini. Kalau ikut dijadikan admin-only, manajer
+    kehilangan kemampuan menugaskan target sama sekali — dan gejalanya cuma
+    dropdown kosong, bukan pesan galat.
+    """
+    client.post("/api/users/", json={"name": "Officer A", "role": "officer"}, headers=admin_headers)
+    res = client.get("/api/users/", headers=auth_headers)
+    assert res.status_code == 200
+    assert any(u["name"] == "Officer A" for u in res.json())
+
+
+def test_manager_cannot_manage_users(client, auth_headers):
+    """Pemisahan portal: manajer tidak boleh membuat, mengubah, atau menghapus akun."""
+    assert client.post("/api/users/", json={"name": "X", "role": "officer"}, headers=auth_headers).status_code == 403
+    assert client.patch("/api/users/whatever", json={"name": "Y"}, headers=auth_headers).status_code == 403
+    assert client.delete("/api/users/whatever", headers=auth_headers).status_code == 403
+
+
+def test_create_manager_account_sets_password(client, admin_headers):
+    """Admin bisa membuat akun portal kedua — sebelumnya tidak ada jalan sama sekali:
+    POST /users/ tidak pernah menyetel kata sandi dan /seed-admin menolak berjalan
+    begitu satu manajer sudah ada."""
+    res = client.post("/api/users/", json={
+        "name": "Manajer Baru", "role": "manager",
+        "email": "mgr2@test.id", "password": "rahasia123",
+    }, headers=admin_headers)
+    assert res.status_code == 200
+
+    login = client.post("/api/auth/login", json={"username": "mgr2@test.id", "password": "rahasia123"})
+    assert login.status_code == 200
+    assert login.json()["role"] == "manager"
+
+
+def test_create_manager_without_password_rejected(client, admin_headers):
+    res = client.post("/api/users/", json={"name": "Tanpa Sandi", "role": "manager"}, headers=admin_headers)
     assert res.status_code == 400
 
 
-def test_delete_user(client, auth_headers):
-    res = client.post("/api/users/", json={"name": "Temp", "role": "officer"}, headers=auth_headers)
+def test_last_admin_cannot_be_removed(client, db, admin_headers):
+    """Menghapus admin terakhir mengunci semua orang keluar dari Manajemen Pengguna,
+    dan karena membuat akun butuh peran admin, tidak ada jalan kembali dari aplikasi."""
+    from backend.models import DbUser, UserRole
+    admin = db.query(DbUser).filter(DbUser.role == UserRole.admin).first()
+
+    assert client.delete(f"/api/users/{admin.id}", headers=admin_headers).status_code == 409
+    assert client.patch(f"/api/users/{admin.id}", json={"role": "manager"}, headers=admin_headers).status_code == 409
+    assert client.patch(f"/api/users/{admin.id}", json={"active": False}, headers=admin_headers).status_code == 409
+
+
+def test_create_user_duplicate_telegram(client, admin_headers):
+    client.post("/api/users/", json={"name": "A", "telegram_id": "111", "role": "officer"}, headers=admin_headers)
+    res = client.post("/api/users/", json={"name": "B", "telegram_id": "111", "role": "officer"}, headers=admin_headers)
+    assert res.status_code == 400
+
+
+def test_create_user_duplicate_phone(client, admin_headers):
+    """Nomor dibandingkan setelah dinormalisasi — tanda hubung tidak boleh jadi
+    celah membuat dua akun bernomor sama, karena penautan Telegram lewat nomor
+    jadi ambigu."""
+    client.post("/api/users/", json={"name": "A", "phone": "081234567890", "role": "officer"}, headers=admin_headers)
+    res = client.post("/api/users/", json={"name": "B", "phone": "+62 812-3456-7890", "role": "officer"}, headers=admin_headers)
+    assert res.status_code == 400
+
+
+def test_delete_user(client, admin_headers):
+    res = client.post("/api/users/", json={"name": "Temp", "role": "officer"}, headers=admin_headers)
     uid = res.json()["id"]
 
-    res = client.delete(f"/api/users/{uid}", headers=auth_headers)
+    res = client.delete(f"/api/users/{uid}", headers=admin_headers)
     assert res.status_code == 200
 
-    res = client.get("/api/users/", headers=auth_headers)
+    res = client.get("/api/users/", headers=admin_headers)
     ids = [u["id"] for u in res.json()]
     assert uid not in ids
 
@@ -258,7 +321,7 @@ def test_officer_cannot_access_users(client, db):
 
 # ── Delete User FK Protection ────────────────────────────────────────
 
-def test_delete_user_with_targets_blocked(client, db, auth_headers):
+def test_delete_user_with_targets_blocked(client, db, admin_headers):
     officer = DbUser(name="Busy Officer", role=UserRole.officer)
     db.add(officer)
     db.commit()
@@ -268,7 +331,7 @@ def test_delete_user_with_targets_blocked(client, db, auth_headers):
     db.add(target)
     db.commit()
 
-    res = client.delete(f"/api/users/{officer.id}", headers=auth_headers)
+    res = client.delete(f"/api/users/{officer.id}", headers=admin_headers)
     assert res.status_code == 409
 
 
@@ -345,3 +408,174 @@ def test_token_ditolak_setelah_akun_dihapus(client, db):
     # Token masih sah secara kriptografis dan belum kedaluwarsa — tetap harus ditolak.
     assert client.get("/api/dashboard/", headers=headers).status_code == 401
     assert client.get("/api/targets/", headers=headers).status_code == 401
+
+
+# ── Normalisasi nomor telepon (A7) ───────────────────────────────────
+
+@pytest.mark.parametrize("raw,expected", [
+    ("081234567890", "6281234567890"),
+    ("+62 812-3456-7890", "6281234567890"),
+    ("6281234567890", "6281234567890"),
+    ("81234567890", "6281234567890"),
+    ("0062 812 3456 7890", "6281234567890"),
+    ("", None),
+    (None, None),
+    ("bukan nomor", None),
+])
+def test_normalize_phone(raw, expected):
+    """Telegram mengirim '62…' lewat kartu kontak sementara manajer mengetik '08…'.
+    Kalau keduanya tidak diseragamkan, pencocokan nomor saat petugas menautkan
+    Telegram-nya tidak akan pernah kena."""
+    from backend.lib.format import normalize_phone
+    assert normalize_phone(raw) == expected
+
+
+# ── Validasi target masuk (A4) ───────────────────────────────────────
+
+def test_upload_rejects_blank_and_negative(client, auth_headers):
+    """Batas kepercayaan input manual: alamat kosong berarti target yang tidak bisa
+    didatangi siapa pun, dan tagihan negatif merusak rekap."""
+    assert client.post("/api/targets/upload", json=[
+        {"customer_name": "A", "address": "   ", "phone": "0812", "amount_due": 100},
+    ], headers=auth_headers).status_code == 422
+
+    assert client.post("/api/targets/upload", json=[
+        {"customer_name": "A", "address": "Jl. Satu", "phone": "0812", "amount_due": -5},
+    ], headers=auth_headers).status_code == 422
+
+
+def test_manual_single_target_upload(client, auth_headers):
+    """Input manual memakai endpoint unggah yang sama dengan CSV, cukup satu elemen —
+    jadi ia otomatis ikut tercatat di audit log dan ikut diantre geocoding."""
+    res = client.post("/api/targets/upload", json=[
+        {"customer_name": "  Budi  ", "address": " Jl. Merdeka 1 ", "phone": "0812", "amount_due": "50000"},
+    ], headers=auth_headers)
+    assert res.status_code == 200
+
+    listed = client.get("/api/targets/", headers=auth_headers).json()
+    assert any(t["customerName"] == "Budi" and t["address"] == "Jl. Merdeka 1" for t in listed)
+
+
+# ── Reset kata sandi lewat Telegram (A2) ─────────────────────────────
+
+def _seed_resettable_user(db, telegram_id="99001"):
+    from backend.models import DbUser, UserRole
+    from backend.security import hash_password
+    user = DbUser(
+        name="Lupa Sandi", email="lupa@test.id", telegram_id=telegram_id,
+        password_hash=hash_password("sandilama"), role=UserRole.manager,
+    )
+    db.add(user)
+    db.commit()
+    return user
+
+
+def test_forgot_password_does_not_leak_account_existence(client, db, monkeypatch):
+    """Jawaban untuk akun yang ada dan yang tidak ada harus IDENTIK — kalau berbeda,
+    halaman ini berubah jadi alat pencacah nama pengguna yang valid."""
+    monkeypatch.setattr("backend.notifications.send_telegram_notification", lambda *a, **k: True)
+    _seed_resettable_user(db)
+
+    ada = client.post("/api/auth/forgot-password", json={"username": "lupa@test.id"})
+    tidak_ada = client.post("/api/auth/forgot-password", json={"username": "tidakada@test.id"})
+    assert ada.status_code == tidak_ada.status_code == 200
+    assert ada.json() == tidak_ada.json()
+
+
+def test_reset_password_end_to_end(client, db, monkeypatch):
+    monkeypatch.setattr("backend.notifications.send_telegram_notification", lambda *a, **k: True)
+    _seed_resettable_user(db)
+    client.post("/api/auth/forgot-password", json={"username": "lupa@test.id"})
+
+    from backend.routers.auth import _reset_codes
+    code = _reset_codes["lupa@test.id"][0]
+
+    res = client.post("/api/auth/reset-password", json={
+        "username": "lupa@test.id", "code": code, "new_password": "sandibaru123",
+    })
+    assert res.status_code == 200
+    assert client.post("/api/auth/login", json={"username": "lupa@test.id", "password": "sandibaru123"}).status_code == 200
+    # Sekali pakai: kode yang sama tidak boleh berlaku lagi.
+    assert client.post("/api/auth/reset-password", json={
+        "username": "lupa@test.id", "code": code, "new_password": "sandilain123",
+    }).status_code == 400
+
+
+def test_reset_password_wrong_code_burns_attempts(client, db, monkeypatch):
+    monkeypatch.setattr("backend.notifications.send_telegram_notification", lambda *a, **k: True)
+    _seed_resettable_user(db)
+    client.post("/api/auth/forgot-password", json={"username": "lupa@test.id"})
+
+    from backend.routers.auth import _reset_codes, RESET_MAX_ATTEMPTS
+    code = _reset_codes["lupa@test.id"][0]
+    salah = "000000" if code != "000000" else "111111"
+
+    for _ in range(RESET_MAX_ATTEMPTS):
+        assert client.post("/api/auth/reset-password", json={
+            "username": "lupa@test.id", "code": salah, "new_password": "sandibaru123",
+        }).status_code == 400
+
+    # Jatah habis: kode yang BENAR pun harus ditolak, kalau tidak menebak 6 digit
+    # cuma soal mencoba berulang kali.
+    assert client.post("/api/auth/reset-password", json={
+        "username": "lupa@test.id", "code": code, "new_password": "sandibaru123",
+    }).status_code == 400
+    assert client.post("/api/auth/login", json={"username": "lupa@test.id", "password": "sandilama"}).status_code == 200
+
+
+def test_reset_password_expired_code_rejected(client, db, monkeypatch):
+    monkeypatch.setattr("backend.notifications.send_telegram_notification", lambda *a, **k: True)
+    _seed_resettable_user(db)
+    client.post("/api/auth/forgot-password", json={"username": "lupa@test.id"})
+
+    from backend.routers import auth as auth_module
+    code, _expires, attempts = auth_module._reset_codes["lupa@test.id"]
+    auth_module._reset_codes["lupa@test.id"] = (code, time.time() - 1, attempts)
+
+    assert client.post("/api/auth/reset-password", json={
+        "username": "lupa@test.id", "code": code, "new_password": "sandibaru123",
+    }).status_code == 400
+
+
+# ── Notifikasi manajer saat kunjungan selesai (A6) ───────────────────
+
+def test_visit_notification_reaches_admin_when_no_manager_exists(db, monkeypatch):
+    """Penerima disaring `role != officer`, BUKAN `== manager`.
+
+    Setelah peran admin dipisah, sebuah organisasi bisa saja hanya punya akun admin.
+    Filter `== manager` akan mengirim NOL notifikasi tanpa satu pun galat — gagal
+    diam-diam, jenis kegagalan yang tidak akan ketahuan sampai ada yang mengeluh.
+    """
+    from backend.models import DbNotificationLog, DbReport, PaymentStatus
+    from backend.tests.conftest import TestSession
+
+    monkeypatch.setattr("backend.database.SessionLocal", TestSession)
+    terkirim = []
+    monkeypatch.setattr(
+        "backend.notifications.send_telegram_notification",
+        lambda tid, msg, **k: terkirim.append((tid, msg)) or True,
+    )
+
+    admin = DbUser(name="Admin Saja", telegram_id="777", role=UserRole.admin)
+    officer = DbUser(name="Petugas", telegram_id="888", role=UserRole.officer)
+    db.add_all([admin, officer])
+    db.commit()
+
+    target = DbTarget(customer_name="Nasabah X", address="Jl. Uji 9", phone="0812", amount_due=250000)
+    db.add(target)
+    db.commit()
+    report = DbReport(
+        target_id=target.id, officer_id=officer.id,
+        payment_status=PaymentStatus.paid, notes="Sudah dibayar tunai",
+    )
+    db.add(report)
+    db.commit()
+
+    from backend.routers.officer import notify_managers_of_report
+    notify_managers_of_report(report.id)
+
+    penerima = [tid for tid, _ in terkirim]
+    assert "777" in penerima, "admin harus menerima notifikasi meski tidak ada akun manager"
+    assert "888" not in penerima, "petugas pelapor tidak perlu dikabari soal laporannya sendiri"
+    assert "Nasabah X" in terkirim[0][1] and "Lunas" in terkirim[0][1]
+    assert db.query(DbNotificationLog).filter(DbNotificationLog.recipient_id == admin.id).count() == 1

@@ -19,8 +19,9 @@ def utc_iso(dt: datetime) -> str:
 # --- SQLAlchemy Models ---
 
 class UserRole(str, Enum):
-    manager = "manager"
-    officer = "officer"
+    admin = "admin"       # kelola akun, audit, pemeliharaan — tidak melihat data operasional
+    manager = "manager"   # dashboard, target, analitik, asisten AI
+    officer = "officer"   # hanya Mini App lapangan
 
 class TargetStatus(str, Enum):
     pending = "pending"
@@ -45,6 +46,12 @@ class DbUser(Base):
     telegram_id = Column(String, unique=True, nullable=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=True)
+    # Nomor telepon ternormalisasi ("62…", tanpa +). Dipakai petugas untuk menautkan
+    # Telegram-nya sendiri lewat tombol bagikan-kontak, jadi manajer tidak perlu
+    # menanyakan Telegram ID. TANPA unique: SQLite tidak bisa menambah kolom unik
+    # lewat ALTER, dan keunikan hanya di PG membuat dua lingkungan menyimpang —
+    # dijaga di API seperti telegram_id (users.py).
+    phone = Column(String, nullable=True, index=True)
     role = _enum_col(UserRole, "user_role", default=UserRole.officer)
     password_hash = Column(String, nullable=True)
     # Distempel saat kata sandi diubah; token yang terbit sebelum waktu ini ditolak
@@ -108,6 +115,7 @@ class DbComment(Base):
 class UserBase(BaseModel):
     name: str
     telegram_id: Optional[str] = None
+    phone: Optional[str] = None
     role: UserRole = UserRole.officer
 
 class User(UserBase):
@@ -164,4 +172,28 @@ class DashboardStats(BaseModel):
     pending: int
 
 class TargetCreate(TargetBase):
-    pass
+    """Batas kepercayaan untuk target masuk — baik dari unggah CSV maupun formulir
+    input manual. Validatornya sengaja HANYA di sini, bukan di TargetBase: `Target`
+    (model respons) juga mewarisi TargetBase dan divalidasi ulang saat menyajikan
+    baris dari basis data, jadi aturan yang sama di sana akan membuat GET /targets
+    balas 500 begitu ada satu baris warisan yang alamatnya kosong."""
+
+    @field_validator("customerName", "address", "phone", mode="before")
+    @classmethod
+    def not_blank(cls, v: Any) -> Any:
+        # Spasi juga kosong: "   " lolos dari `if not v` tapi tetap tak berguna
+        # bagi petugas yang harus mendatangi alamatnya.
+        if v is None or not str(v).strip():
+            raise ValueError("wajib diisi")
+        return str(v).strip()
+
+    @field_validator("amountDue", mode="before")
+    @classmethod
+    def amount_not_negative(cls, v: Any) -> Any:
+        try:
+            amount = float(v)
+        except (TypeError, ValueError):
+            raise ValueError("harus berupa angka")
+        if amount < 0:
+            raise ValueError("tidak boleh negatif")
+        return amount

@@ -18,6 +18,10 @@ JWT_EXPIRY_HOURS = 4
 
 TELEGRAM_AUTH_MAX_AGE = 300  # 5 minutes — reject replayed initData older than this
 
+# Satu kebijakan panjang kata sandi untuk seluruh akun portal (pembuatan akun,
+# ganti sandi, reset lewat Telegram). Bootstrap /seed-admin tetap lebih ketat (12).
+MIN_PASSWORD_LENGTH = 8
+
 def validate_telegram_data(init_data: str) -> bool:
     """
     Memvalidasi integritas data yang dikirim dari Telegram Mini App
@@ -180,9 +184,53 @@ def _require_manager_dep(authorization: str = None):
             raise HTTPException(status_code=401, detail="Sesi berakhir karena kata sandi diubah. Silakan login ulang.")
         # Compare against the live DB role, not the (possibly stale) JWT claim.
         role = user.role.value if hasattr(user.role, "value") else user.role
-        if role != "manager":
+        # admin ikut diterima: peran ini dipisah dari manager untuk memisahkan menu,
+        # bukan untuk mencabut akses. Kalau di sini tetap "manager" saja, setiap
+        # endpoint yang memakai require_manager langsung 403 bagi admin.
+        if role not in ("manager", "admin"):
             raise HTTPException(status_code=403, detail="Manager role required")
         return payload
     return _dep
 
 require_manager = _require_manager_dep()
+
+
+def _require_admin_dep():
+    """Sama seperti _require_manager_dep, tapi hanya menerima peran admin.
+
+    Sengaja disalin, bukan diabstraksi: dua penjaga yang tampak mirip tapi berbeda
+    satu baris lebih aman dibaca daripada satu fungsi berparameter yang salah
+    dipanggil diam-diam meloloskan peran yang tidak diinginkan.
+    """
+    from fastapi import Header, HTTPException, Depends
+    from sqlalchemy.orm import Session
+    from .database import get_db
+    from .models import DbUser
+
+    def _dep(
+        authorization: str = Header(None, alias="Authorization"),
+        db: Session = Depends(get_db),
+    ):
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing or invalid token")
+        token = authorization.split(" ", 1)[1]
+        try:
+            payload = decode_access_token(token)
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token expired")
+        except jwt.InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        user_id = payload.get("sub")
+        user = db.query(DbUser).filter(DbUser.id == user_id).first() if user_id else None
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        if _token_issued_before_password_change(payload, user):
+            raise HTTPException(status_code=401, detail="Sesi berakhir karena kata sandi diubah. Silakan login ulang.")
+        role = user.role.value if hasattr(user.role, "value") else user.role
+        if role != "admin":
+            raise HTTPException(status_code=403, detail="Butuh peran admin")
+        return payload
+    return _dep
+
+require_admin = _require_admin_dep()

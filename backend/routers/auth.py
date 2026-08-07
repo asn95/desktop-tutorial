@@ -1,13 +1,17 @@
 import time
 import hmac
+import secrets
 from datetime import datetime, timezone
 from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import DbUser, DbAuditLog, UserRole
-from ..security import verify_password, create_access_token, hash_password, require_manager
+from ..models import DbUser, DbAuditLog, DbNotificationLog, UserRole
+from ..security import (
+    verify_password, create_access_token, hash_password, require_manager,
+    MIN_PASSWORD_LENGTH,
+)
 
 router = APIRouter()
 
@@ -119,8 +123,8 @@ async def change_password(payload: ChangePasswordPayload, db: Session = Depends(
         raise HTTPException(status_code=401, detail="Pengguna tidak ditemukan")
     if not verify_password(payload.current_password, user.password_hash):
         raise HTTPException(status_code=401, detail="Kata sandi saat ini salah")
-    if len(payload.new_password) < 6:
-        raise HTTPException(status_code=400, detail="Kata sandi baru minimal 6 karakter")
+    if len(payload.new_password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Kata sandi baru minimal {MIN_PASSWORD_LENGTH} karakter")
     user.password_hash = hash_password(payload.new_password)
     user.password_changed_at = datetime.now(timezone.utc)  # batalkan token lama → wajib login ulang
     db.add(DbAuditLog(user_id=auth["sub"], action="change_password", detail="Kata sandi diubah"))
@@ -157,3 +161,97 @@ async def seed_admin(payload: SeedPayload, db: Session = Depends(get_db)):
     db.add(admin)
     db.commit()
     return {"message": "Admin dibuat dengan nama pengguna: admin"}
+
+
+# --- Lupa kata sandi lewat Telegram ---
+#
+# Disimpan di memori proses, tanpa tabel dan tanpa migrasi — sama seperti penghitung
+# rate limit di atas. Kodenya hidup 15 menit; kehilangan seluruhnya saat kontainer
+# restart hanya berarti pengguna meminta kode baru.
+# ponytail: dict per-proses; pindah ke Redis kalau API pernah dijalankan >1 instance,
+# karena kode yang terbit di instance A tidak akan dikenali instance B.
+_reset_codes: dict[str, tuple[str, float, int]] = {}  # username -> (kode, kedaluwarsa, sisa_percobaan)
+RESET_TTL_SECONDS = 900
+RESET_MAX_ATTEMPTS = 5
+
+# Jawaban yang SAMA persis dipakai baik akun ada maupun tidak. Membedakannya akan
+# mengubah halaman lupa-sandi menjadi alat pencacah nama pengguna yang valid.
+_RESET_SENT_MESSAGE = (
+    "Jika akun tersebut terdaftar dan tertaut ke Telegram, kode verifikasi sudah dikirim ke Telegram-nya."
+)
+
+
+class ForgotPasswordPayload(BaseModel):
+    username: str
+
+
+@router.post("/forgot-password")
+async def forgot_password(payload: ForgotPasswordPayload, request: Request, db: Session = Depends(get_db)):
+    username = payload.username.strip()
+    # Rate limit memakai ember yang sama dengan login: tanpa itu endpoint ini jadi
+    # cara gratis membanjiri Telegram seorang manajer dengan kode yang tak ia minta.
+    _check_rate_limit(_client_ip(request), username)
+    _record_attempt(_client_ip(request), username)
+
+    user = db.query(DbUser).filter(DbUser.email == username).first()
+    if user and user.telegram_id and user.password_hash:
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        _reset_codes[username] = (code, time.time() + RESET_TTL_SECONDS, RESET_MAX_ATTEMPTS)
+        message = (
+            f"Kode reset kata sandi C3MR Anda: {code}\n\n"
+            f"Berlaku {RESET_TTL_SECONDS // 60} menit dan hanya bisa dipakai sekali.\n"
+            "Abaikan pesan ini jika Anda tidak meminta reset."
+        )
+        from ..notifications import send_telegram_notification
+        # parse_mode=None: kodenya angka polos, tidak perlu Markdown, dan Markdown
+        # yang gagal diurai membuat Telegram menolak seluruh pesan.
+        ok = send_telegram_notification(user.telegram_id, message, parse_mode=None)
+        db.add(DbNotificationLog(recipient_id=user.id, message="Kode reset kata sandi dikirim", success="true" if ok else "false"))
+        db.add(DbAuditLog(user_id=user.id, action="request_password_reset", detail="Kode reset diminta lewat halaman login"))
+        db.commit()
+
+    return {"message": _RESET_SENT_MESSAGE}
+
+
+class ResetPasswordPayload(BaseModel):
+    username: str
+    code: str
+    new_password: str
+
+
+@router.post("/reset-password")
+async def reset_password(payload: ResetPasswordPayload, db: Session = Depends(get_db)):
+    username = payload.username.strip()
+    entry = _reset_codes.get(username)
+    if not entry:
+        raise HTTPException(status_code=400, detail="Kode tidak valid atau sudah kedaluwarsa")
+
+    code, expires_at, attempts_left = entry
+    if time.time() > expires_at or attempts_left <= 0:
+        _reset_codes.pop(username, None)
+        raise HTTPException(status_code=400, detail="Kode tidak valid atau sudah kedaluwarsa")
+
+    if not hmac.compare_digest(code, payload.code.strip()):
+        # Sisa percobaan dikurangi lebih dulu supaya menebak 6 digit dengan cara
+        # mencoba berulang kali habis jatahnya jauh sebelum ruang kodenya terjelajahi.
+        _reset_codes[username] = (code, expires_at, attempts_left - 1)
+        raise HTTPException(status_code=400, detail="Kode tidak valid atau sudah kedaluwarsa")
+
+    if len(payload.new_password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Kata sandi baru minimal {MIN_PASSWORD_LENGTH} karakter")
+
+    user = db.query(DbUser).filter(DbUser.email == username).first()
+    if not user:
+        _reset_codes.pop(username, None)
+        raise HTTPException(status_code=400, detail="Kode tidak valid atau sudah kedaluwarsa")
+
+    user.password_hash = hash_password(payload.new_password)
+    # Membatalkan seluruh token lama (lihat security.py): kalau akunnya memang
+    # sedang dibajak, sesi penyerang mati begitu pemiliknya reset.
+    user.password_changed_at = datetime.now(timezone.utc)
+    db.add(DbAuditLog(user_id=user.id, action="reset_password", detail="Kata sandi direset lewat kode Telegram"))
+    # Sekali pakai: dibuang SEBELUM membalas, jadi kode yang sama tidak bisa
+    # dipakai ulang bahkan oleh permintaan yang berjalan bersamaan.
+    _reset_codes.pop(username, None)
+    db.commit()
+    return {"message": "Kata sandi berhasil diubah. Silakan masuk dengan kata sandi baru."}

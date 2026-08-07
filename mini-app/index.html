@@ -217,7 +217,8 @@
             font-weight: 600;
             color: var(--muted);
         }
-        .period-bar select {
+        .period-bar select,
+        .period-bar input[type="search"] {
             flex: 1;
             padding: 8px 12px;
             font-size: 13px;
@@ -227,6 +228,13 @@
             border-radius: 8px;
             background: #fff;
         }
+        /* 16px mencegah webview iOS memperbesar halaman saat kolom difokus */
+        .period-bar input[type="search"] {
+            font-size: 16px;
+            font-weight: 500;
+            -webkit-appearance: none;
+        }
+        .period-bar input[type="search"]::placeholder { color: var(--faint); font-weight: 400; }
         .subj-maps {
             display: inline-block;
             margin: 0 10px 12px 0;
@@ -437,6 +445,10 @@
         <label for="period-select">Periode</label>
         <select id="period-select"></select>
     </div>
+    <div class="period-bar">
+        <input id="task-search" type="search" inputmode="search" autocomplete="off"
+               placeholder="Cari nama atau alamat…" aria-label="Cari tugas">
+    </div>
     <div class="sec-label">Antrean Tugas</div>
     <div id="task-container"></div>
 </div>
@@ -504,6 +516,6 @@
     <button type="button" id="web-submit-btn" onclick="submitReportWeb()" class="btn-fin">Kirim Laporan</button>
 </div>
 
-<script src="js/app.js?v=3"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>

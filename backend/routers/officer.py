@@ -46,8 +46,14 @@ def get_current_officer(x_telegram_auth: str = Header(None), db: Session = Depen
 
 @router.get("/tasks", response_model=List[Target])
 async def get_officer_tasks(officer: DbUser = Depends(get_current_officer), db: Session = Depends(get_db)):
-    # Return targets assigned to the validated officer
-    return db.query(DbTarget).filter(DbTarget.assigned_officer == officer.id).all()
+    # Terbaru dulu. Tanpa order_by, urutannya adalah urutan baris database — yaitu
+    # urutan unggah CSV — yang tidak berarti apa-apa bagi petugas di lapangan.
+    return (
+        db.query(DbTarget)
+        .filter(DbTarget.assigned_officer == officer.id)
+        .order_by(DbTarget.created_at.desc())
+        .all()
+    )
 
 @router.post("/report")
 async def submit_report(

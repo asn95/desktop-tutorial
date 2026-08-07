@@ -6,6 +6,7 @@ let currentTasks = [];
 let selectedTask = null;
 let selectedTag = null;
 let selectedPeriod = null; // batch bulanan "YYYY-MM" yang sedang ditampilkan
+let searchQuery = "";      // pencarian nama nasabah / alamat, huruf kecil
 let loginAttempts = 0;
 const MAX_LOGIN_ATTEMPTS = 5;
 
@@ -204,6 +205,11 @@ document.getElementById('period-select').addEventListener('change', (e) => {
     renderTasks();
 });
 
+document.getElementById('task-search').addEventListener('input', (e) => {
+    searchQuery = e.target.value.trim().toLowerCase();
+    renderTasks();
+});
+
 function renderTasks() {
     renderPeriodOptions();
     taskContainer.innerHTML = '';
@@ -211,14 +217,29 @@ function renderTasks() {
         ? currentTasks.filter(t => (t.period || '') === selectedPeriod)
         : currentTasks;
     const activeTasks = inPeriod.filter(t => t.status !== 'completed');
+    // Hitungan di info-bar tetap beban kerja SEBENARNYA, tidak ikut menyusut saat
+    // mengetik — kalau tidak, petugas mengira tugasnya berkurang.
     document.getElementById('active-cases').textContent = activeTasks.length;
 
-    if (activeTasks.length === 0) {
-        taskContainer.innerHTML = '<p style="text-align:center;color:#9ca3af;padding:40px 16px;font-size:13px;">Tidak ada tugas tertunda pada periode ini.</p>';
+    const shown = searchQuery
+        ? activeTasks.filter(t =>
+            (t.customerName || '').toLowerCase().includes(searchQuery) ||
+            (t.address || '').toLowerCase().includes(searchQuery))
+        : activeTasks;
+
+    // Terbaru dulu. Backend sudah mengurutkan, tapi cache localStorage bisa
+    // menyajikan data lama yang belum terurut sampai 24 jam (lihat cacheGet).
+    // .filter() mengembalikan array baru, jadi .sort() tidak merusak currentTasks.
+    shown.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    if (shown.length === 0) {
+        taskContainer.innerHTML = searchQuery
+            ? '<p style="text-align:center;color:#9ca3af;padding:40px 16px;font-size:13px;">Tidak ada tugas yang cocok dengan pencarian.</p>'
+            : '<p style="text-align:center;color:#9ca3af;padding:40px 16px;font-size:13px;">Tidak ada tugas tertunda pada periode ini.</p>';
         return;
     }
 
-    activeTasks.forEach((task, i) => {
+    shown.forEach((task, i) => {
         const caseNum = '2025-' + String(8394 - i * 3012).replace('-','');
 
         const div = document.createElement('div');

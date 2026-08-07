@@ -34,7 +34,10 @@ def send_telegram_notification(telegram_id: str, message: str, include_field_app
         })
 
     try:
-        response = requests.post(url, json=payload)
+        # timeout wajib: ini panggilan sinkron yang dipakai di dalam request handler
+        # (_assign_one, agent_tools._notify) — tanpa batas waktu, Telegram yang
+        # menggantung menahan worker-nya selamanya.
+        response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
         return True
     except Exception as e:

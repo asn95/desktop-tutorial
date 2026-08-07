@@ -36,9 +36,12 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_db():
-    # Clear server-side rate limit state between tests
-    from backend.routers.auth import _login_attempts
+    # Bersihkan state di-proses antar tes. _login_attempts_user ikut dibersihkan —
+    # tanpa itu tes yang gagal login berulang saling mewarisi hitungan lewat nama
+    # pengguna dan hasilnya bergantung pada urutan eksekusi.
+    from backend.routers.auth import _login_attempts, _login_attempts_user
     _login_attempts.clear()
+    _login_attempts_user.clear()
 
     Base.metadata.create_all(bind=engine)
     yield

@@ -340,35 +340,40 @@ export function UserManagementPage() {
                 </select>
               </div>
 
-              {newRole === "officer" ? (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Nomor telepon")}</label>
-                    <input
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      inputMode="tel"
-                      placeholder="0812-3456-7890"
-                      className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
-                    />
-                    <p className="text-[9px] text-slate-400">
-                      {t("Nomor telepon petugas — dipakai untuk menautkan Telegram lewat tombol Bagikan Nomor.")}
-                    </p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Telegram ID</label>
-                    <input
-                      value={telegramId}
-                      onChange={(e) => setTelegramId(e.target.value)}
-                      placeholder={t("mis. 123456789")}
-                      className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
-                    />
-                    <p className="text-[9px] text-slate-400">
-                      {t("Opsional jika nomor telepon diisi — petugas menautkan sendiri lewat bot.")}
-                    </p>
-                  </div>
-                </>
-              ) : (
+              {/* Nomor telepon dan Telegram ID berlaku untuk SEMUA peran, bukan
+                  petugas saja: manajer justru pengguna bot paling utama — ia yang
+                  menerima notifikasi kunjungan selesai, laporan mingguan, /summary
+                  dan /ask. Akun manajer tanpa telegram_id tidak akan pernah dapat
+                  satu pun dari itu, dan tidak ada pesan galat yang memberitahunya. */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Nomor telepon")}</label>
+                <input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  inputMode="tel"
+                  placeholder="0812-3456-7890"
+                  className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
+                />
+                <p className="text-[9px] text-slate-400">
+                  {t("Dipakai untuk menautkan Telegram sendiri lewat tombol Bagikan Nomor di bot.")}
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">Telegram ID</label>
+                <input
+                  value={telegramId}
+                  onChange={(e) => setTelegramId(e.target.value)}
+                  placeholder={t("mis. 123456789")}
+                  className="w-full border-b border-gray-200 bg-transparent px-0 py-2 text-sm font-bold font-mono outline-none placeholder:text-slate-300 focus:border-b-2"
+                />
+                <p className="text-[9px] text-slate-400">
+                  {newRole === "officer"
+                    ? t("Opsional jika nomor telepon diisi — petugas menautkan sendiri lewat bot.")
+                    : t("Tanpa ini akun tidak menerima notifikasi kunjungan, laporan mingguan, maupun perintah bot.")}
+                </p>
+              </div>
+
+              {newRole !== "officer" && (
                 <>
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("Nama pengguna")} *</label>

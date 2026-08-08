@@ -7,7 +7,11 @@ Generate polished UML diagrams for C3MR Capstone:
 from PIL import Image, ImageDraw, ImageFont
 import os
 
-BASE   = "/Users/auzasyamil/Documents/Capstone/capstone1"
+# Diturunkan dari lokasi skrip ini sendiri. Sebelumnya dipaku ke
+# "/Users/auzasyamil/Documents/Capstone/capstone1" — salinan repo lama — sehingga
+# menjalankan skrip ini menulis gambar ke tempat yang tidak pernah dibaca siapa pun,
+# lalu tampak seolah diagramnya "tidak berubah" padahal memang tidak pernah sampai.
+BASE   = os.path.dirname(os.path.abspath(__file__))
 IMGDIR = os.path.join(BASE, "uml", "images")
 FONT   = "/System/Library/Fonts/SFNS.ttf"
 ARIAL  = "/Library/Fonts/Arial Unicode.ttf"
@@ -712,7 +716,17 @@ def make_erd():
 # 7. DFD LEVEL 0 – CONTEXT DIAGRAM
 # ═══════════════════════════════════════════════════════════════
 def make_dfd_level0():
-    W, H = 860, 520
+    """DFD Level 0 setelah revisi mayor Agustus 2026.
+
+    Tiga hal yang berubah dari versi lama, dan yang pertama adalah salah fakta:
+      - Penyimpanan tertulis "Supabase". Sistemnya memakai PostgreSQL di Railway;
+        Supabase tidak pernah dipakai di produksi.
+      - Administrator belum ada sebagai entitas — perannya baru dipisah dari
+        manajer, dan dialah yang mengelola akun serta mode pemeliharaan.
+      - Telegram Bot API belum digambarkan sebagai entitas luar, padahal semua
+        notifikasi, penautan nomor, dan perintah bot lewat sana.
+    """
+    W, H = 1020, 660
     img = Image.new("RGB", (W, H), (248,250,252))
     d   = ImageDraw.Draw(img, "RGBA")
 
@@ -771,53 +785,88 @@ def make_dfd_level0():
             d.text((x1+OFF+4, (y1+y2)//2 - th//2), lbl_back, font=LS, fill=(120,120,120))
 
     # ── Central system box ──
-    CX, CY = W//2, 240
-    CW, CH = 200, 100
+    CX, CY = W//2, 330
+    CW, CH = 220, 110
     shadow(d, CX-CW//2, CY-CH//2, CX+CW//2, CY+CH//2, 10)
     rr(d, CX-CW//2, CY-CH//2, CX+CW//2, CY+CH//2, 10,
        (220,235,255), (50,100,200), 2)
-    ctext(d, CX, CY-14, "C3MR", fnt(18), (20,60,180))
-    ctext(d, CX, CY+10, "System", fnt(14), (20,60,180))
+    ctext(d, CX, CY-22, "C3MR", fnt(18), (20,60,180))
+    ctext(d, CX, CY+2, "System", fnt(14), (20,60,180))
+    ctext(d, CX, CY+26, "API · Bot · Mini App", fnt(10), (60,90,160))
+
+    LEFT, RIGHT = CX-CW//2, CX+CW//2
+    TOP, BOTTOM = CY-CH//2, CY+CH//2
 
     # ── External entities ──
-    # Field Officer (left)
-    entity(50, 175, 230, 305,
+    entity(40, 265, 230, 395,
            "Field Officer", "Telegram Mini App",
            (25,118,210), (227,242,253))
 
-    # Manager (right)
-    entity(630, 175, 810, 305,
-           "Manager", "Web Admin / Bot",
+    entity(790, 265, 980, 395,
+           "Manager", "Web Portal + Bot",
            (21,101,192), (187,222,251))
 
-    # Supabase (bottom)
-    entity(330, 390, 530, 490,
-           "Supabase", "PostgreSQL + Storage",
+    # Administrator: peran ketiga hasil revisi. Menu web-nya terpisah dari manajer —
+    # ia mengelola akun, peran, dan mode pemeliharaan, tanpa melihat data operasional.
+    entity(250, 60, 450, 175,
+           "Administrator", "Web Portal",
+           (94,53,177), (237,231,246))
+
+    # Telegram Bot API: jalur keluar semua notifikasi dan jalur masuk kartu kontak
+    # yang dipakai petugas untuk menautkan akunnya sendiri.
+    entity(570, 60, 770, 175,
+           "Telegram Bot API", "External Service",
+           (0,137,123), (224,242,241))
+
+    # Railway PostgreSQL, bukan Supabase.
+    entity(410, 500, 610, 620,
+           "PostgreSQL", "Railway (managed)",
            (245,127,23), (255,236,179))
 
     # ── Data flow arrows ──
-    # Field Officer <-> C3MR  (horizontal)
-    dbl_arrow(230, CY, CX-CW//2, CY,
-              "Submit Report", "Task List", horiz=True)
+    dbl_arrow(230, CY, LEFT, CY,
+              "Visit report + photo", "Assigned tasks", horiz=True)
 
-    # Manager <-> C3MR  (horizontal)
-    dbl_arrow(CX+CW//2, CY, 630, CY,
-              "Upload CSV / Assign", "Reports & Stats", horiz=True)
+    dbl_arrow(RIGHT, CY, 790, CY,
+              "Targets, assignment", "Dashboard, analytics", horiz=True)
 
-    # C3MR <-> Supabase  (vertical)
-    dbl_arrow(CX, CY+CH//2, 430, 390,
-              "Store Data", "Retrieve Data", horiz=False)
+    dbl_arrow(350, 175, 350, TOP,
+              "Accounts & roles", "Audit log", horiz=False)
+
+    # Ketiga notifikasi keluar dijadikan satu label, bukan digambar sebagai garis
+    # terpisah: garis tambahan dari sisi kanan sistem memotong panah ini dan justru
+    # membuat diagramnya lebih sulit dibaca daripada informasinya menolong.
+    dbl_arrow(670, 175, 670, TOP,
+              "Notifications: visit, weekly, reset code",
+              "Commands, shared contact", horiz=False)
+
+    dbl_arrow(CX, BOTTOM, CX, 500,
+              "Store data", "Retrieve data", horiz=False)
 
     img.save(os.path.join(IMGDIR, "10_dfd_level0.png"), dpi=(150,150))
     print("Saved: 10_dfd_level0.png")
 
 
-# ── Run all ────────────────────────────────────────────────────
-make_architecture()
-make_component()
-make_sequence()
-make_usecase()
-make_activity()
-make_erd()
-make_dfd_level0()
-print("All diagrams generated.")
+# ── Jalankan ───────────────────────────────────────────────────
+# Tanpa argumen semua diagram dibuat ulang. Beri nama diagram sebagai argumen untuk
+# membuat sebagian saja — penting saat hanya satu diagram yang direvisi, supaya
+# gambar lain tidak ikut ditimpa render baru yang isinya belum tentu sama.
+ALL = {
+    "architecture": make_architecture,
+    "component":    make_component,
+    "sequence":     make_sequence,
+    "usecase":      make_usecase,
+    "activity":     make_activity,
+    "erd":          make_erd,
+    "dfd":          make_dfd_level0,
+}
+
+if __name__ == "__main__":
+    import sys
+    names = sys.argv[1:] or list(ALL)
+    unknown = [n for n in names if n not in ALL]
+    if unknown:
+        sys.exit(f"diagram tidak dikenal: {unknown}. Pilihan: {', '.join(ALL)}")
+    for n in names:
+        ALL[n]()
+    print(f"Selesai: {', '.join(names)} → {IMGDIR}")

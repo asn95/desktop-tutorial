@@ -715,136 +715,15 @@ def make_erd():
 # ═══════════════════════════════════════════════════════════════
 # 7. DFD LEVEL 0 – CONTEXT DIAGRAM
 # ═══════════════════════════════════════════════════════════════
-def make_dfd_level0():
-    """DFD Level 0 setelah revisi mayor Agustus 2026.
-
-    Tiga hal yang berubah dari versi lama, dan yang pertama adalah salah fakta:
-      - Penyimpanan tertulis "Supabase". Sistemnya memakai PostgreSQL di Railway;
-        Supabase tidak pernah dipakai di produksi.
-      - Administrator belum ada sebagai entitas — perannya baru dipisah dari
-        manajer, dan dialah yang mengelola akun serta mode pemeliharaan.
-      - Telegram Bot API belum digambarkan sebagai entitas luar, padahal semua
-        notifikasi, penautan nomor, dan perintah bot lewat sana.
-    """
-    W, H = 1020, 660
-    img = Image.new("RGB", (W, H), (248,250,252))
-    d   = ImageDraw.Draw(img, "RGBA")
-
-    ft = fnt(16)
-    ctext(d, W//2, 22, "C3MR – DFD Level 0 (Context Diagram)", ft, (30,30,30))
-    d.line([(40,36),(W-40,36)], fill=(200,210,220), width=1)
-
-    LA = fnt(11)
-    LS = fnt(10)
-
-    def entity(x1, y1, x2, y2, title, sub, hcol, bcol):
-        shadow(d, x1, y1, x2, y2, 8)
-        rr(d, x1, y1, x2, y2, 8, bcol, hcol, 2)
-        rr(d, x1, y1, x2, y1+26, 8, hcol)
-        d.rectangle([x1, y1+14, x2, y1+26], fill=hcol)
-        ctext(d, (x1+x2)//2, y1+13, title, fnt(12), (255,255,255))
-        ctext(d, (x1+x2)//2, y1+44, sub, fnt(10), (50,50,50))
-
-    def dbl_arrow(x1, y1, x2, y2, lbl_fwd, lbl_back, horiz=True):
-        """Draw two parallel arrows (forward + return) with labels."""
-        OFF = 10  # offset between the two arrows
-        if horiz:
-            # forward (top line)
-            d.line([(x1, y1-OFF),(x2, y1-OFF)], fill=(60,60,60), width=2)
-            if x2 > x1:
-                d.polygon([(x2-8, y1-OFF-4),(x2-8, y1-OFF+4),(x2, y1-OFF)], fill=(60,60,60))
-            else:
-                d.polygon([(x2+8, y1-OFF-4),(x2+8, y1-OFF+4),(x2, y1-OFF)], fill=(60,60,60))
-            tw, th = tsz(d, lbl_fwd, LS)
-            ctext(d, (x1+x2)//2, y1-OFF-th-2, lbl_fwd, LS, (50,50,150))
-            # return (bottom line, dashed)
-            seg, gap, cx = 7, 4, min(x1,x2)
-            while cx < max(x1,x2)-7:
-                d.line([(cx, y1+OFF),(min(cx+seg, max(x1,x2)), y1+OFF)],
-                       fill=(120,120,120), width=1)
-                cx += seg+gap
-            if x2 > x1:
-                d.polygon([(x1+8, y1+OFF-3),(x1+8, y1+OFF+3),(x1, y1+OFF)], fill=(120,120,120))
-            else:
-                d.polygon([(x1-8, y1+OFF-3),(x1-8, y1+OFF+3),(x1, y1+OFF)], fill=(120,120,120))
-            tw, th = tsz(d, lbl_back, LS)
-            ctext(d, (x1+x2)//2, y1+OFF+4, lbl_back, LS, (120,120,120))
-        else:  # vertical
-            d.line([(x1-OFF, y1),(x1-OFF, y2)], fill=(60,60,60), width=2)
-            d.polygon([(x1-OFF-4, y2-8),(x1-OFF+4, y2-8),(x1-OFF, y2)], fill=(60,60,60))
-            tw, th = tsz(d, lbl_fwd, LS)
-            d.text((x1-OFF-tw-4, (y1+y2)//2 - th//2), lbl_fwd, font=LS, fill=(50,50,150))
-            # return dashed
-            seg, gap, cy = 7, 4, min(y1,y2)
-            while cy < max(y1,y2)-7:
-                d.line([(x1+OFF, cy),(x1+OFF, min(cy+seg, max(y1,y2)))],
-                       fill=(120,120,120), width=1)
-                cy += seg+gap
-            d.polygon([(x1+OFF-3, y1+8),(x1+OFF+3, y1+8),(x1+OFF, y1)], fill=(120,120,120))
-            tw, th = tsz(d, lbl_back, LS)
-            d.text((x1+OFF+4, (y1+y2)//2 - th//2), lbl_back, font=LS, fill=(120,120,120))
-
-    # ── Central system box ──
-    CX, CY = W//2, 330
-    CW, CH = 220, 110
-    shadow(d, CX-CW//2, CY-CH//2, CX+CW//2, CY+CH//2, 10)
-    rr(d, CX-CW//2, CY-CH//2, CX+CW//2, CY+CH//2, 10,
-       (220,235,255), (50,100,200), 2)
-    ctext(d, CX, CY-22, "C3MR", fnt(18), (20,60,180))
-    ctext(d, CX, CY+2, "System", fnt(14), (20,60,180))
-    ctext(d, CX, CY+26, "API · Bot · Mini App", fnt(10), (60,90,160))
-
-    LEFT, RIGHT = CX-CW//2, CX+CW//2
-    TOP, BOTTOM = CY-CH//2, CY+CH//2
-
-    # ── External entities ──
-    entity(40, 265, 230, 395,
-           "Field Officer", "Telegram Mini App",
-           (25,118,210), (227,242,253))
-
-    entity(790, 265, 980, 395,
-           "Manager", "Web Portal + Bot",
-           (21,101,192), (187,222,251))
-
-    # Administrator: peran ketiga hasil revisi. Menu web-nya terpisah dari manajer —
-    # ia mengelola akun, peran, dan mode pemeliharaan, tanpa melihat data operasional.
-    entity(250, 60, 450, 175,
-           "Administrator", "Web Portal",
-           (94,53,177), (237,231,246))
-
-    # Telegram Bot API: jalur keluar semua notifikasi dan jalur masuk kartu kontak
-    # yang dipakai petugas untuk menautkan akunnya sendiri.
-    entity(570, 60, 770, 175,
-           "Telegram Bot API", "External Service",
-           (0,137,123), (224,242,241))
-
-    # Railway PostgreSQL, bukan Supabase.
-    entity(410, 500, 610, 620,
-           "PostgreSQL", "Railway (managed)",
-           (245,127,23), (255,236,179))
-
-    # ── Data flow arrows ──
-    dbl_arrow(230, CY, LEFT, CY,
-              "Visit report + photo", "Assigned tasks", horiz=True)
-
-    dbl_arrow(RIGHT, CY, 790, CY,
-              "Targets, assignment", "Dashboard, analytics", horiz=True)
-
-    dbl_arrow(350, 175, 350, TOP,
-              "Accounts & roles", "Audit log", horiz=False)
-
-    # Ketiga notifikasi keluar dijadikan satu label, bukan digambar sebagai garis
-    # terpisah: garis tambahan dari sisi kanan sistem memotong panah ini dan justru
-    # membuat diagramnya lebih sulit dibaca daripada informasinya menolong.
-    dbl_arrow(670, 175, 670, TOP,
-              "Notifications: visit, weekly, reset code",
-              "Commands, shared contact", horiz=False)
-
-    dbl_arrow(CX, BOTTOM, CX, 500,
-              "Store data", "Retrieve data", horiz=False)
-
-    img.save(os.path.join(IMGDIR, "10_dfd_level0.png"), dpi=(150,150))
-    print("Saved: 10_dfd_level0.png")
+# DFD Level 0 TIDAK lagi dibuat skrip ini.
+#
+# Diagramnya sekarang dirancang di Figma (FigJam) dan diekspor ke
+# uml/images/10_dfd_level0.png:
+#   https://www.figma.com/board/fOy4kijezSJ6js15Tu9t9z
+#
+# Fungsi make_dfd_level0() sengaja DIHAPUS, bukan sekadar dilepas dari daftar
+# di bawah: selama fungsinya ada, sekali saja seseorang menjalankan skrip ini
+# tanpa argumen, hasil Figma tertimpa gambar PIL tanpa peringatan apa pun.
 
 
 # ── Jalankan ───────────────────────────────────────────────────
@@ -858,7 +737,6 @@ ALL = {
     "usecase":      make_usecase,
     "activity":     make_activity,
     "erd":          make_erd,
-    "dfd":          make_dfd_level0,
 }
 
 if __name__ == "__main__":

@@ -35,10 +35,32 @@ pernyataan yang tidak sesuai sistem sebenarnya:
 
 ## Catatan bentuk
 
-`08_activity_diagram.png` berukuran 1100x7347 karena alurnya linear empat belas
-langkah. Lebarnya sengaja tidak dikecilkan supaya teksnya tetap terbaca saat
-dicetak; kalau perlu muat satu halaman, potong di simpul keputusan
-"Photo evidence attached?" dan sajikan sebagai dua gambar.
+**Activity.** Alurnya linear empat belas langkah, jadi keluaran Figma-nya 1100x7347
+(rasio 1:6,7) — mustahil muat di halaman potret tanpa mengecilkan teks sampai tak
+terbaca. `08_activity_diagram.png` yang tersimpan di sini adalah versi **tiga kolom**
+(3548x2710, rasio 1,31): gambar tinggi itu dipotong di celah antar-simpul terdekat
+dengan sepertiga dan dua-pertiga tinggi, lalu disusun bersebelahan dengan pemisah
+dan judul kolom. Titik potong WAJIB di celah — memotong di tengah kotak memenggal
+teksnya. Group Report memakai varian **dua kolom** karena slot gambar di sana
+berasio tegak (0,71); tiga kolom yang melebar akan terlalu banyak bermargin di situ.
+
+**Judul lapisan.** Subgraph Mermaid ter-render sebagai pita bergaris tanpa judul —
+nama lapisannya hanya ada sebagai id grup di dalam SVG dan tidak pernah digambar.
+Judul "Client Tier", "Application Tier", dan seterusnya disisipkan sebagai elemen
+`<text>` ke dalam SVG lalu di-render ulang, bukan dicap ke PNG, supaya tetap tajam.
+
+## Yang masih perlu dikerjakan
+
+- **Dua pasang label bertumpuk di diagram arsitektur**: "HTTPS + JWT" menimpa
+  "HTTPS + initData HMAC", dan "SQL" menimpa "writes photos". Labelnya tidak bisa
+  digeser dari SVG karena satu grup dengan garis konektornya — geser labelnya,
+  garisnya ikut pindah. Perbaikannya di Figma: perpendek teks label atau geser
+  simpulnya. Tertunda karena kuota panggilan Figma MCP paket Starter habis.
+- **Teks badan Group Report masih menyebut Supabase** ("Supabase Auth for admin",
+  "photo upload to object storage") di bagian Level 1 - Major Processes. Gambarnya
+  sudah diganti, teksnya belum — menyunting teks di dalam PDF berisiko merusak
+  penyematan font. Perlu dokumen sumbernya (Google Docs/Word), yang tidak ada di
+  folder SUBMISSION.
 
 ## Cara memperbarui
 

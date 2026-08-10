@@ -49,6 +49,14 @@ nama lapisannya hanya ada sebagai id grup di dalam SVG dan tidak pernah digambar
 Judul "Client Tier", "Application Tier", dan seterusnya disisipkan sebagai elemen
 `<text>` ke dalam SVG lalu di-render ulang, bukan dicap ke PNG, supaya tetap tajam.
 
+## Label bertumpuk — sudah beres
+
+Dua pasang label di diagram arsitektur sempat saling menimpa. Anggapan awal bahwa
+labelnya tidak bisa digeser karena "satu grup dengan garis konektornya" KELIRU:
+tiap grup label berisi tepat dua anak, `<path>` garisnya dan satu `<g>` berisi
+teks. Menambahkan `transform="translate(...)"` pada `<g>` itu memindahkan teksnya
+saja. Diperiksa ulang secara program: nol tumpukan tersisa dari sepuluh label.
+
 ## Sinkron dengan kode
 
 Diagram dan dokumen ikut diperbarui setiap kali skema atau permukaan API berubah.
@@ -62,11 +70,6 @@ tabel di atas.
 
 ## Yang masih perlu dikerjakan
 
-- **Dua pasang label bertumpuk di diagram arsitektur**: "HTTPS + JWT" menimpa
-  "HTTPS + initData HMAC", dan "SQL" menimpa "writes photos". Labelnya tidak bisa
-  digeser dari SVG karena satu grup dengan garis konektornya — geser labelnya,
-  garisnya ikut pindah. Perbaikannya di Figma: perpendek teks label atau geser
-  simpulnya. Tertunda karena kuota panggilan Figma MCP paket Starter habis.
 - **Teks badan Group Report masih menyebut Supabase** ("Supabase Auth for admin",
   "photo upload to object storage") di bagian Level 1 - Major Processes. Gambarnya
   sudah diganti, teksnya belum — menyunting teks di dalam PDF berisiko merusak

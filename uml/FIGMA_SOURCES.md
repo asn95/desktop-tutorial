@@ -70,11 +70,14 @@ tabel di atas.
 
 ## Yang masih perlu dikerjakan
 
-- **Teks badan Group Report masih menyebut Supabase** ("Supabase Auth for admin",
-  "photo upload to object storage") di bagian Level 1 - Major Processes. Gambarnya
-  sudah diganti, teksnya belum — menyunting teks di dalam PDF berisiko merusak
-  penyematan font. Perlu dokumen sumbernya (Google Docs/Word), yang tidak ada di
-  folder SUBMISSION.
+- **Group Report PDF perlu disusun ulang dari Form yang sudah dibetulkan.**
+  Dokumen sumbernya ADA di `SUBMISSION/02 Group Report/Forms/` — catatan
+  sebelumnya yang menyebut sumbernya tidak ada itu keliru, foldernya memang tidak
+  saya buka. Sembilan belas penyebutan Supabase di Form 1, 2, dan 3 sudah diganti
+  (PostgreSQL Railway, filesystem kontainer API, bcrypt + JWT terbitan backend),
+  begitu pula `upload_batches` yang tidak pernah ada dan gateway Cloudflare/Nginx
+  yang tidak pernah dikonfigurasi. PDF 85 halaman yang sudah dirapikan masih
+  memuat teks lama; menyusunnya ulang dari Form adalah proses tim.
 
 ## Cara memperbarui
 

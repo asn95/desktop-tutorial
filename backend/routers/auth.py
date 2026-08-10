@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import DbUser, DbAuditLog, DbNotificationLog, UserRole
 from ..security import (
-    verify_password, create_access_token, hash_password, require_manager,
+    verify_password, create_access_token, hash_password, require_portal,
     MIN_PASSWORD_LENGTH,
 )
 
@@ -104,7 +104,7 @@ class VerifyPasswordPayload(BaseModel):
     password: str
 
 @router.post("/verify-password")
-async def verify_manager_password(payload: VerifyPasswordPayload, db: Session = Depends(get_db), auth: dict = Depends(require_manager)):
+async def verify_manager_password(payload: VerifyPasswordPayload, db: Session = Depends(get_db), auth: dict = Depends(require_portal)):
     user = db.query(DbUser).filter(DbUser.id == auth["sub"]).first()
     if not user or not user.password_hash:
         raise HTTPException(status_code=401, detail="Kata sandi tidak valid")
@@ -117,7 +117,7 @@ class ChangePasswordPayload(BaseModel):
     new_password: str
 
 @router.post("/change-password")
-async def change_password(payload: ChangePasswordPayload, db: Session = Depends(get_db), auth: dict = Depends(require_manager)):
+async def change_password(payload: ChangePasswordPayload, db: Session = Depends(get_db), auth: dict = Depends(require_portal)):
     user = db.query(DbUser).filter(DbUser.id == auth["sub"]).first()
     if not user or not user.password_hash:
         raise HTTPException(status_code=401, detail="Pengguna tidak ditemukan")
@@ -148,15 +148,18 @@ async def seed_admin(payload: SeedPayload, db: Session = Depends(get_db)):
     if len(payload.password) < 12:
         raise HTTPException(status_code=400, detail="Kata sandi admin minimal 12 karakter.")
 
-    any_manager = db.query(DbUser).filter(DbUser.role == UserRole.manager).first()
-    if any_manager:
-        raise HTTPException(status_code=403, detail="Admin sudah ada. Seed dinonaktifkan.")
+    # Cek peran admin JUGA, bukan manajer saja. Sejak peran dipisah, sebuah instalasi
+    # bisa punya admin tanpa satu pun manajer — dan pemeriksaan lama membaca keadaan
+    # itu sebagai "belum ada siapa-siapa", sehingga endpoint bootstrap ini hidup lagi.
+    existing = db.query(DbUser).filter(DbUser.role.in_([UserRole.admin, UserRole.manager])).first()
+    if existing:
+        raise HTTPException(status_code=403, detail="Akun portal sudah ada. Seed dinonaktifkan.")
 
     admin = DbUser(
         name="C3MR Administrator",
         email="admin",
         password_hash=hash_password(payload.password),
-        role=UserRole.manager,
+        role=UserRole.admin,
     )
     db.add(admin)
     db.commit()
@@ -188,10 +191,13 @@ class ForgotPasswordPayload(BaseModel):
 @router.post("/forgot-password")
 async def forgot_password(payload: ForgotPasswordPayload, request: Request, db: Session = Depends(get_db)):
     username = payload.username.strip()
-    # Rate limit memakai ember yang sama dengan login: tanpa itu endpoint ini jadi
-    # cara gratis membanjiri Telegram seorang manajer dengan kode yang tak ia minta.
-    _check_rate_limit(_client_ip(request), username)
-    _record_attempt(_client_ip(request), username)
+    # Ember TERPISAH dari login lewat awalan "reset:". Versi sebelumnya memakai ember
+    # yang sama, sehingga menembak endpoint ini lima kali semenit dengan username
+    # orang lain membuat ORANG ITU tidak bisa login — permintaan lupa-sandi yang tak
+    # pernah ia buat mengunci akunnya sendiri. Pembatasannya tetap ada, hanya tidak
+    # lagi ikut menghabiskan jatah login.
+    _check_rate_limit(_client_ip(request), "reset:" + username)
+    _record_attempt(_client_ip(request), "reset:" + username)
 
     user = db.query(DbUser).filter(DbUser.email == username).first()
     if user and user.telegram_id and user.password_hash:

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..database import get_db
 from ..models import DbTarget, DbComment, DbReport, DbUser, DbAuditLog, DbNotificationLog, Target, TargetCreate, TargetStatus, utc_iso
-from ..security import require_auth
+from ..security import require_manager
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ async def get_targets(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    _auth: dict = Depends(require_auth),
+    _auth: dict = Depends(require_manager),
 ):
     query = db.query(DbTarget)
     if status:
@@ -32,7 +32,7 @@ async def get_targets(
     return query.order_by(DbTarget.created_at.desc()).offset(skip).limit(limit).all()
 
 @router.get("/periods")
-async def list_periods(db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def list_periods(db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
     """Distinct upload periods (newest first) with target counts, for the period selector."""
     rows = (
         db.query(DbTarget.period, func.count(DbTarget.id))
@@ -52,7 +52,7 @@ async def upload_targets(
     background_tasks: BackgroundTasks,
     period: Optional[str] = None,
     db: Session = Depends(get_db),
-    _auth: dict = Depends(require_auth),
+    _auth: dict = Depends(require_manager),
 ):
     batch_period = period or current_period()
     try:
@@ -101,7 +101,7 @@ def _assign_one(db_target, db_officer, db, auth_sub):
         db.add(DbNotificationLog(recipient_id=db_officer.id, message=msg, success="true" if success else "false"))
 
 @router.patch("/{target_id}/assign")
-async def assign_target(target_id: str, officer_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def assign_target(target_id: str, officer_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
     db_target = db.query(DbTarget).filter(DbTarget.id == target_id).first()
     if not db_target:
         raise HTTPException(status_code=404, detail="Target tidak ditemukan")
@@ -120,7 +120,7 @@ class BulkAssignPayload(_BaseModel):
     officer_id: str
 
 @router.post("/bulk-assign")
-async def bulk_assign(payload: BulkAssignPayload, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def bulk_assign(payload: BulkAssignPayload, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
     db_officer = db.query(DbUser).filter(DbUser.id == payload.officer_id).first()
     if not db_officer:
         raise HTTPException(status_code=404, detail="Petugas tidak ditemukan")
@@ -135,7 +135,7 @@ async def bulk_assign(payload: BulkAssignPayload, db: Session = Depends(get_db),
     return {"message": f"{len(targets)} target berhasil ditugaskan ke {db_officer.name}"}
 
 @router.get("/export/csv")
-async def export_targets_csv(period: Optional[str] = None, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def export_targets_csv(period: Optional[str] = None, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
     query = db.query(DbTarget)
     if period and period != "all":
         query = query.filter(DbTarget.period == period)
@@ -165,7 +165,7 @@ async def export_targets_csv(period: Optional[str] = None, db: Session = Depends
     )
 
 @router.get("/{target_id}/reports")
-async def get_target_reports(target_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def get_target_reports(target_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
     reports = (
         db.query(DbReport, DbUser)
         .join(DbUser, DbReport.officer_id == DbUser.id)
@@ -186,7 +186,7 @@ async def get_target_reports(target_id: str, db: Session = Depends(get_db), _aut
     ]
 
 @router.get("/{target_id}/comments")
-async def get_target_comments(target_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def get_target_comments(target_id: str, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
     comments = (
         db.query(DbComment, DbUser)
         .join(DbUser, DbComment.officer_id == DbUser.id)

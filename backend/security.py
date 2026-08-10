@@ -108,11 +108,15 @@ def _token_issued_before_password_change(payload: dict, user) -> bool:
         changed_at = changed_at.replace(tzinfo=timezone.utc)
     return int(iat) < int(changed_at.timestamp())
 
-def get_current_manager(authorization: str = None):
-    """FastAPI dependency: extract and validate JWT from Authorization header.
+def _require_roles(*allowed: str):
+    """Dependency FastAPI: JWT sah + peran diverifikasi ulang ke basis data.
 
-    Selain memeriksa tanda tangan JWT, token juga ditolak bila terbit sebelum kata
-    sandi pemiliknya terakhir diubah — memaksa login ulang setelah ganti kata sandi.
+    Klaim `role` di dalam token TIDAK dipercaya sendirian: token yang dicetak saat
+    akun masih manajer tetap sah secara kriptografis sampai kedaluwarsa meskipun
+    akunnya sudah dihapus atau diturunkan. Karena itu penggunanya dimuat ulang
+    lewat `sub` setiap request, dan basis data yang jadi sumber kebenaran.
+
+    Tanpa argumen: cukup terautentikasi. Dengan argumen: perannya harus termasuk.
     """
     from fastapi import Header, HTTPException, Depends
     from sqlalchemy.orm import Session
@@ -125,9 +129,8 @@ def get_current_manager(authorization: str = None):
     ):
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Missing or invalid token")
-        token = authorization.split(" ", 1)[1]
         try:
-            payload = decode_access_token(token)
+            payload = decode_access_token(authorization.split(" ", 1)[1])
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=401, detail="Token expired")
         except jwt.InvalidTokenError:
@@ -135,102 +138,21 @@ def get_current_manager(authorization: str = None):
 
         user_id = payload.get("sub")
         user = db.query(DbUser).filter(DbUser.id == user_id).first() if user_id else None
-        # Pemilik token WAJIB masih ada. Sebelumnya pemeriksaan di bawah ditulis
-        # `if user and ...`, sehingga pengguna yang akunnya sudah DIHAPUS justru lolos:
-        # user bernilai None, syaratnya salah, requestnya diteruskan. Akibatnya token
-        # milik akun terhapus tetap bisa dipakai sampai kedaluwarsa sendiri.
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        if _token_issued_before_password_change(payload, user):
-            raise HTTPException(status_code=401, detail="Sesi berakhir karena kata sandi diubah. Silakan login ulang.")
-        return payload
-    return _dep
-
-# Reusable dependency instance
-require_auth = get_current_manager()
-
-def _require_manager_dep(authorization: str = None):
-    """FastAPI dependency: require a valid JWT AND re-verify manager status in the DB.
-
-    The JWT's role claim is not trusted on its own: a token minted while the account was
-    a manager stays cryptographically valid until expiry even if the account was later
-    deleted or demoted. So on every privileged request we re-load the user by `sub` and
-    confirm they still exist and still hold the manager role; the DB is the source of truth.
-    """
-    from fastapi import Header, HTTPException, Depends
-    from sqlalchemy.orm import Session
-    from .database import get_db
-    from .models import DbUser
-
-    def _dep(
-        authorization: str = Header(None, alias="Authorization"),
-        db: Session = Depends(get_db),
-    ):
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Missing or invalid token")
-        token = authorization.split(" ", 1)[1]
-        try:
-            payload = decode_access_token(token)
-        except jwt.ExpiredSignatureError:
-            raise HTTPException(status_code=401, detail="Token expired")
-        except jwt.InvalidTokenError:
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-        user_id = payload.get("sub")
-        user = db.query(DbUser).filter(DbUser.id == user_id).first() if user_id else None
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        if _token_issued_before_password_change(payload, user):
-            raise HTTPException(status_code=401, detail="Sesi berakhir karena kata sandi diubah. Silakan login ulang.")
-        # Compare against the live DB role, not the (possibly stale) JWT claim.
-        role = user.role.value if hasattr(user.role, "value") else user.role
-        # admin ikut diterima: peran ini dipisah dari manager untuk memisahkan menu,
-        # bukan untuk mencabut akses. Kalau di sini tetap "manager" saja, setiap
-        # endpoint yang memakai require_manager langsung 403 bagi admin.
-        if role not in ("manager", "admin"):
-            raise HTTPException(status_code=403, detail="Manager role required")
-        return payload
-    return _dep
-
-require_manager = _require_manager_dep()
-
-
-def _require_admin_dep():
-    """Sama seperti _require_manager_dep, tapi hanya menerima peran admin.
-
-    Sengaja disalin, bukan diabstraksi: dua penjaga yang tampak mirip tapi berbeda
-    satu baris lebih aman dibaca daripada satu fungsi berparameter yang salah
-    dipanggil diam-diam meloloskan peran yang tidak diinginkan.
-    """
-    from fastapi import Header, HTTPException, Depends
-    from sqlalchemy.orm import Session
-    from .database import get_db
-    from .models import DbUser
-
-    def _dep(
-        authorization: str = Header(None, alias="Authorization"),
-        db: Session = Depends(get_db),
-    ):
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Missing or invalid token")
-        token = authorization.split(" ", 1)[1]
-        try:
-            payload = decode_access_token(token)
-        except jwt.ExpiredSignatureError:
-            raise HTTPException(status_code=401, detail="Token expired")
-        except jwt.InvalidTokenError:
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-        user_id = payload.get("sub")
-        user = db.query(DbUser).filter(DbUser.id == user_id).first() if user_id else None
+        # Pemilik token WAJIB masih ada. Sebelumnya pemeriksaan ini ditulis
+        # `if user and ...`, sehingga pengguna yang akunnya sudah DIHAPUS justru
+        # lolos: user bernilai None, syaratnya salah, requestnya diteruskan.
         if not user:
             raise HTTPException(status_code=401, detail="Invalid token")
         if _token_issued_before_password_change(payload, user):
             raise HTTPException(status_code=401, detail="Sesi berakhir karena kata sandi diubah. Silakan login ulang.")
         role = user.role.value if hasattr(user.role, "value") else user.role
-        if role != "admin":
-            raise HTTPException(status_code=403, detail="Butuh peran admin")
+        if allowed and role not in allowed:
+            raise HTTPException(status_code=403, detail=f"Butuh peran: {' atau '.join(allowed)}")
         return payload
     return _dep
 
-require_admin = _require_admin_dep()
+
+require_auth    = _require_roles()                        # siapa pun yang terautentikasi
+require_portal  = _require_roles("manager", "admin")      # halaman yang dipakai keduanya
+require_manager = _require_roles("manager")               # kerja operasional
+require_admin   = _require_roles("admin")                 # kelola akun, audit, pemeliharaan

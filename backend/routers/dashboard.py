@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import DbTarget, DbComment, DbUser, DashboardStats, TargetStatus, Target, utc_iso
-from ..security import require_auth
+from ..security import require_manager
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -17,7 +17,7 @@ async def get_dashboard_snapshot(
     period: Optional[str] = None,
     limit: int = 50,
     db: Session = Depends(get_db),
-    _auth: dict = Depends(require_auth),
+    _auth: dict = Depends(require_manager),
 ):
     """Ringkasan + daftar target.
 
@@ -57,7 +57,7 @@ async def get_dashboard_snapshot(
     }
 
 @router.get("/recent-comments")
-async def get_recent_comments(limit: int = 5, db: Session = Depends(get_db), _auth: dict = Depends(require_auth)):
+async def get_recent_comments(limit: int = 5, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
     comments = (
         db.query(DbComment, DbUser.name.label("officer_name"), DbTarget.customer_name)
         .join(DbUser, DbComment.officer_id == DbUser.id)

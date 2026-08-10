@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from ..database import get_db
 from ..models import DbUser, DbTarget, DbReport, DbComment, DbAuditLog, User, UserBase, UserRole
 from ..lib.format import normalize_phone
-from ..security import require_manager, require_admin, hash_password, MIN_PASSWORD_LENGTH
+from ..security import require_portal, require_admin, hash_password, MIN_PASSWORD_LENGTH
 
 router = APIRouter()
 
@@ -58,8 +58,8 @@ class UserCreate(UserBase):
 
 
 @router.get("/", response_model=List[User])
-async def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
-    # Sengaja require_manager, bukan require_admin: dropdown penugasan di
+async def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _auth: dict = Depends(require_portal)):
+    # Sengaja require_portal, bukan require_admin: dropdown penugasan di
     # TargetsTable/DashboardPage/TargetsPage mengambil daftar petugas dari sini.
     # Dijadikan admin-only berarti manajer tidak bisa menugaskan target lagi.
     return db.query(DbUser).order_by(DbUser.created_at.desc()).offset(skip).limit(limit).all()

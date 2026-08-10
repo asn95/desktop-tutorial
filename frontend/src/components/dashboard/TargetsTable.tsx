@@ -6,6 +6,19 @@ import { getUsers } from "../../services/userService";
 import { apiClient } from "../../lib/apiClient";
 import { useLang } from "../../contexts/LanguageContext";
 
+/** Foto bukti kini butuh autentikasi. Tag <img> dan <a href> tidak bisa mengirim
+ *  header Authorization, jadi tokennya ikut lewat query — sama-sama origin, dan
+ *  tokennya berumur 4 jam. Dibaca dari localStorage seperti apiClient. */
+function photoSrc(photoUrl: string): string {
+  try {
+    const stored = localStorage.getItem("c3mr:web-admin:auth-user");
+    const token = stored ? JSON.parse(stored)?.token : null;
+    return token ? `/api${photoUrl}?token=${encodeURIComponent(token)}` : `/api${photoUrl}`;
+  } catch {
+    return `/api${photoUrl}`;
+  }
+}
+
 interface Comment {
   id: string;
   message: string;
@@ -247,9 +260,9 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                         </div>
                         {r.notes && <p className="text-xs text-slate-700 leading-relaxed mb-2">{r.notes}</p>}
                         {r.photo_url && (
-                          <a href={`/api${r.photo_url}`} target="_blank" rel="noopener noreferrer">
+                          <a href={photoSrc(r.photo_url)} target="_blank" rel="noopener noreferrer">
                             <img
-                              src={`/api${r.photo_url}`}
+                              src={photoSrc(r.photo_url)}
                               alt={t("Bukti foto")}
                               className="w-full max-h-48 object-cover rounded border border-slate-200 cursor-pointer hover:opacity-90"
                             />

@@ -579,3 +579,90 @@ def test_visit_notification_reaches_admin_when_no_manager_exists(db, monkeypatch
     assert "888" not in penerima, "petugas pelapor tidak perlu dikabari soal laporannya sendiri"
     assert "Nasabah X" in terkirim[0][1] and "Lunas" in terkirim[0][1]
     assert db.query(DbNotificationLog).filter(DbNotificationLog.recipient_id == admin.id).count() == 1
+
+
+# ── Pemisahan peran ditegakkan di API, bukan cuma disembunyikan di UI ──
+
+def test_admin_ditolak_dari_endpoint_operasional(client, admin_headers):
+    """Butir revisi 1 minta portal admin dan manajer dipisah. Menyembunyikan menu di
+    frontend saja kosmetik — endpoint-nya dulu memakai require_auth yang menerima
+    siapa pun yang bisa login, jadi admin tetap bisa memanggilnya langsung."""
+    for path in ("/api/dashboard/", "/api/targets/", "/api/analytics/summary",
+                 "/api/targets/periods", "/api/targets/export/csv"):
+        assert client.get(path, headers=admin_headers).status_code == 403, path
+    assert client.post("/api/targets/upload", json=[], headers=admin_headers).status_code == 403
+
+
+def test_manajer_ditolak_dari_log_audit(client, auth_headers):
+    """Log audit dan log notifikasi adalah menu admin."""
+    assert client.get("/api/audit/logs", headers=auth_headers).status_code == 403
+    assert client.get("/api/audit/notifications", headers=auth_headers).status_code == 403
+
+
+def test_kedua_peran_portal_boleh_ganti_sandi_dan_lihat_daftar_pengguna(client, auth_headers, admin_headers):
+    """Endpoint bersama tidak boleh ikut terpisah: manajer butuh daftar pengguna untuk
+    dropdown penugasan, dan keduanya harus bisa mengganti kata sandinya sendiri."""
+    for h in (auth_headers, admin_headers):
+        assert client.get("/api/users/", headers=h).status_code == 200
+        assert client.post("/api/auth/verify-password", json={"password": "salah"}, headers=h).status_code == 401
+
+
+# ── Foto bukti kunjungan tidak lagi terbuka untuk publik ──
+
+def test_foto_butuh_token(client, auth_headers, tmp_path, monkeypatch):
+    import pathlib
+    from backend import main as m
+    monkeypatch.setattr(m, "UPLOAD_PATH", tmp_path)
+    (tmp_path / "bukti.jpg").write_bytes(b"\xff\xd8\xff\x00 palsu")
+
+    assert client.get("/api/uploads/bukti.jpg").status_code == 401
+    assert client.get("/api/uploads/bukti.jpg", headers=auth_headers).status_code == 200
+    # <img> tidak bisa mengirim header, jadi token lewat query juga diterima.
+    token = auth_headers["Authorization"].split(" ", 1)[1]
+    assert client.get(f"/api/uploads/bukti.jpg?token={token}").status_code == 200
+
+
+def test_foto_menolak_path_traversal(client, auth_headers):
+    """Nama berkas datang dari URL; tanpa penjaga, '..' keluar dari folder unggahan."""
+    for jahat in ("..%2f..%2fetc%2fpasswd", "....//secrets.env"):
+        assert client.get(f"/api/uploads/{jahat}", headers=auth_headers).status_code in (307, 404)
+
+
+# ── Bootstrap tidak boleh hidup lagi setelah peran dipisah ──
+
+def test_seed_admin_menolak_saat_admin_sudah_ada(client, db, monkeypatch):
+    """Pemeriksaan lama hanya melihat peran `manager`. Setelah akun portal satu-satunya
+    dinaikkan jadi `admin`, sistem punya NOL manajer — dan endpoint bootstrap ini
+    membaca keadaan itu sebagai instalasi kosong."""
+    monkeypatch.setenv("SEED_TOKEN", "test-seed-token")
+    from backend.models import DbUser, UserRole
+    from backend.security import hash_password
+    db.add(DbUser(name="A", email="adm2", password_hash=hash_password("x"*12), role=UserRole.admin))
+    db.commit()
+
+    res = client.post("/api/auth/seed-admin", json={"token": "test-seed-token", "password": "Str0ng!Passw0rd"})
+    assert res.status_code == 403
+
+
+# ── Lupa sandi tidak boleh mengunci login orang lain ──
+
+def test_forgot_password_tidak_menghabiskan_jatah_login_korban(client, db, monkeypatch):
+    """Ember rate limit dulu dipakai bersama login, dikunci per nama pengguna: menembak
+    endpoint ini dengan username orang lain membuat ORANG ITU tidak bisa login."""
+    monkeypatch.setattr("backend.notifications.send_telegram_notification", lambda *a, **k: True)
+    from backend.models import DbUser, UserRole
+    from backend.security import hash_password
+    db.add(DbUser(name="Korban", email="korban@test.id", telegram_id="4242",
+                  password_hash=hash_password("sandiaman"), role=UserRole.manager))
+    db.commit()
+
+    # Penyerang dan korban WAJIB dibedakan IP-nya lewat X-Forwarded-For — ember
+    # per-IP memang sengaja dipakai bersama, jadi kalau keduanya seolah datang dari
+    # alamat yang sama tesnya cuma mengukur penyerang mengunci dirinya sendiri.
+    penyerang = {"X-Forwarded-For": "203.0.113.9"}
+    for _ in range(8):
+        client.post("/api/auth/forgot-password", json={"username": "korban@test.id"}, headers=penyerang)
+
+    res = client.post("/api/auth/login", json={"username": "korban@test.id", "password": "sandiaman"},
+                      headers={"X-Forwarded-For": "198.51.100.5"})
+    assert res.status_code == 200, f"korban terkunci oleh permintaan reset yang bukan miliknya ({res.status_code})"

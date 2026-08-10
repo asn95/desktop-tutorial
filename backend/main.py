@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Header, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 import os, traceback, logging
 from pathlib import Path
@@ -175,10 +175,32 @@ async def global_exception_handler(request: Request, exc: Exception):
     # Never expose raw exception details to clients — log only
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
-# Serve uploads statically
-if not os.path.exists("backend/uploads"):
-    os.makedirs("backend/uploads")
-app.mount("/api/uploads", StaticFiles(directory="backend/uploads"), name="uploads")
+# Foto bukti kunjungan. DULU disajikan sebagai StaticFiles tanpa autentikasi sama
+# sekali: siapa pun yang punya URL-nya bisa mengunduh foto rumah dan wajah nasabah,
+# selamanya, tanpa cara mencabutnya. Nama berkasnya memang UUID acak, tapi "sulit
+# ditebak" bukan kendali akses — URL-nya muncul di respons API dan riwayat browser.
+UPLOAD_PATH = Path("backend/uploads")
+UPLOAD_PATH.mkdir(parents=True, exist_ok=True)
+
+
+@app.get("/api/uploads/{name}")
+async def serve_upload(name: str, token: str = "", authorization: str = Header(None)):
+    from .security import decode_access_token
+
+    # Tag <img> tidak bisa mengirim header Authorization, jadi token juga diterima
+    # lewat query. Sama-sama origin, dan tokennya berumur 4 jam.
+    raw = token or (authorization or "").removeprefix("Bearer ").strip()
+    try:
+        decode_access_token(raw)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    target = (UPLOAD_PATH / name).resolve()
+    # Penjaga path traversal: nama berkas datang dari URL, jadi "../../etc/passwd"
+    # harus ditolak sebelum menyentuh disk.
+    if UPLOAD_PATH.resolve() != target.parent or not target.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(target)
 
 # Serve the Telegram Mini App
 app.mount("/officer-app", StaticFiles(directory="mini-app", html=True), name="mini-app")

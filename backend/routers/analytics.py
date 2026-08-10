@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from ..database import get_db
 from ..models import DbTarget, DbReport, DbUser, DbComment, TargetStatus, UserRole
-from ..security import require_auth
+from ..security import require_manager
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -45,7 +45,7 @@ async def get_analytics_summary(
     date_from: Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
     date_to: Optional[str] = Query(None, description="End date YYYY-MM-DD"),
     db: Session = Depends(get_db),
-    _auth: dict = Depends(require_auth),
+    _auth: dict = Depends(require_manager),
 ):
     # Build base query with optional date filter
     base_q = db.query(DbTarget)

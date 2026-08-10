@@ -12,7 +12,7 @@ karena hasilnya akan menimpa ekspor Figma dengan gambar PIL versi lama.
 | `05_sequence_diagram.png`    | https://www.figma.com/board/2UydRoLKcxsAQn4qcdLGB4 |
 | `07_usecase_diagram.png`     | https://www.figma.com/board/KKDL2BOEQBacJ7K5Dg9ay3 |
 | `08_activity_diagram.png`    | https://www.figma.com/board/wNd03DkWGvah1oam78GNpw |
-| `09_erd_diagram.png`         | https://www.figma.com/board/bmJL8pkuyCv9hcjSLzNS0U |
+| `09_erd_diagram.png`         | https://www.figma.com/board/2rrXo0SH1dqTMov0PUvq4F |
 | `10_dfd_level0.png`          | https://www.figma.com/board/fOy4kijezSJ6js15Tu9t9z |
 
 ## Koreksi fakta yang ikut dikerjakan
@@ -48,6 +48,17 @@ berasio tegak (0,71); tiga kolom yang melebar akan terlalu banyak bermargin di s
 nama lapisannya hanya ada sebagai id grup di dalam SVG dan tidak pernah digambar.
 Judul "Client Tier", "Application Tier", dan seterusnya disisipkan sebagai elemen
 `<text>` ke dalam SVG lalu di-render ulang, bukan dicap ke PNG, supaya tetap tajam.
+
+## Sinkron dengan kode
+
+Diagram dan dokumen ikut diperbarui setiap kali skema atau permukaan API berubah.
+Terakhir (10 Agu 2026): `reports` mendapat `officer_lat`, `officer_lon`, dan
+`distance_m` untuk verifikasi lokasi kunjungan, dan jumlah endpoint router naik
+25 → 28. ERD, Table 3.1, Table 4.1, serta listing kode di lampiran laporan Rashad
+dan Auza sudah disesuaikan.
+
+Board ERD lama (`bmJL8pkuyCv9hcjSLzNS0U`) sudah usang — pakai yang tercantum di
+tabel di atas.
 
 ## Yang masih perlu dikerjakan
 

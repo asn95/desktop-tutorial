@@ -235,6 +235,13 @@
             -webkit-appearance: none;
         }
         .period-bar input[type="search"]::placeholder { color: var(--faint); font-weight: 400; }
+        /* Antrean kiriman tertunda. Petugas HARUS tahu laporannya belum sampai —
+           diam-diam mengantre lebih buruk daripada gagal terang-terangan. */
+        #outbox-badge {
+            display: none; margin: 10px 14px 0; padding: 10px 12px;
+            border-radius: 8px; background: #FFF4E5; border: 1px solid #F0B429;
+            color: #8A5A00; font-size: 13px; font-weight: 600;
+        }
         .subj-maps {
             display: inline-block;
             margin: 0 10px 12px 0;
@@ -449,6 +456,7 @@
         <input id="task-search" type="search" inputmode="search" autocomplete="off"
                placeholder="Cari nama atau alamat…" aria-label="Cari tugas">
     </div>
+    <div id="outbox-badge"></div>
     <div class="sec-label">Antrean Tugas</div>
     <div id="task-container"></div>
 </div>
@@ -516,6 +524,6 @@
     <button type="button" id="web-submit-btn" onclick="submitReportWeb()" class="btn-fin">Kirim Laporan</button>
 </div>
 
-<script src="js/app.js?v=4"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

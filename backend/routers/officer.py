@@ -139,6 +139,11 @@ async def submit_report(
     target_id: str = Form(...),
     payment_status: str = Form(...),
     notes: Optional[str] = Form(None),
+    # Lokasi perangkat petugas saat mengirim. Opsional — petugas bisa menolak izin
+    # lokasi, dan laporan tetap harus bisa masuk. Yang tidak mengirim koordinat
+    # tampil sebagai "lokasi tidak dibagikan", bukan sebagai kunjungan palsu.
+    lat: Optional[float] = Form(None),
+    lon: Optional[float] = Form(None),
     photo: UploadFile = File(...),
     officer: DbUser = Depends(get_current_officer),
     db: Session = Depends(get_db)
@@ -168,12 +173,21 @@ async def submit_report(
         shutil.copyfileobj(photo.file, buffer)
     
     # 3. Create Report Record
+    # Jarak dihitung SEKALI di sini, bukan tiap kali laporan dibaca: koordinat target
+    # bisa berubah kalau alamatnya di-geocode ulang, dan yang ingin dibuktikan adalah
+    # seberapa dekat petugas saat itu — bukan menurut data hari ini.
+    from ..lib.format import haversine_m
+    distance = haversine_m(lat, lon, target.latitude, target.longitude)
+
     db_report = DbReport(
         target_id=target_id,
         officer_id=officer.id,
         payment_status=payment_status,
         notes=notes,
-        photo_url=f"/uploads/{file_name}" # Local URL
+        photo_url=f"/uploads/{file_name}",  # Local URL
+        officer_lat=lat,
+        officer_lon=lon,
+        distance_m=distance,
     )
     db.add(db_report)
 

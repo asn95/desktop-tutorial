@@ -22,3 +22,19 @@ def normalize_phone(raw) -> str | None:
     elif not digits.startswith("62"):
         digits = "62" + digits      # 812… → 62812…
     return digits
+
+
+def haversine_m(lat1, lon1, lat2, lon2) -> float | None:
+    """Jarak dua koordinat dalam meter. None kalau salah satunya tidak ada.
+
+    Haversine, bukan Euclidean: pada jarak beberapa kilometer selisih derajat
+    lintang dan bujur tidak sama panjangnya, dan justru ambang beberapa ratus
+    meter itu yang menentukan laporan ditandai atau tidak.
+    """
+    if None in (lat1, lon1, lat2, lon2):
+        return None
+    from math import radians, sin, cos, asin, sqrt
+    p1, p2 = radians(lat1), radians(lat2)
+    dp, dl = p2 - p1, radians(lon2 - lon1)
+    h = sin(dp / 2) ** 2 + cos(p1) * cos(p2) * sin(dl / 2) ** 2
+    return 2 * 6371000 * asin(min(1.0, sqrt(h)))

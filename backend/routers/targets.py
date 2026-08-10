@@ -56,6 +56,24 @@ async def upload_targets(
 ):
     batch_period = period or current_period()
     try:
+        # Lewati baris yang sudah ada di periode ini. Tanpa ini, mengunggah berkas
+        # yang sama dua kali — hal yang sangat mudah terjadi saat unggahan pertama
+        # tampak gagal padahal berhasil — menggandakan seluruh batch, dan target
+        # ganda berarti nasabah didatangi dua petugas.
+        existing = {
+            (c, a) for c, a in db.query(DbTarget.customer_name, DbTarget.address)
+            .filter(DbTarget.period == batch_period).all()
+        }
+        fresh, skipped = [], 0
+        for t in targets:
+            key = (t.customerName, t.address)
+            if key in existing:
+                skipped += 1
+                continue
+            existing.add(key)
+            fresh.append(t)
+        targets = fresh
+
         db_targets = [
             DbTarget(
                 customer_name=t.customerName,
@@ -67,13 +85,20 @@ async def upload_targets(
             for t in targets
         ]
         db.add_all(db_targets)
-        db.add(DbAuditLog(user_id=_auth["sub"], action="upload", detail=f"Mengunggah {len(targets)} target (periode {batch_period})"))
+        db.add(DbAuditLog(
+            user_id=_auth["sub"], action="upload",
+            detail=f"Mengunggah {len(targets)} target (periode {batch_period})"
+                   + (f", {skipped} duplikat dilewati" if skipped else ""),
+        ))
         db.commit()
         # Geocode alamat di background (Nominatim dibatasi 1 request/detik,
         # jadi tidak boleh menahan respons unggah).
         from ..external import geocode_targets
         background_tasks.add_task(geocode_targets, [t.id for t in db_targets])
-        return {"message": f"Berhasil mengunggah {len(targets)} target ke periode {batch_period}", "period": batch_period}
+        msg = f"Berhasil mengunggah {len(targets)} target ke periode {batch_period}"
+        if skipped:
+            msg += f" · {skipped} duplikat dilewati"
+        return {"message": msg, "period": batch_period, "skipped": skipped}
     except Exception as e:
         db.rollback()
         import traceback; traceback.print_exc()
@@ -158,6 +183,12 @@ async def export_targets_csv(period: Optional[str] = None, db: Session = Depends
             t.created_at.strftime("%Y-%m-%d %H:%M") if t.created_at else "",
         ])
     output.seek(0)
+    db.add(DbAuditLog(
+        user_id=_auth["sub"], action="export",
+        detail=f"Mengekspor {len(targets)} target ke CSV (periode {period or 'semua'})",
+    ))
+    db.commit()
+
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
@@ -180,6 +211,8 @@ async def get_target_reports(target_id: str, db: Session = Depends(get_db), _aut
             "notes": r.notes,
             "photo_url": r.photo_url,
             "officerName": u.name,
+            "distance_m": r.distance_m,
+            "has_location": r.officer_lat is not None,
             "submitted_at": utc_iso(r.submitted_at),
         }
         for r, u in reports

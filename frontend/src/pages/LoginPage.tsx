@@ -42,7 +42,7 @@ function isLockedOut(): { locked: boolean; remainingSec: number } {
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, completeMfa } = useAuth();
   const { t, lang, toggle: toggleLang } = useLang();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -55,6 +55,11 @@ export function LoginPage() {
   const [showRecovery, setShowRecovery] = useState(false);
   const [lockoutSec, setLockoutSec] = useState(() => isLockedOut().remainingSec);
   const [mounted, setMounted] = useState(false);
+
+  // Langkah kedua login admin. Kata sandi benar belum menerbitkan token; server
+  // mengirim kode enam digit ke Telegram dan menunggu kode itu ditukar.
+  const [mfaUser, setMfaUser] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
 
   // Reset kata sandi: langkah 1 minta kode ke Telegram, langkah 2 tukar kode
   // dengan kata sandi baru.
@@ -130,6 +135,20 @@ export function LoginPage() {
     return <Navigate to="/" replace />;
   }
 
+  async function onSubmitMfa(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    try {
+      setIsSubmitting(true);
+      await completeMfa(mfaUser!, mfaCode.trim());
+      navigate(redirectPath, { replace: true });
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? t("Kode tidak valid atau sudah kedaluwarsa"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -143,8 +162,13 @@ export function LoginPage() {
 
     try {
       setIsSubmitting(true);
-      await login({ username, password });
+      const result = await login({ username, password });
       clearFailures();
+      if (result.kind === "mfa") {
+        setMfaUser(result.username);
+        setMfaCode("");
+        return;                       // token belum terbit — jangan navigasi
+      }
       if (rememberDevice) {
         localStorage.setItem("c3mr:remember-device", "true");
       } else {
@@ -219,7 +243,7 @@ export function LoginPage() {
 
       {/* ───────────── RIGHT — sign-in form (centered) ───────────── */}
       <div className="flex items-center justify-center bg-white px-6 py-10 sm:px-10">
-        <div className="w-full max-w-md">
+        <div className="relative w-full max-w-md">
           <div className="mb-8">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900">{t("Masuk ke akun Anda")}</h2>
             <p className="mt-1.5 text-sm text-gray-500">{t("Masukkan kredensial untuk mengakses C3MR.")}</p>
@@ -340,6 +364,44 @@ export function LoginPage() {
                 )}
               </button>
             </form>
+
+            {mfaUser && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/95 px-1">
+                <form onSubmit={onSubmitMfa} className="w-full space-y-5">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{t("Verifikasi dua langkah")}</h2>
+                    <p className="mt-1 text-sm leading-relaxed text-gray-600">
+                      {t("Kode enam digit sudah dikirim ke Telegram yang tertaut pada akun administrator ini.")}
+                    </p>
+                  </div>
+                  <input
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value)}
+                    inputMode="numeric"
+                    maxLength={6}
+                    autoFocus
+                    autoComplete="one-time-code"
+                    placeholder="000000"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-center text-lg font-semibold tracking-[0.4em] text-gray-900 placeholder-gray-400 transition focus:border-[#EA0A2C] focus:outline-none focus:ring-2 focus:ring-[#EA0A2C]/20"
+                  />
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || mfaCode.trim().length < 6}
+                    className="w-full rounded-lg bg-[#EA0A2C] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#C80825] disabled:cursor-not-allowed disabled:bg-gray-300"
+                  >
+                    {isSubmitting ? t("Memproses…") : t("Masuk")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMfaUser(null); setError(null); setPassword(""); }}
+                    className="w-full text-center text-sm font-medium text-gray-500 transition-colors hover:text-gray-800"
+                  >
+                    {t("Kembali")}
+                  </button>
+                </form>
+              </div>
+            )}
 
             {/* Security notice */}
             <p className="mt-8 border-t border-gray-100 pt-6 text-xs leading-relaxed text-gray-500">

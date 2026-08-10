@@ -16,6 +16,7 @@ from .agent_tools import (
 )
 from .models import DbTarget, DbReport, DbUser, DbNotificationLog, TargetStatus, PaymentStatus, UserRole
 from .notifications import send_telegram_notification
+from .lib.format import format_currency_python
 
 WIB = timezone(timedelta(hours=7))
 
@@ -96,6 +97,28 @@ def collect_weekly_data() -> dict:
                 "reports_this_week": reports_this_week,
             })
 
+    # Target menua: belum selesai dan sudah lebih dari 14 hari sejak dibuat.
+    # Dihitung di sini, bukan diserahkan ke narasi AI, supaya angkanya tetap terbit
+    # apa adanya meskipun panggilan modelnya gagal.
+    with get_db() as db:
+        stale_cut = now - timedelta(days=14)
+        stale_q = (
+            db.query(DbTarget)
+            .filter(DbTarget.status != TargetStatus.completed, DbTarget.created_at < stale_cut)
+            .order_by(DbTarget.created_at.asc())
+        )
+        stale_all = stale_q.all()
+        stale = {
+            "count": len(stale_all),
+            "amount": round(sum(t.amount_due or 0 for t in stale_all)),
+            "oldest_days": (now - stale_all[0].created_at).days if stale_all else 0,
+            "sample": [
+                {"customer": t.customer_name, "days": (now - t.created_at).days,
+                 "amount": t.amount_due, "area": extract_area(t.address)}
+                for t in stale_all[:5]
+            ],
+        }
+
     feedback = summarize_field_feedback(days=7, limit=30)
     feedback.pop("comments", None)  # aggregates are enough for the narrative
     priorities = get_priority_targets(limit=5)
@@ -128,6 +151,7 @@ def collect_weekly_data() -> dict:
         ],
         "officers": officer_rows,
         "field_feedback_7d": feedback,
+        "stale_targets_over_14d": stale,
         "weather_3d_top_areas": weather_rows,
         "national_holidays_next_7d": holidays,
         "top_priority_targets": [
@@ -170,7 +194,19 @@ async def build_weekly_report_text() -> str:
         + (f" · Periode aktif {data['active_period']}" if data.get("active_period") else "")
         + "\n\n"
     )
-    return header + narrative
+    stale = data.get("stale_targets_over_14d") or {}
+    aging = ""
+    if stale.get("count"):
+        lines = "\n".join(
+            f"  • {r['customer']} — {r['days']} hari · {format_currency_python(r['amount'])} · {r['area']}"
+            for r in stale.get("sample", [])
+        )
+        aging = (
+            f"\n\n⏳ TARGET MENUA (>14 hari, belum selesai)\n"
+            f"{stale['count']} target · {format_currency_python(stale['amount'])} tertahan · "
+            f"tertua {stale['oldest_days']} hari\n{lines}"
+        )
+    return header + narrative + aging
 
 
 async def send_weekly_report() -> dict:

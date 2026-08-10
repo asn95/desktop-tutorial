@@ -71,11 +71,14 @@ class LoginPayload(BaseModel):
     password: str
 
 class AuthResponse(BaseModel):
-    id: str
-    name: str
+    # Semua opsional kecuali username: login admin membalas {mfa_required, username}
+    # lebih dulu, dan token baru terbit setelah kodenya diverifikasi.
+    id: str | None = None
+    name: str | None = None
     username: str
-    role: str
-    token: str
+    role: str | None = None
+    token: str | None = None
+    mfa_required: bool = False
 
 @router.post("/login", response_model=AuthResponse)
 async def login(payload: LoginPayload, request: Request, db: Session = Depends(get_db)):
@@ -91,6 +94,26 @@ async def login(payload: LoginPayload, request: Request, db: Session = Depends(g
         raise HTTPException(status_code=401, detail="Nama pengguna atau kata sandi tidak valid")
 
     role = _role_str(user.role)
+
+    # Langkah kedua untuk admin. Akun admin bisa membuat, menaikkan, dan menghapus
+    # akun lain — kata sandi saja terlalu tipis untuk itu. Hanya diwajibkan kalau
+    # akunnya PUNYA telegram_id; kalau tidak, tidak ada jalan mengirim kodenya dan
+    # mewajibkannya berarti mengunci admin keluar dari sistemnya sendiri.
+    if role == "admin" and user.telegram_id:
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        _mfa_codes[user.email] = (code, time.time() + MFA_TTL_SECONDS, MFA_MAX_ATTEMPTS)
+        from ..notifications import send_telegram_notification
+        ok = send_telegram_notification(
+            user.telegram_id,
+            f"Kode masuk C3MR: {code}\n\nBerlaku {MFA_TTL_SECONDS // 60} menit. "
+            "Jika bukan Anda yang mencoba masuk, segera ganti kata sandi.",
+            parse_mode=None,
+        )
+        db.add(DbNotificationLog(recipient_id=user.id, message="Kode masuk dua langkah",
+                                 success="true" if ok else "false"))
+        db.commit()
+        return {"mfa_required": True, "username": user.email}
+
     token = create_access_token(user.id, role)
     return {
         "id": user.id,
@@ -173,6 +196,10 @@ async def seed_admin(payload: SeedPayload, db: Session = Depends(get_db)):
 # restart hanya berarti pengguna meminta kode baru.
 # ponytail: dict per-proses; pindah ke Redis kalau API pernah dijalankan >1 instance,
 # karena kode yang terbit di instance A tidak akan dikenali instance B.
+_mfa_codes: dict[str, tuple[str, float, int]] = {}   # username -> (kode, kedaluwarsa, sisa)
+MFA_TTL_SECONDS = 300
+MFA_MAX_ATTEMPTS = 5
+
 _reset_codes: dict[str, tuple[str, float, int]] = {}  # username -> (kode, kedaluwarsa, sisa_percobaan)
 RESET_TTL_SECONDS = 900
 RESET_MAX_ATTEMPTS = 5
@@ -261,3 +288,41 @@ async def reset_password(payload: ResetPasswordPayload, db: Session = Depends(ge
     _reset_codes.pop(username, None)
     db.commit()
     return {"message": "Kata sandi berhasil diubah. Silakan masuk dengan kata sandi baru."}
+
+
+class MfaPayload(BaseModel):
+    username: str
+    code: str
+
+
+@router.post("/login-2fa", response_model=AuthResponse)
+async def login_2fa(payload: MfaPayload, request: Request, db: Session = Depends(get_db)):
+    """Tukar kode enam digit dengan token. Hanya berlaku setelah /login admin."""
+    username = payload.username.strip()
+    _check_rate_limit(_client_ip(request), "mfa:" + username)
+
+    entry = _mfa_codes.get(username)
+    if not entry:
+        raise HTTPException(status_code=401, detail="Kode tidak valid atau sudah kedaluwarsa")
+    code, expires_at, left = entry
+    if time.time() > expires_at or left <= 0:
+        _mfa_codes.pop(username, None)
+        raise HTTPException(status_code=401, detail="Kode tidak valid atau sudah kedaluwarsa")
+    if not hmac.compare_digest(code, payload.code.strip()):
+        _mfa_codes[username] = (code, expires_at, left - 1)
+        _record_attempt(_client_ip(request), "mfa:" + username)
+        raise HTTPException(status_code=401, detail="Kode tidak valid atau sudah kedaluwarsa")
+
+    user = db.query(DbUser).filter(DbUser.email == username).first()
+    if not user:
+        _mfa_codes.pop(username, None)
+        raise HTTPException(status_code=401, detail="Kode tidak valid atau sudah kedaluwarsa")
+
+    _mfa_codes.pop(username, None)      # sekali pakai, dibuang sebelum membalas
+    role = _role_str(user.role)
+    db.add(DbAuditLog(user_id=user.id, action="login_2fa", detail="Masuk dengan verifikasi dua langkah"))
+    db.commit()
+    return {
+        "id": user.id, "name": user.name, "username": user.email,
+        "role": role, "token": create_access_token(user.id, role),
+    }

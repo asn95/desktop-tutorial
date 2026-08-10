@@ -6,6 +6,30 @@ import { getUsers } from "../../services/userService";
 import { apiClient } from "../../lib/apiClient";
 import { useLang } from "../../contexts/LanguageContext";
 
+/** Seberapa dekat petugas dengan alamat target saat mengirim laporan.
+ *
+ *  Ambangnya 300 m: geocoding Nominatim menaruh titik di tengah ruas jalan, dan
+ *  akurasi GPS ponsel di area padat mudah meleset seratusan meter — ambang yang
+ *  lebih ketat akan menandai kunjungan yang sah sebagai mencurigakan. Yang tanpa
+ *  koordinat ditandai netral, BUKAN merah: petugas berhak menolak izin lokasi. */
+function VisitLocation({ report }: { report: Report }) {
+  const { t } = useLang();
+  if (!report.has_location) {
+    return <p className="text-[10px] font-medium text-slate-400 mb-2">{t("Lokasi tidak dibagikan")}</p>;
+  }
+  if (report.distance_m == null) {
+    return <p className="text-[10px] font-medium text-slate-400 mb-2">{t("Alamat target belum punya koordinat")}</p>;
+  }
+  const m = Math.round(report.distance_m);
+  const jauh = m > 300;
+  const jarak = m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`;
+  return (
+    <p className={`text-[10px] font-semibold mb-2 ${jauh ? "text-amber-700" : "text-emerald-700"}`}>
+      {jauh ? "⚠ " : "✓ "}{jarak} {t("dari alamat target")}
+    </p>
+  );
+}
+
 /** Foto bukti kini butuh autentikasi. Tag <img> dan <a href> tidak bisa mengirim
  *  header Authorization, jadi tokennya ikut lewat query — sama-sama origin, dan
  *  tokennya berumur 4 jam. Dibaca dari localStorage seperti apiClient. */
@@ -32,6 +56,8 @@ interface Report {
   payment_status: string;
   notes: string | null;
   photo_url: string | null;
+  distance_m: number | null;
+  has_location: boolean;
   officerName: string;
   submitted_at: string;
 }
@@ -259,6 +285,7 @@ export function TargetsTable({ targets, onRefresh, selected, onToggleSelect, onT
                           </span>
                         </div>
                         {r.notes && <p className="text-xs text-slate-700 leading-relaxed mb-2">{r.notes}</p>}
+                        <VisitLocation report={r} />
                         {r.photo_url && (
                           <a href={photoSrc(r.photo_url)} target="_blank" rel="noopener noreferrer">
                             <img

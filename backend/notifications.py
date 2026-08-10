@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import requests
 from dotenv import load_dotenv
 
@@ -33,13 +34,20 @@ def send_telegram_notification(telegram_id: str, message: str, include_field_app
             ]]
         })
 
-    try:
-        # timeout wajib: ini panggilan sinkron yang dipakai di dalam request handler
-        # (_assign_one, agent_tools._notify) — tanpa batas waktu, Telegram yang
-        # menggantung menahan worker-nya selamanya.
-        response = requests.post(url, json=payload, timeout=10)
-        response.raise_for_status()
-        return True
-    except Exception as e:
-        print(f"Failed to send Telegram notification: {e}")
-        return False
+    # Dua percobaan dengan jeda pendek. Kegagalan Telegram yang paling sering
+    # ditemui bersifat sesaat (jaringan, 429), dan sebelumnya kegagalan itu hanya
+    # dicatat ke notification_logs lalu tidak pernah disentuh lagi — petugas
+    # kehilangan penugasannya tanpa ada yang tahu.
+    for attempt in (1, 2):
+        try:
+            # timeout wajib: ini panggilan sinkron yang dipakai di dalam request
+            # handler (_assign_one, agent_tools._notify) — tanpa batas waktu,
+            # Telegram yang menggantung menahan worker-nya selamanya.
+            response = requests.post(url, json=payload, timeout=10)
+            response.raise_for_status()
+            return True
+        except Exception as e:
+            print(f"Telegram notification attempt {attempt} failed: {e}")
+            if attempt == 1:
+                time.sleep(2)
+    return False

@@ -131,12 +131,27 @@ def _migrate_user_phone():
             logger.exception("Gagal menambahkan kolom phone (mungkin sudah ada)")
 
 
+def _migrate_report_geo():
+    """Kolom lokasi petugas + jarak ke alamat target pada tabel reports."""
+    from sqlalchemy import inspect, text
+
+    cols = {c["name"] for c in inspect(engine).get_columns("reports")}
+    for col in ("officer_lat", "officer_lon", "distance_m"):
+        if col not in cols:
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE reports ADD COLUMN {col} FLOAT"))
+            except Exception:
+                logger.exception(f"Gagal menambahkan kolom {col} (mungkin sudah ada)")
+
+
 _migrate_target_geo()
 _migrate_target_period()
 _migrate_user_password_changed_at()
 _migrate_user_active()
 _migrate_user_role_admin()
 _migrate_user_phone()
+_migrate_report_geo()
 
 def _geocode_active_period_backfill():
     """Geocode target periode aktif yang belum punya koordinat, di thread terpisah

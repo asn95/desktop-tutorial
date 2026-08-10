@@ -1,3 +1,103 @@
+
+// ── Lokasi kunjungan & antrean offline ──────────────────────────────
+//
+// Dua masalah lapangan yang nyata. Pertama, tidak ada cara membuktikan petugas
+// benar-benar mendatangi alamatnya — EXIF foto tidak bisa dipakai karena Telegram
+// menghapus blok GPS-nya (diperiksa pada foto produksi: nol tag GPS), jadi
+// koordinat diambil dari perangkat saat mengirim. Kedua, petugas bekerja di data
+// seluler: kalau pengiriman gagal, laporan DAN fotonya hilang begitu saja.
+
+function getPosition(timeoutMs = 8000) {
+    // Selalu resolve, tidak pernah reject: izin lokasi boleh ditolak dan laporannya
+    // tetap harus bisa dikirim. Yang tanpa koordinat tampil sebagai "lokasi tidak
+    // dibagikan" di sisi manajer, bukan sebagai kunjungan palsu.
+    return new Promise(resolve => {
+        if (!navigator.geolocation) return resolve(null);
+        let done = false;
+        const finish = v => { if (!done) { done = true; resolve(v); } };
+        navigator.geolocation.getCurrentPosition(
+            p => finish({ lat: p.coords.latitude, lon: p.coords.longitude }),
+            () => finish(null),
+            { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 60000 }
+        );
+        setTimeout(() => finish(null), timeoutMs + 500);   // jaga-jaga callback tak pernah datang
+    });
+}
+
+// Antrean di IndexedDB, bukan localStorage: fotonya 1–3 MB dan localStorage hanya
+// menyimpan string (base64 membengkak ~33% dan kuotanya ±5 MB untuk seluruh origin).
+const OUTBOX_DB = 'c3mr-outbox', OUTBOX_STORE = 'reports';
+
+function outbox() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(OUTBOX_DB, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(OUTBOX_STORE, { keyPath: 'id', autoIncrement: true });
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+function outboxTx(mode, fn) {
+    return outbox().then(db => new Promise((resolve, reject) => {
+        const tx = db.transaction(OUTBOX_STORE, mode);
+        const req = fn(tx.objectStore(OUTBOX_STORE));
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    }));
+}
+
+const outboxAdd = rec => outboxTx('readwrite', st => st.add(rec));
+const outboxAll = () => outboxTx('readonly', st => st.getAll());
+const outboxDel = id => outboxTx('readwrite', st => st.delete(id));
+
+async function postReport(rec) {
+    const fd = new FormData();
+    fd.append("target_id", rec.target_id);
+    fd.append("payment_status", rec.payment_status);
+    fd.append("notes", rec.notes || "");
+    if (rec.lat != null) { fd.append("lat", rec.lat); fd.append("lon", rec.lon); }
+    fd.append("photo", rec.photo, rec.photo_name || "bukti.jpg");
+    const res = await fetch(`${API_BASE}/officer/report`, {
+        method: 'POST',
+        headers: { "X-Telegram-Auth": initDataString },
+        body: fd
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res;
+}
+
+async function flushOutbox() {
+    let queued;
+    try { queued = await outboxAll(); } catch { return 0; }
+    let sent = 0;
+    for (const rec of queued) {
+        try {
+            await postReport(rec);
+            await outboxDel(rec.id);
+            sent++;
+        } catch {
+            break;   // masih offline — sisanya biarkan, urutannya dipertahankan
+        }
+    }
+    if (sent) {
+        const badge = document.getElementById('outbox-badge');
+        if (badge) badge.style.display = 'none';
+        try { localStorage.removeItem(CACHE_KEY); } catch (e) {}   // paksa muat ulang dari server
+    }
+    return sent;
+}
+
+async function showOutboxBadge() {
+    let n = 0;
+    try { n = (await outboxAll()).length; } catch { return; }
+    const badge = document.getElementById('outbox-badge');
+    if (!badge) return;
+    badge.textContent = `${n} laporan menunggu terkirim`;
+    badge.style.display = n ? 'block' : 'none';
+}
+
+window.addEventListener('online', () => flushOutbox().then(showOutboxBadge));
+
 const tg = window.Telegram.WebApp;
 const API_BASE = window.location.origin + "/api";
 
@@ -136,23 +236,34 @@ tg.MainButton.onClick(async () => {
     if (!photo) { tg.showAlert("Bukti foto wajib dilampirkan."); return; }
 
     tg.MainButton.showProgress();
-    const fd = new FormData();
-    fd.append("target_id", selectedTask.id);
-    fd.append("payment_status", document.getElementById('payment-status').value);
-    fd.append("notes", document.getElementById('notes').value);
-    fd.append("photo", photo);
+    const pos = await getPosition();
+    const rec = {
+        target_id: selectedTask.id,
+        payment_status: document.getElementById('payment-status').value,
+        notes: document.getElementById('notes').value,
+        lat: pos ? pos.lat : null,
+        lon: pos ? pos.lon : null,
+        photo: photo,
+        photo_name: photo.name,
+    };
 
     try {
-        const res = await fetch(`${API_BASE}/officer/report`, {
-            method: 'POST',
-            headers: { "X-Telegram-Auth": initDataString },
-            body: fd
-        });
-        if (!res.ok) throw new Error();
+        await postReport(rec);
         tg.HapticFeedback.notificationOccurred('success');
         tg.showAlert("Laporan berhasil dikirim!", () => loginSecure());
     } catch (err) {
-        tg.showAlert("Pengiriman gagal.");
+        // Jangan buang laporannya. Petugas sudah mendatangi alamatnya dan memotret;
+        // memintanya mengulang karena sinyal buruk adalah cara tercepat kehilangan
+        // bukti kunjungan yang tidak bisa diambil ulang.
+        try {
+            await outboxAdd(rec);
+            await showOutboxBadge();
+            tg.HapticFeedback.notificationOccurred('warning');
+            tg.showAlert("Sinyal bermasalah. Laporan disimpan dan akan terkirim otomatis saat jaringan kembali.",
+                         () => showView('list'));
+        } catch {
+            tg.showAlert("Pengiriman gagal dan laporan tidak bisa disimpan. Coba lagi.");
+        }
     } finally {
         tg.MainButton.hideProgress();
     }
@@ -433,3 +544,8 @@ document.getElementById('photo-input').onchange = (e) => {
             '<p class="upbox-repl">Ganti Foto</p>';
     }
 };
+
+
+// Saat aplikasi dibuka: coba kirim ulang apa pun yang tertinggal di antrean.
+// Petugas sering menutup Mini App begitu keluar dari area bersinyal buruk.
+flushOutbox().then(showOutboxBadge).catch(() => {});

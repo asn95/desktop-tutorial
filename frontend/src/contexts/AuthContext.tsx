@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { loginManager } from "../services/authService";
+import { loginManager, loginWith2fa } from "../services/authService";
+import type { LoginResult } from "../services/authService";
 import type { AuthUser, LoginPayload } from "../types/auth";
 
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -8,7 +9,8 @@ const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<LoginResult>;
+  completeMfa: (username: string, code: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -68,10 +70,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user, resetIdleTimer]);
 
-  const login = async (payload: LoginPayload) => {
-    const authenticatedUser = await loginManager(payload);
-    setUser(authenticatedUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(authenticatedUser));
+  const persist = (u: AuthUser) => {
+    setUser(u);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+  };
+
+  const login = async (payload: LoginPayload): Promise<LoginResult> => {
+    const result = await loginManager(payload);
+    // Sesi HANYA disimpan kalau tokennya sudah terbit. Login admin berhenti di
+    // langkah kode, dan menyimpan apa pun di titik itu berarti setengah masuk.
+    if (result.kind === "signed-in") persist(result.user);
+    return result;
+  };
+
+  const completeMfa = async (username: string, code: string) => {
+    persist(await loginWith2fa(username, code));
   };
 
   const value = useMemo<AuthContextValue>(
@@ -79,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: Boolean(user),
       login,
+      completeMfa,
       logout,
     }),
     [user, logout]

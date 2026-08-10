@@ -83,6 +83,13 @@ class DbReport(Base):
     payment_status = _enum_col(PaymentStatus, "payment_status_enum", nullable=False)
     notes = Column(Text, nullable=True)
     photo_url = Column(String, nullable=True)
+    # Lokasi PERANGKAT petugas saat mengirim, bukan dari EXIF foto: Telegram
+    # menghapus blok GPS dari gambar yang dilewatkan Mini App (diperiksa langsung
+    # pada foto produksi — nol tag GPS), jadi bersandar pada EXIF berarti fitur
+    # yang tidak pernah menyala. distance_m diisi saat laporan masuk.
+    officer_lat = Column(Float, nullable=True)
+    officer_lon = Column(Float, nullable=True)
+    distance_m = Column(Float, nullable=True)
     submitted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class DbAuditLog(Base):

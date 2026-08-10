@@ -8,6 +8,12 @@
 export type Lang = "id" | "en";
 
 export const EN: Record<string, string> = {
+  "Verifikasi dua langkah": "Two-step verification",
+  "Kode enam digit sudah dikirim ke Telegram yang tertaut pada akun administrator ini.": "A six-digit code has been sent to the Telegram account linked to this administrator.",
+  "Kode tidak valid atau sudah kedaluwarsa": "Invalid or expired code",
+  "Lokasi tidak dibagikan": "Location not shared",
+  "Alamat target belum punya koordinat": "Target address has no coordinates yet",
+  "dari alamat target": "from the target address",
   "Lupa kata sandi?": "Forgot password?",
   "Lupa kata sandi": "Forgot password",
   "Kode verifikasi enam digit akan dikirim ke Telegram yang tertaut pada akun Anda. Tidak ada surel yang dikirim.": "A six-digit verification code will be sent to the Telegram account linked to your user. No email is sent.",

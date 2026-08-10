@@ -666,3 +666,88 @@ def test_forgot_password_tidak_menghabiskan_jatah_login_korban(client, db, monke
     res = client.post("/api/auth/login", json={"username": "korban@test.id", "password": "sandiaman"},
                       headers={"X-Forwarded-For": "198.51.100.5"})
     assert res.status_code == 200, f"korban terkunci oleh permintaan reset yang bukan miliknya ({res.status_code})"
+
+
+# ── 2FA admin lewat Telegram ─────────────────────────────────────────
+
+def _admin_ber_telegram(db, tg="55001"):
+    from backend.models import DbUser, UserRole
+    from backend.security import hash_password
+    u = DbUser(name="Admin 2FA", email="adm2fa@test.id", telegram_id=tg,
+               password_hash=hash_password("sandiadmin"), role=UserRole.admin)
+    db.add(u); db.commit()
+    return u
+
+
+def test_login_admin_minta_kode_dua_langkah(client, db, monkeypatch):
+    monkeypatch.setattr("backend.notifications.send_telegram_notification", lambda *a, **k: True)
+    _admin_ber_telegram(db)
+
+    res = client.post("/api/auth/login", json={"username": "adm2fa@test.id", "password": "sandiadmin"})
+    assert res.status_code == 200
+    body = res.json()
+    # Kata sandi yang benar TIDAK cukup: tokennya belum terbit.
+    assert body["mfa_required"] is True and body.get("token") is None
+
+    from backend.routers.auth import _mfa_codes
+    code = _mfa_codes["adm2fa@test.id"][0]
+
+    ok = client.post("/api/auth/login-2fa", json={"username": "adm2fa@test.id", "code": code})
+    assert ok.status_code == 200 and ok.json()["token"]
+    assert client.get("/api/users/", headers={"Authorization": f"Bearer {ok.json()['token']}"}).status_code == 200
+    # Sekali pakai.
+    assert client.post("/api/auth/login-2fa", json={"username": "adm2fa@test.id", "code": code}).status_code == 401
+
+
+def test_admin_tanpa_telegram_tidak_terkunci(client, admin_headers):
+    """2FA hanya diwajibkan kalau ada telegram_id. Kalau tidak, tidak ada jalan
+    mengirim kodenya — mewajibkannya berarti mengunci admin dari sistemnya sendiri."""
+    res = client.post("/api/auth/login", json={"username": "adm@test.id", "password": "pass1234"})
+    assert res.status_code == 200 and res.json()["token"]
+
+
+def test_login_2fa_kode_salah_habis_jatah(client, db, monkeypatch):
+    monkeypatch.setattr("backend.notifications.send_telegram_notification", lambda *a, **k: True)
+    _admin_ber_telegram(db, tg="55002")
+    client.post("/api/auth/login", json={"username": "adm2fa@test.id", "password": "sandiadmin"})
+    from backend.routers.auth import _mfa_codes, MFA_MAX_ATTEMPTS
+    benar = _mfa_codes["adm2fa@test.id"][0]
+    salah = "000000" if benar != "000000" else "111111"
+    for _ in range(MFA_MAX_ATTEMPTS):
+        assert client.post("/api/auth/login-2fa", json={"username": "adm2fa@test.id", "code": salah}).status_code == 401
+    # Kode yang BENAR pun harus ditolak. 429 diterima juga: rate limit per-username
+    # menyalip penghitung jatah, dan itu justru penolakan yang lebih dini.
+    res = client.post("/api/auth/login-2fa", json={"username": "adm2fa@test.id", "code": benar})
+    assert res.status_code in (401, 429), res.status_code
+
+
+# ── Verifikasi lokasi kunjungan ──────────────────────────────────────
+
+def test_haversine_jarak_masuk_akal():
+    from backend.lib.format import haversine_m
+    # Monas → Bundaran HI, ±1,9 km menurut peta.
+    d = haversine_m(-6.1754, 106.8272, -6.1950, 106.8230)
+    assert 1700 < d < 2300, d
+    assert haversine_m(None, 1, 2, 3) is None      # koordinat tak lengkap
+
+
+def test_dedup_unggah_csv(client, auth_headers):
+    """Mengunggah berkas yang sama dua kali — mudah terjadi saat unggahan pertama
+    tampak gagal padahal berhasil — dulu menggandakan seluruh batch."""
+    baris = [{"customer_name": "Budi", "address": "Jl. Satu", "phone": "0812", "amount_due": 1000},
+             {"customer_name": "Siti", "address": "Jl. Dua", "phone": "0813", "amount_due": 2000}]
+    a = client.post("/api/targets/upload?period=2026-09", json=baris, headers=auth_headers)
+    assert a.status_code == 200 and a.json()["skipped"] == 0
+
+    b = client.post("/api/targets/upload?period=2026-09", json=baris, headers=auth_headers)
+    assert b.status_code == 200 and b.json()["skipped"] == 2
+    assert len(client.get("/api/targets/?period=2026-09", headers=auth_headers).json()) == 2
+
+
+def test_ekspor_csv_tercatat_di_audit(client, db, auth_headers, admin_headers):
+    """Mengunduh seluruh data nasabah adalah aksi paling sensitif di sistem ini,
+    dan dulu satu-satunya yang tidak meninggalkan jejak sama sekali."""
+    assert client.get("/api/targets/export/csv", headers=auth_headers).status_code == 200
+    logs = client.get("/api/audit/logs", headers=admin_headers).json()
+    entries = logs.get("logs", logs) if isinstance(logs, dict) else logs
+    assert any(e.get("action") == "export" for e in entries), entries

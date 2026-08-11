@@ -145,6 +145,12 @@ def _require_roles(*allowed: str):
             raise HTTPException(status_code=401, detail="Invalid token")
         if _token_issued_before_password_change(payload, user):
             raise HTTPException(status_code=401, detail="Sesi berakhir karena kata sandi diubah. Silakan login ulang.")
+        # Menonaktifkan akun harus MENCABUT akses, bukan sekadar menyembunyikannya
+        # dari daftar penugasan. Tanpa baris ini, manajer yang baru dinonaktifkan
+        # tetap bisa memakai token lamanya sampai kedaluwarsa — termasuk mengekspor
+        # seluruh data nasabah ke CSV.
+        if not user.active:
+            raise HTTPException(status_code=401, detail="Akun ini sudah dinonaktifkan.")
         role = user.role.value if hasattr(user.role, "value") else user.role
         if allowed and role not in allowed:
             raise HTTPException(status_code=403, detail=f"Butuh peran: {' atau '.join(allowed)}")

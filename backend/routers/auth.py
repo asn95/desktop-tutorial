@@ -92,6 +92,12 @@ async def login(payload: LoginPayload, request: Request, db: Session = Depends(g
     if not verify_password(payload.password, user.password_hash):
         _record_attempt(client_ip, payload.username)
         raise HTTPException(status_code=401, detail="Nama pengguna atau kata sandi tidak valid")
+    # Diperiksa SETELAH kata sandi, dan dengan pesan yang sama: membalas "akun
+    # dinonaktifkan" pada kata sandi yang salah memberi tahu penebak bahwa nama
+    # penggunanya benar.
+    if not user.active:
+        _record_attempt(client_ip, payload.username)
+        raise HTTPException(status_code=401, detail="Nama pengguna atau kata sandi tidak valid")
 
     role = _role_str(user.role)
 
@@ -313,8 +319,11 @@ async def login_2fa(payload: MfaPayload, request: Request, db: Session = Depends
         _record_attempt(_client_ip(request), "mfa:" + username)
         raise HTTPException(status_code=401, detail="Kode tidak valid atau sudah kedaluwarsa")
 
+    # `active` diperiksa lagi di sini, bukan hanya di /login: kode yang sudah
+    # terkirim tetap berlaku beberapa menit, jadi akun yang dinonaktifkan di
+    # sela-sela dua langkah itu masih bisa menukarnya dengan token.
     user = db.query(DbUser).filter(DbUser.email == username).first()
-    if not user:
+    if not user or not user.active:
         _mfa_codes.pop(username, None)
         raise HTTPException(status_code=401, detail="Kode tidak valid atau sudah kedaluwarsa")
 

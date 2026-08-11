@@ -155,6 +155,23 @@ async def submit_report(
     if target.assigned_officer != officer.id:
         raise HTTPException(status_code=403, detail="You are not assigned to this target")
 
+    # Satu kunjungan, satu laporan. Tanpa penjaga ini tombol kirim yang ditekan dua
+    # kali di jaringan lambat menghasilkan dua laporan, dua notifikasi ke manajer,
+    # dan dua kunjungan di analitik untuk satu nasabah yang sama.
+    if target.status == TargetStatus.completed:
+        raise HTTPException(status_code=409, detail="Target ini sudah dilaporkan selesai")
+
+    # payment_status masuk sebagai teks bebas dari form. Nilai di luar daftar dulu
+    # lolos sampai ke basis data, lalu meledak sebagai LookupError setiap kali baris
+    # itu dibaca kembali — merusak dashboard dan analitik, bukan cuma satu request.
+    try:
+        payment_status = PaymentStatus(payment_status)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Status pembayaran tidak dikenal. Pilih salah satu: {', '.join(s.value for s in PaymentStatus)}",
+        )
+
     # 2. Save Photo locally
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
     contents = await photo.read()
@@ -234,6 +251,16 @@ async def get_comments(
     officer: DbUser = Depends(get_current_officer),
     db: Session = Depends(get_db)
 ):
+    # Dua endpoint tetangga (kirim laporan, kirim komentar) sudah memeriksa
+    # penugasan; yang ini dulu menyaring berdasarkan target_id saja. Catatan
+    # lapangan memuat keadaan pribadi nasabah, dan id target ikut terkirim ke
+    # setiap petugas lewat daftar tugasnya — jadi menebaknya tidak diperlukan.
+    target = db.query(DbTarget).filter(DbTarget.id == target_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    if target.assigned_officer != officer.id:
+        raise HTTPException(status_code=403, detail="You are not assigned to this target")
+
     comments = (
         db.query(DbComment)
         .filter(DbComment.target_id == target_id)

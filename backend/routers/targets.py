@@ -107,6 +107,26 @@ async def upload_targets(
 from ..notifications import send_telegram_notification
 from ..lib.format import format_currency_python # We'll create this helper
 
+def _resolve_officer(db, officer_id):
+    """Ambil calon penerima tugas, dan pastikan ia memang petugas lapangan aktif.
+
+    Sebelumnya kedua endpoint penugasan hanya mencari berdasarkan id. Target yang
+    jatuh ke akun manajer/admin tidak pernah muncul di Mini App mana pun — dan
+    karena statusnya berubah jadi 'sedang dikerjakan', ia juga hilang dari daftar
+    yang menunggu ditugaskan. Nasabahnya tidak pernah didatangi tanpa satu pun
+    tanda di dashboard.
+    """
+    officer = db.query(DbUser).filter(DbUser.id == officer_id).first()
+    if not officer:
+        raise HTTPException(status_code=404, detail="Petugas tidak ditemukan")
+    role = officer.role.value if hasattr(officer.role, "value") else officer.role
+    if role != "officer":
+        raise HTTPException(status_code=400, detail="Target hanya bisa ditugaskan ke petugas lapangan")
+    if not officer.active:
+        raise HTTPException(status_code=400, detail="Petugas ini sudah nonaktif")
+    return officer
+
+
 def _assign_one(db_target, db_officer, db, auth_sub):
     """Assign a single target and send notification. Returns success bool."""
     db_target.assigned_officer = db_officer.id
@@ -130,9 +150,7 @@ async def assign_target(target_id: str, officer_id: str, db: Session = Depends(g
     db_target = db.query(DbTarget).filter(DbTarget.id == target_id).first()
     if not db_target:
         raise HTTPException(status_code=404, detail="Target tidak ditemukan")
-    db_officer = db.query(DbUser).filter(DbUser.id == officer_id).first()
-    if not db_officer:
-        raise HTTPException(status_code=404, detail="Petugas tidak ditemukan")
+    db_officer = _resolve_officer(db, officer_id)
 
     _assign_one(db_target, db_officer, db, _auth["sub"])
     db.commit()
@@ -146,9 +164,7 @@ class BulkAssignPayload(_BaseModel):
 
 @router.post("/bulk-assign")
 async def bulk_assign(payload: BulkAssignPayload, db: Session = Depends(get_db), _auth: dict = Depends(require_manager)):
-    db_officer = db.query(DbUser).filter(DbUser.id == payload.officer_id).first()
-    if not db_officer:
-        raise HTTPException(status_code=404, detail="Petugas tidak ditemukan")
+    db_officer = _resolve_officer(db, payload.officer_id)
 
     targets = db.query(DbTarget).filter(DbTarget.id.in_(payload.target_ids)).all()
     if not targets:

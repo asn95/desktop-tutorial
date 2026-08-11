@@ -245,6 +245,72 @@ def test_laporan_kedua_untuk_target_selesai_ditolak(client, db, monkeypatch):
     assert db.query(DbReport).count() == 1
 
 
+# ── Jalur agen AI: penjaga yang sama, pintu masuk yang berbeda ───────
+
+def _pakai_db_tes(monkeypatch):
+    from backend.tests.conftest import TestSession
+    monkeypatch.setattr("backend.agent_tools.SessionLocal", TestSession)
+    monkeypatch.setattr("backend.agent_tools.send_telegram_notification", lambda *a, **k: True)
+
+
+def test_agen_tidak_bisa_menugaskan_target_ke_akun_portal(db, monkeypatch):
+    """Agen memilih officer_id dari percakapan bebas, jadi justru jalur inilah yang
+    paling mungkin menyodorkan id akun manajer — menutupnya di endpoint REST saja
+    menyisakan pintu kedua yang terbuka lebar."""
+    from backend.agent_tools import assign_targets_to_officer
+    _pakai_db_tes(monkeypatch)
+
+    manajer = DbUser(name="Manajer Agen", email="mgr3@test.id",
+                     password_hash=hash_password("pass123"), role=UserRole.manager)
+    target = DbTarget(customer_name="Nasabah E", address="Jl. H", phone="0819", amount_due=700000)
+    db.add_all([manajer, target])
+    db.commit()
+    db.refresh(manajer)
+    db.refresh(target)
+
+    hasil = assign_targets_to_officer([target.id], manajer.id)
+    assert hasil["success"] is False
+    db.refresh(target)
+    assert target.assigned_officer is None
+
+
+def test_agen_tidak_bisa_menugaskan_target_ke_petugas_nonaktif(db, monkeypatch):
+    from backend.agent_tools import assign_targets_to_officer
+    _pakai_db_tes(monkeypatch)
+
+    petugas = DbUser(name="Petugas Cuti", telegram_id="900050",
+                     role=UserRole.officer, active=False)
+    target = DbTarget(customer_name="Nasabah F", address="Jl. I", phone="0820", amount_due=800000)
+    db.add_all([petugas, target])
+    db.commit()
+    db.refresh(petugas)
+    db.refresh(target)
+
+    hasil = assign_targets_to_officer([target.id], petugas.id)
+    assert hasil["success"] is False
+    db.refresh(target)
+    assert target.assigned_officer is None
+
+
+def test_agen_tidak_menugaskan_massal_ke_petugas_nonaktif(db, monkeypatch):
+    """Pencarian per nama menyaring peran tapi dulu tidak menyaring status aktif."""
+    from backend.agent_tools import assign_all_pending_to_officer
+    _pakai_db_tes(monkeypatch)
+
+    petugas = DbUser(name="Budi Nonaktif", telegram_id="900051",
+                     role=UserRole.officer, active=False)
+    targets = [DbTarget(customer_name=f"M{i}", address="Jl. J", phone="0821", amount_due=90000)
+               for i in range(2)]
+    db.add_all([petugas] + targets)
+    db.commit()
+
+    hasil = assign_all_pending_to_officer("Budi")
+    assert hasil["success"] is False
+    for t in targets:
+        db.refresh(t)
+        assert t.assigned_officer is None
+
+
 # ── Data yang mustahil di lapangan ───────────────────────────────────
 
 def test_status_pembayaran_di_luar_daftar_ditolak(client, db, monkeypatch):

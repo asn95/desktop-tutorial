@@ -281,9 +281,19 @@ def get_flagged_targets(min_comments: int = 3) -> list[dict]:
 def assign_targets_to_officer(target_ids: list[str], officer_id: str) -> dict:
     """Assign a list of targets to an officer. Returns success count."""
     with get_db() as db:
+        # Peran dan status aktif diperiksa di sini juga, bukan hanya di
+        # routers/targets.py: agen memilih officer_id dari percakapan bebas, jadi
+        # justru jalur inilah yang paling mungkin menyodorkan id akun manajer.
+        # Target yang jatuh ke akun non-petugas berstatus "sedang dikerjakan"
+        # tapi tidak muncul di Mini App mana pun.
         officer = db.query(DbUser).filter(DbUser.id == officer_id).first()
         if not officer:
             return {"success": False, "error": "Officer not found"}
+        role = officer.role.value if hasattr(officer.role, "value") else officer.role
+        if role != "officer":
+            return {"success": False, "error": f"{officer.name} bukan petugas lapangan"}
+        if not officer.active:
+            return {"success": False, "error": f"{officer.name} sudah nonaktif"}
 
         updated = 0
         for tid in target_ids:
@@ -379,12 +389,16 @@ def assign_all_pending_to_officer(officer: str, address_filter: str | None = Non
     stays small and the agent request never exceeds provider payload limits.
     """
     with get_db() as db:
+        # `active` ikut disaring, bukan hanya peran: petugas nonaktif sudah tidak
+        # bekerja, jadi target yang jatuh padanya tidak akan pernah dikunjungi —
+        # dan statusnya berubah jadi "sedang dikerjakan" sehingga tidak ada yang tahu.
         person = db.query(DbUser).filter(
-            DbUser.role == UserRole.officer, DbUser.id == officer
+            DbUser.role == UserRole.officer, DbUser.active == True, DbUser.id == officer
         ).first()
         if not person:
             person = db.query(DbUser).filter(
-                DbUser.role == UserRole.officer, DbUser.name.ilike(f"%{officer}%")
+                DbUser.role == UserRole.officer, DbUser.active == True,
+                DbUser.name.ilike(f"%{officer}%")
             ).first()
         if not person:
             return {"success": False, "error": f"Officer '{officer}' not found"}

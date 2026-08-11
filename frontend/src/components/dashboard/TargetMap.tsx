@@ -21,6 +21,19 @@ interface TargetMapProps {
   targets: Target[];
 }
 
+/** Isi popup dirakit sebagai node DOM; textContent tidak pernah menafsirkan markup. */
+function popupEl(name: string, address: string, meta: string): HTMLElement {
+  const el = document.createElement("div");
+  const strong = document.createElement("strong");
+  strong.textContent = name;
+  const addr = document.createElement("div");
+  addr.textContent = address;
+  const info = document.createElement("div");
+  info.textContent = meta;
+  el.append(strong, addr, info);
+  return el;
+}
+
 export function TargetMap({ targets }: TargetMapProps) {
   // dialias: `t` sudah dipakai sebagai variabel Target di file ini
   const { t: tr } = useLang();
@@ -90,11 +103,11 @@ export function TargetMap({ targets }: TargetMapProps) {
         fillColor: STATUS_COLOR[status],
         fillOpacity: 0.35,
       })
-        .bindPopup(
-          `<strong>${t.customerName}</strong><br/>` +
-            `${t.address}<br/>` +
-            `${formatCurrency(t.amountDue)} · ${tr(STATUS_LABEL[status])}`
-        )
+        // Elemen, bukan string HTML. Nama dan alamat nasabah datang dari unggahan
+        // CSV — bukan ketikan manajer — dan bindPopup memasang string sebagai
+        // innerHTML. Satu baris CSV bernama `<img src=x onerror=...>` sudah cukup
+        // untuk mencuri token dari localStorage begitu ada yang mengklik pin-nya.
+        .bindPopup(popupEl(t.customerName, t.address, `${formatCurrency(t.amountDue)} · ${tr(STATUS_LABEL[status])}`))
         .addTo(layer);
     }
     map.fitBounds(

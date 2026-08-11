@@ -119,7 +119,14 @@ def get_current_officer(x_telegram_auth: str = Header(None), db: Session = Depen
     officer = db.query(DbUser).filter(DbUser.telegram_id == telegram_id).first()
     if not officer:
         raise HTTPException(status_code=404, detail="Officer not registered in C3MR system")
-        
+    # Penjaga yang sama seperti di jalur portal (security.py). Tanpa ini, petugas
+    # yang sudah diberhentikan tetap membuka Mini App seperti biasa: initData-nya
+    # asli, HMAC-nya sah, dan seluruh target lamanya — lengkap dengan nama, alamat,
+    # telepon, dan jumlah tagihan nasabah — tetap terbaca sampai admin memindahkan
+    # target itu satu per satu.
+    if not officer.active:
+        raise HTTPException(status_code=403, detail="Akun ini sudah dinonaktifkan")
+
     return officer
 
 @router.get("/tasks", response_model=List[Target])
@@ -155,12 +162,6 @@ async def submit_report(
     if target.assigned_officer != officer.id:
         raise HTTPException(status_code=403, detail="You are not assigned to this target")
 
-    # Satu kunjungan, satu laporan. Tanpa penjaga ini tombol kirim yang ditekan dua
-    # kali di jaringan lambat menghasilkan dua laporan, dua notifikasi ke manajer,
-    # dan dua kunjungan di analitik untuk satu nasabah yang sama.
-    if target.status == TargetStatus.completed:
-        raise HTTPException(status_code=409, detail="Target ini sudah dilaporkan selesai")
-
     # payment_status masuk sebagai teks bebas dari form. Nilai di luar daftar dulu
     # lolos sampai ke basis data, lalu meledak sebagai LookupError setiap kali baris
     # itu dibaca kembali — merusak dashboard dan analitik, bukan cuma satu request.
@@ -172,23 +173,44 @@ async def submit_report(
             detail=f"Status pembayaran tidak dikenal. Pilih salah satu: {', '.join(s.value for s in PaymentStatus)}",
         )
 
-    # 2. Save Photo locally
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-    contents = await photo.read()
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File too large. Maximum size is 10 MB.")
-    await photo.seek(0)
-
     ALLOWED_EXT = {"jpg", "jpeg", "png"}
     file_ext = (photo.filename or "").rsplit(".", 1)[-1].lower()
     if file_ext not in ALLOWED_EXT:
         raise HTTPException(status_code=400, detail=f"File type not allowed. Use: {', '.join(ALLOWED_EXT)}")
+
+    # Satu kunjungan, satu laporan. Ditegakkan lewat UPDATE bersyarat, bukan
+    # "baca lalu tulis": ada `await` antara pemeriksaan dan commit, jadi dua request
+    # yang datang bersamaan sama-sama membaca in_progress dan sama-sama lolos.
+    # Baris ini mengunci barisnya sampai commit di bawah, sehingga request kedua
+    # menunggu lalu mendapati syaratnya tak lagi terpenuhi.
+    klaim = (
+        db.query(DbTarget)
+        .filter(DbTarget.id == target_id, DbTarget.status != TargetStatus.completed)
+        .update({"status": TargetStatus.completed}, synchronize_session=False)
+    )
+    if not klaim:
+        raise HTTPException(status_code=409, detail="Target ini sudah dilaporkan selesai")
+
+    # 2. Save Photo locally — dibaca berpotongan dan dihentikan begitu melewati
+    # batas. Membaca seluruhnya lebih dulu berarti berkas 3 GB masuk RAM sebelum
+    # satu pun pemeriksaan berjalan, dan kontainer mati kena OOM.
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
     file_name = f"{uuid.uuid4()}.{file_ext}"
     file_path = os.path.join(UPLOAD_DIR, file_name)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(photo.file, buffer)
-    
+    written = 0
+    try:
+        with open(file_path, "wb") as buffer:
+            while chunk := await photo.read(1024 * 1024):
+                written += len(chunk)
+                if written > MAX_FILE_SIZE:
+                    raise HTTPException(status_code=400, detail="File too large. Maximum size is 10 MB.")
+                buffer.write(chunk)
+    except Exception:
+        db.rollback()          # batalkan klaim — targetnya harus bisa dilaporkan lagi
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise
+
     # 3. Create Report Record
     # Jarak dihitung SEKALI di sini, bukan tiap kali laporan dibaca: koordinat target
     # bisa berubah kalau alamatnya di-geocode ulang, dan yang ingin dibuktikan adalah
@@ -208,9 +230,8 @@ async def submit_report(
     )
     db.add(db_report)
 
-    # 4. Update Target Status — finalized report means collection is complete
-    target.status = TargetStatus.completed
-
+    # Status target sudah disetel oleh UPDATE klaim di atas, dalam transaksi yang
+    # sama dengan baris laporan ini — jadi keduanya jadi atau keduanya batal.
     db.commit()
 
     # Di latar, bukan inline: petugas ada di jaringan seluler dan baru saja

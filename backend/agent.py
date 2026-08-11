@@ -9,10 +9,13 @@ Usage:
 import os
 import re
 import json
+import logging
 import anthropic
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 from .agent_tools import TOOL_DEFINITIONS, TOOL_FUNCTIONS
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -94,6 +97,11 @@ def _run_tool(name: str, tool_input: dict) -> str:
             content = content[:MAX_TOOL_RESULT_CHARS] + " …[hasil dipotong; persempit filter atau gunakan tool ringkasan]"
         return content
     except Exception as e:
+        # Dicatat, bukan cuma dikembalikan ke model. Tanpa baris ini galat tool
+        # sepenuhnya tak terlihat: modelnya menerima {"error": ...}, lalu menjawab
+        # manajer seolah tidak terjadi apa-apa. Satu bug TypeError sempat hidup
+        # berbulan-bulan persis karena itu.
+        logger.exception("Tool agen '%s' gagal", name)
         return json.dumps({"error": str(e)})
 
 

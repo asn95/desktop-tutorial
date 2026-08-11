@@ -15,6 +15,10 @@ interface AuthContextValue {
 }
 
 const STORAGE_KEY = "c3mr:web-admin:auth-user";
+// Stempel aktivitas terakhir. Timer idle hanya hidup di memori, jadi menutup tab
+// atau me-restart browser membatalkannya: sesi dipulihkan dari localStorage dan
+// satu-satunya yang diperiksa adalah masa berlaku JWT — empat jam, bukan lima menit.
+const ACTIVITY_KEY = "c3mr:web-admin:last-activity";
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -30,6 +34,11 @@ function readStoredUser(): AuthUser | null {
         localStorage.removeItem(STORAGE_KEY);
         return null;
       }
+    }
+    const last = Number(localStorage.getItem(ACTIVITY_KEY) || 0);
+    if (last && Date.now() - last > IDLE_TIMEOUT_MS) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
     }
     return user;
   } catch {
@@ -51,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetIdleTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
     timerRef.current = setTimeout(logout, IDLE_TIMEOUT_MS);
   }, [logout]);
 

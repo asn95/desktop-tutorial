@@ -28,14 +28,17 @@ def _client_ip(request: Request) -> str:
     """Resolve the real client IP.
 
     Behind Railway's reverse proxy request.client.host is always the proxy, so per-IP
-    limiting is useless. Prefer the left-most (original client) entry of X-Forwarded-For
-    when present, falling back to the direct peer.
+    limiting is useless. X-Forwarded-For dipakai, tapi entri PALING KANAN — itulah
+    yang ditulis proxy tepercaya. Entri paling kiri sepenuhnya dikendalikan klien:
+    memercayainya membuat batas per-IP bisa dilewati dengan mengarang alamat tiap
+    request, dan lebih buruk lagi memungkinkan penyerang mengunci seluruh kantor
+    dengan mengirim lima login gagal atas nama IP kantor itu.
     """
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
-        first = forwarded.split(",")[0].strip()
-        if first:
-            return first
+        parts = [p.strip() for p in forwarded.split(",") if p.strip()]
+        if parts:
+            return parts[-1]
     return request.client.host if request.client else "unknown"
 
 

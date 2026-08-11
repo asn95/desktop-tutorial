@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
@@ -11,6 +12,7 @@ from ..models import DbTarget, DbComment, DbReport, DbUser, DbAuditLog, DbNotifi
 from ..security import require_manager
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 def current_period() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m")
@@ -99,10 +101,12 @@ async def upload_targets(
         if skipped:
             msg += f" · {skipped} duplikat dilewati"
         return {"message": msg, "period": batch_period, "skipped": skipped}
-    except Exception as e:
+    except Exception:
         db.rollback()
-        import traceback; traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Gagal mengunggah target: {str(e)}")
+        # Detailnya ke log, bukan ke klien: str(e) dari psycopg2 memuat nama tabel,
+        # nama kolom, dan nama constraint — peta skema gratis buat penyerang.
+        logger.exception("Gagal mengunggah target")
+        raise HTTPException(status_code=500, detail="Gagal mengunggah target.")
 
 from ..notifications import send_telegram_notification
 from ..lib.format import format_currency_python # We'll create this helper

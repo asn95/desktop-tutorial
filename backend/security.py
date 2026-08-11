@@ -29,10 +29,12 @@ def validate_telegram_data(init_data: str) -> bool:
     """
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not bot_token:
-        debug = os.environ.get("DEBUG", "false").lower() == "true"
-        if debug:
-            print("WARNING: TELEGRAM_BOT_TOKEN not set. Skipping validation (DEBUG mode).")
-            return True
+        # Gagal-tertutup, tanpa pengecualian. Dulu ada cabang "kalau DEBUG=true dan
+        # token kosong, izinkan" — satu flag env salah membuat siapa pun bisa
+        # menyamar sebagai petugas mana pun hanya dengan menebak Telegram ID-nya,
+        # dan ID itu dicetak terang-terangan oleh bot ke layar tiap petugas.
+        # Untuk dev, pakai token bot sungguhan; verifikasi kriptografi tidak boleh
+        # punya jalur "kalau tidak dikonfigurasi, lewati saja".
         return False
 
     # 1. Parse data menjadi dictionary

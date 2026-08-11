@@ -2,6 +2,7 @@
 C3MR Agent Tools — Database query functions exposed as Claude tools.
 Each function takes a DB session and returns structured data for the agent.
 """
+import logging
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
 from .database import SessionLocal
@@ -18,12 +19,22 @@ import contextvars
 # nama manusia yang memerintahkannya — bukan atas nama "agen" tanpa pemilik.
 CURRENT_ACTOR = contextvars.ContextVar("c3mr_agent_actor", default=None)
 
+logger = logging.getLogger(__name__)
+
 
 def _log_action(db, action: str, detail: str) -> None:
-    """Catat aksi agen ke audit log, kalau pemanggilnya diketahui."""
+    """Catat aksi agen ke audit log. Aktor tak dikenal tetap dicatat.
+
+    Sebelumnya baris tanpa aktor dilewati diam-diam — dan aktor bernilai None persis
+    terjadi untuk Telegram ID yang hanya ada di MANAGER_BOT_ALLOWED_IDS, tidak di
+    tabel users. Akibatnya penugasan massal lewat jalur itu tidak meninggalkan jejak
+    sama sekali di halaman Log Audit: 40 target berpindah dan tak ada yang tahu siapa.
+    """
     actor = CURRENT_ACTOR.get()
     if actor:
         db.add(DbAuditLog(user_id=actor, action=action, detail=detail))
+    else:
+        logger.warning("Aksi agen tanpa aktor teridentifikasi: %s — %s", action, detail)
 
 
 def _notify(db, officer, message: str, include_field_app: bool = True) -> bool:
@@ -241,7 +252,11 @@ def get_overdue_targets(days: int = 7) -> list[dict]:
                 "amount_due": t.amount_due,
                 "status": t.status.value if hasattr(t.status, "value") else t.status,
                 "officer": u.name if u else "Unassigned",
-                "days_old": (datetime.now(timezone.utc) - t.created_at).days,
+                # Lewat _days_since, bukan pengurangan langsung: kolom DateTime
+                # mengembalikan datetime naive, dan mengurangkannya dari now(utc)
+                # yang aware melempar TypeError — yang lalu ditelan agent.py jadi
+                # {"error": ...} sehingga tool ini gagal tanpa jejak apa pun.
+                "days_old": _days_since(t.created_at),
             }
             for t, u in rows
         ]

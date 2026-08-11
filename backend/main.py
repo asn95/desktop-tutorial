@@ -1,11 +1,12 @@
-from fastapi import FastAPI, Request, Header, HTTPException
+from fastapi import FastAPI, Request, Header, HTTPException, Depends
 from fastapi.responses import JSONResponse, FileResponse
 import os, traceback, logging
 from pathlib import Path
+from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
-from .database import engine, Base
+from .database import engine, Base, get_db
 from fastapi.staticfiles import StaticFiles
 from .routers import targets, dashboard, auth, users, analytics, officer, audit
 from .maintenance import maintenance_state
@@ -182,7 +183,16 @@ import sys
 if "pytest" not in sys.modules:  # jangan akses jaringan saat unit test
     _geocode_active_period_backfill()
 
-app = FastAPI(title="C3MR API")
+# Skema API hanya terbuka saat DEBUG. Di produksi /docs, /redoc, dan /openapi.json
+# menyerahkan peta lengkap 30-an endpoint beserta bentuk payload-nya ke siapa pun
+# tanpa akun — pengintaian gratis untuk aplikasi berisi data tunggakan nasabah.
+_DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
+app = FastAPI(
+    title="C3MR API",
+    docs_url="/docs" if _DEBUG else None,
+    redoc_url="/redoc" if _DEBUG else None,
+    openapi_url="/openapi.json" if _DEBUG else None,
+)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -199,16 +209,28 @@ UPLOAD_PATH.mkdir(parents=True, exist_ok=True)
 
 
 @app.get("/api/uploads/{name}")
-async def serve_upload(name: str, token: str = "", authorization: str = Header(None)):
-    from .security import decode_access_token
+async def serve_upload(name: str, token: str = "", authorization: str = Header(None),
+                       db: Session = Depends(get_db)):
+    from .security import decode_access_token, _token_issued_before_password_change
 
     # Tag <img> tidak bisa mengirim header Authorization, jadi token juga diterima
     # lewat query. Sama-sama origin, dan tokennya berumur 4 jam.
     raw = token or (authorization or "").removeprefix("Bearer ").strip()
     try:
-        decode_access_token(raw)
+        payload = decode_access_token(raw)
     except Exception:
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Tanda tangan yang sah saja tidak cukup. Ini satu-satunya endpoint yang tidak
+    # lewat _require_roles, dan tanpa pemeriksaan berikut ketiga penjaga di sana
+    # terlewati sekaligus: akun yang sudah dihapus, akun yang dinonaktifkan, dan
+    # token yang terbit sebelum kata sandi diganti — justru skenario "akun saya
+    # dibajak, saya reset sandi" yang seharusnya mematikan semua sesi penyerang.
+    user = db.query(DbUser).filter(DbUser.id == payload.get("sub")).first()
+    if not user or not user.active or _token_issued_before_password_change(payload, user):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if (user.role.value if hasattr(user.role, "value") else user.role) != "manager":
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     target = (UPLOAD_PATH / name).resolve()
     # Penjaga path traversal: nama berkas datang dari URL, jadi "../../etc/passwd"
@@ -239,10 +261,38 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+        # Mini App dirender Telegram di dalam iframe pada versi Web dan Desktop.
+        # `X-Frame-Options: DENY` untuk semua path membuat petugas yang memakai
+        # kedua versi itu melihat halaman kosong; di HP tidak terasa karena
+        # webview native bukan iframe. Jadi hanya /officer-app yang boleh dibingkai,
+        # dan hanya oleh Telegram — portal manajer tetap DENY.
+        mini_app = request.url.path.startswith("/officer-app")
+        if mini_app:
+            frame_ancestors = "frame-ancestors https://web.telegram.org https://*.telegram.org"
+        else:
+            frame_ancestors = "frame-ancestors 'none'"
+            response.headers["X-Frame-Options"] = "DENY"
+
+        # Sumbernya dienumerasi dari yang benar-benar dimuat: Google Fonts, skrip
+        # Mini App Telegram, dan ubin peta OpenStreetMap. `script-src` sengaja tanpa
+        # 'unsafe-inline' — itu direktif yang mengubah XSS dari pencurian token
+        # menjadi sekadar gangguan tampilan.
+        response.headers["Content-Security-Policy"] = "; ".join([
+            "default-src 'self'",
+            "script-src 'self' https://telegram.org",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com",
+            "img-src 'self' data: blob: https://tile.openstreetmap.org",
+            "connect-src 'self'",
+            "object-src 'none'",
+            "base-uri 'none'",
+            "form-action 'self'",
+            frame_ancestors,
+        ])
         # Webview Telegram meng-cache aset mini-app secara agresif sehingga update
         # JS tidak sampai ke petugas; file-nya kecil, paksa revalidasi (304 murah).
         if request.url.path.startswith("/officer-app"):
@@ -343,9 +393,11 @@ async def agent_ask(payload: AgentQuery, _auth: dict = Depends(require_manager))
         from .agent import run_agent
         answer = await run_agent(question, actor_id=_auth.get("sub"))
         return {"answer": answer}
-    except Exception as e:
+    except Exception:
+        # Sudah masuk log lengkap dengan trace; ke klien cukup pesan umum. str(e)
+        # dari SDK Anthropic bisa memuat potongan URL request dan metadata organisasi.
         logger.exception("AI agent error")
-        raise HTTPException(status_code=500, detail=f"Agent error: {e}")
+        raise HTTPException(status_code=500, detail="Asisten AI sedang tidak bisa dihubungi.")
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])

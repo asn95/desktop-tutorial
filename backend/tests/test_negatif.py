@@ -311,6 +311,78 @@ def test_agen_tidak_menugaskan_massal_ke_petugas_nonaktif(db, monkeypatch):
         assert t.assigned_officer is None
 
 
+# ── Pencabutan akses harus berlaku di KETIGA jalur autentikasi ───────
+
+def test_petugas_nonaktif_ditolak_mini_app(client, db, monkeypatch):
+    """Jaminan 'nonaktif = akses dicabut' sebelumnya hanya berlaku untuk pemegang
+    JWT. Petugas yang diberhentikan tetap membuka Mini App seperti biasa —
+    initData-nya asli — dan seluruh target lamanya, lengkap dengan nama, alamat,
+    telepon, dan tagihan nasabah, tetap terbaca."""
+    _lewati_verifikasi_telegram(monkeypatch)
+    petugas = DbUser(name="Petugas Dipecat", telegram_id="900060",
+                     role=UserRole.officer, active=False)
+    db.add(petugas)
+    db.commit()
+    db.refresh(petugas)
+    db.add(DbTarget(customer_name="Nasabah Rahasia", address="Jl. K", phone="0822",
+                    amount_due=900000, assigned_officer=petugas.id))
+    db.commit()
+
+    res = client.get("/api/officer/tasks", headers=_telegram_headers("900060"))
+    assert res.status_code == 403
+    assert "Nasabah Rahasia" not in res.text
+
+
+def test_manajer_nonaktif_ditolak_bot_telegram(db):
+    """Jalur ketiga: bot Telegram. Manajer nonaktif tidak bisa login web dan token
+    lamanya ditolak — tapi dulu ia masih bisa menyuruh agen lewat Telegram."""
+    from backend.bot_service import is_manager
+    aktif = DbUser(name="Manajer Aktif", telegram_id="900070", role=UserRole.manager)
+    nonaktif = DbUser(name="Manajer Nonaktif", telegram_id="900071",
+                      role=UserRole.manager, active=False)
+    db.add_all([aktif, nonaktif])
+    db.commit()
+
+    assert is_manager("900070", db) is True
+    assert is_manager("900071", db) is False
+
+
+def test_foto_bukti_menolak_token_akun_nonaktif(client, db, admin_headers):
+    """Endpoint foto satu-satunya yang tidak lewat _require_roles. Tanpa pemeriksaan
+    ulang ke basis data, token manajer yang baru dinonaktifkan tetap bisa mengunduh
+    foto rumah dan wajah nasabah sampai empat jam ke depan."""
+    manajer = DbUser(name="Manajer Foto", email="foto@test.id",
+                     password_hash=hash_password("pass123"), role=UserRole.manager)
+    db.add(manajer)
+    db.commit()
+    db.refresh(manajer)
+    token = client.post("/api/auth/login",
+                        json={"username": "foto@test.id", "password": "pass123"}).json()["token"]
+
+    # Berkasnya memang tidak ada — 404 membuktikan otorisasinya lolos lebih dulu.
+    assert client.get(f"/api/uploads/apa.jpg?token={token}").status_code == 404
+
+    client.patch(f"/api/users/{manajer.id}", json={"active": False}, headers=admin_headers)
+    assert client.get(f"/api/uploads/apa.jpg?token={token}").status_code == 401
+
+
+def test_foto_bukti_menolak_peran_admin(client, admin_headers, db):
+    """Admin sengaja tidak melihat data operasional. Foto bukti kunjungan termasuk."""
+    token = admin_headers["Authorization"].removeprefix("Bearer ")
+    assert client.get(f"/api/uploads/apa.jpg?token={token}").status_code == 403
+
+
+# ── Verifikasi Telegram tidak boleh punya jalur gagal-terbuka ────────
+
+def test_validasi_telegram_gagal_tertutup_tanpa_token(monkeypatch):
+    """Dulu ada cabang 'kalau DEBUG=true dan token kosong, izinkan'. Satu flag env
+    salah membuat siapa pun bisa menyamar sebagai petugas mana pun."""
+    from backend.security import validate_telegram_data
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.setenv("DEBUG", "true")
+    assert validate_telegram_data('user={"id":1}&hash=dummy_hash') is False
+
+
 # ── Data yang mustahil di lapangan ───────────────────────────────────
 
 def test_status_pembayaran_di_luar_daftar_ditolak(client, db, monkeypatch):

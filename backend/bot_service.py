@@ -51,6 +51,12 @@ def is_manager(telegram_id: str, db) -> bool:
     ).first()
     if not user:
         return False
+    # Akun nonaktif kehilangan akses di sini juga, bukan hanya di portal web.
+    # Tanpa baris ini manajer yang sudah dinonaktifkan tetap bisa membuka Telegram
+    # dan menyuruh agen menugaskan target atau membacakan data nasabah — seluruh
+    # pemblokiran di sisi web tidak berpengaruh pada jalur ini.
+    if not user.active:
+        return False
     # Managers and admins always have access. Admin sengaja ikut: perannya dipisah
     # untuk memisahkan menu web, bukan mencabut akses bot — kalau di sini tetap
     # "manager" saja, admin kehilangan /summary, /report, /ask, dan /mingguan.

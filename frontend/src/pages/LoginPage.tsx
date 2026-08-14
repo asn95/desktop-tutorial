@@ -261,7 +261,6 @@ export function LoginPage() {
                   required
                   autoComplete="username"
                   className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-base text-gray-900 placeholder-gray-500 transition focus:border-[#EA0A2C] focus:outline-none focus:ring-2 focus:ring-[#EA0A2C]/20 disabled:bg-gray-50 disabled:text-gray-400"
-                  placeholder="admin"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
                   disabled={locked}
@@ -445,7 +444,6 @@ export function LoginPage() {
                     onChange={(e) => setRecoveryUser(e.target.value)}
                     autoComplete="username"
                     className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-base text-gray-900 placeholder-gray-500 transition focus:border-[#EA0A2C] focus:outline-none focus:ring-2 focus:ring-[#EA0A2C]/20"
-                    placeholder="admin"
                   />
                 </div>
                 {recoveryError && <p className="text-sm text-red-600">{recoveryError}</p>}

@@ -121,10 +121,14 @@ async def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(g
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     if payload.telegram_id is not None:
-        existing = db.query(DbUser).filter(DbUser.telegram_id == payload.telegram_id, DbUser.id != user_id).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="Telegram ID already registered to another user")
-        db_user.telegram_id = payload.telegram_id
+        # String kosong = putuskan tautan Telegram; simpan NULL, bukan "",
+        # supaya dua akun tanpa Telegram tidak saling bentrok di pemeriksaan unik.
+        tid = payload.telegram_id.strip() or None
+        if tid:
+            existing = db.query(DbUser).filter(DbUser.telegram_id == tid, DbUser.id != user_id).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Telegram ID already registered to another user")
+        db_user.telegram_id = tid
     if payload.phone is not None:
         phone = normalize_phone(payload.phone)
         if phone:

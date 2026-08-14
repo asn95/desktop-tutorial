@@ -179,7 +179,9 @@ export function UserManagementPage() {
     try {
       await updateUser(editingUser.id, {
         name: editName,
-        telegram_id: editTelegramId || undefined,
+        // Selalu kirim, termasuk string kosong: kosong = putuskan tautan Telegram.
+        // `|| undefined` membuat kolom yang dikosongkan tak pernah tersimpan.
+        telegram_id: editTelegramId.trim(),
       });
       setEditingUser(null);
       loadData();

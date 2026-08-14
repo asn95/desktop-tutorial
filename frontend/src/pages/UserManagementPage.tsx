@@ -39,22 +39,22 @@ export function UserManagementPage() {
   }, []);
 
   async function loadData() {
-    try {
-      const [userData, snap] = await Promise.all([
-        getUsers(),
-        // Statistik per petugas dihitung dari daftar target ini, jadi daftarnya harus
-        // UTUH. Tanpa argumen, backend memakai limit default 50 dan yang terhitung
-        // cuma 50 target terbaru — petugas yang seluruh tugasnya di batch lama tampil
-        // sebagai nol. Null = semua periode, ALL_ROWS = batas atas backend (2000).
-        getDashboardSnapshot(null, ALL_ROWS),
-      ]);
-      setUsers(userData);
-      setTargets(snap.targets);
-    } catch (err) {
-      console.error("Gagal memuat data:", err);
-    } finally {
-      setIsLoading(false);
-    }
+    // allSettled, bukan all: /api/dashboard dijaga require_manager, jadi untuk
+    // admin panggilan snapshot selalu 403 — kegagalan itu tidak boleh ikut
+    // membuang daftar pengguna yang sudah berhasil diambil. Admin tetap melihat
+    // direktori personel; hanya statistik target per petugas yang kosong.
+    const [userRes, snapRes] = await Promise.allSettled([
+      getUsers(),
+      // Statistik per petugas dihitung dari daftar target ini, jadi daftarnya harus
+      // UTUH. Tanpa argumen, backend memakai limit default 50 dan yang terhitung
+      // cuma 50 target terbaru — petugas yang seluruh tugasnya di batch lama tampil
+      // sebagai nol. Null = semua periode, ALL_ROWS = batas atas backend (2000).
+      getDashboardSnapshot(null, ALL_ROWS),
+    ]);
+    if (userRes.status === "fulfilled") setUsers(userRes.value);
+    else console.error("Gagal memuat pengguna:", userRes.reason);
+    if (snapRes.status === "fulfilled") setTargets(snapRes.value.targets);
+    setIsLoading(false);
   }
 
   function getOfficerStats(userId: string) {

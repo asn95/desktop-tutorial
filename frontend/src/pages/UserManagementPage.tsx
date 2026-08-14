@@ -78,7 +78,9 @@ export function UserManagementPage() {
   const linked = (users || []).filter(u => u.telegram_id).length;
 
   function formatRole(role: string) {
-    return role === "manager" ? t("Manajer") : t("Petugas");
+    if (role === "manager") return t("Manajer");
+    if (role === "admin") return t("Administrator");
+    return t("Petugas");
   }
 
   async function handleAddUser(e: React.FormEvent) {

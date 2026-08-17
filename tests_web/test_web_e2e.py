@@ -277,3 +277,7 @@ def test_mini_app_punya_penyaring_dan_pencarian(halaman):
     assert "Periode" in isi, "penyaring periode tidak ditemukan"
     # Terbaru lebih dulu: 'Nasabah Baru' harus muncul sebelum 'Nasabah Lama'.
     assert isi.index("Nasabah Baru") < isi.index("Nasabah Lama"), "antrean tidak urut terbaru"
+    # Nomor kasus harus diturunkan dari id tugas, bukan dari posisinya di daftar.
+    # Kalau turun dari posisi, mengurutkan ulang antrean membuat nomor yang sama
+    # menempel pada nasabah yang berbeda.
+    assert "TBARU" in isi and "TLAMA" in isi, "nomor kasus tidak berasal dari id tugas"

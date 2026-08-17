@@ -350,8 +350,13 @@ function renderTasks() {
         return;
     }
 
-    shown.forEach((task, i) => {
-        const caseNum = '2025-' + String(8394 - i * 3012).replace('-','');
+    shown.forEach((task) => {
+        // Nomor kasus melekat pada tugasnya, bukan pada posisinya di daftar. Versi
+        // lama menurunkannya dari indeks ('2025-' + (8394 - i*3012)), sehingga begitu
+        // urutan antrean berubah — justru inti butir koreksi ini — label nomornya
+        // tetap di tempat dan dua nasabah berbeda tampil dengan nomor yang sama.
+        // (Rumus lama juga negatif mulai posisi ke-4, minusnya sekadar dibuang.)
+        const caseNum = String(task.id).replace(/-/g, '').slice(-6).toUpperCase();
 
         const div = document.createElement('div');
         div.className = 'tcard';
